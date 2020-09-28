@@ -28,11 +28,11 @@ def main(start_fold, batch_size, lr, n_epochs, p_proc, train, gpu,downsample):
     hparams['start_fold'] = int(start_fold)
     hparams['n_epochs'] = n_epochs
 
-    if p_proc:
-        pre_processing = PrepareData(
-            input_folders=DATA_PATH, split_folder=SPLIT_TABLE_PATH, split_table_name=SPLIT_TABLE_NAME
-        )
-        pre_processing.run()
+    # if p_proc:
+    #     pre_processing = PrepareData(
+    #         input_folders=DATA_PATH, split_folder=SPLIT_TABLE_PATH, split_table_name=SPLIT_TABLE_NAME
+    #     )
+    #     pre_processing.run()
 
     if train:
         cross_val = CVPipeline(

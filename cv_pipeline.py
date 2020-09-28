@@ -38,20 +38,7 @@ class CVPipeline:
         self.debug_folder = debug_folder
         self.split_table_path = split_table_path
         self.split_table_name = split_table_name
-        self.exclusions = ['S0431',
-                           'S0326'
-                           'S0453'
-                           'S0458'
-                           'A5766'
-                           'A0227'
-                           'A0238'
-                           'A1516'
-                           'A5179'
-                           'Q1807'
-                           'Q3568'
-                           'E10256'
-                           'E07341'
-                           'E05758']
+        self.exclusions = []
 
 
         self.splits = self.load_split_table()
@@ -63,41 +50,10 @@ class CVPipeline:
 
         splits = []
 
-        split_files = [i for i in os.listdir(self.split_table_path) if i.find('fold') != -1]
+        split_files = [i for i in os.listdir(self.split_table_path) if i.find('.json')!=-1]
 
         for i in range(len(split_files)):
             data = json.load(open(self.split_table_path + str(i) + '_' + self.split_table_name))
-
-            train_data = data['train']
-            for index, i in enumerate(train_data):
-                i = i.split('\\')
-                i = i[-1]
-                train_data[index] = i
-
-            val_data = data['val']
-            for index, i in enumerate(val_data):
-                i = i.split('\\')
-                i = i[-1]
-                val_data[index] = i
-
-            dataset_train = []
-            for i in train_data:
-                if i in self.exclusions:
-                    continue
-                if i[0] != 'Q' and i[0] != 'S' and i[0] != 'A' and i[0] != 'H' and i[0] != 'E':  # A, B , D, E datasets
-                    continue
-                dataset_train.append(i)
-
-            dataset_val = []
-            for i in val_data:
-                if i in self.exclusions:
-                    continue
-                if i[0] != 'Q' and i[0] != 'S' and i[0] != 'A' and i[0] != 'H' and i[0] != 'E':  # A, B , D, E datasets
-                    continue
-                dataset_val.append(i)
-
-            data['train'] = dataset_train#+self.additinal_data
-            data['val'] = dataset_val
 
             splits.append(data)
 
