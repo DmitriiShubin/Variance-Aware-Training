@@ -70,12 +70,12 @@ class Model:
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        weights = torch.Tensor([1. , 1. , 1. , 1. , 0.5, 1. , 1. , 1. , 1. , 1. , 1. , 1. , 0.5,
-       0.5, 1. , 1. , 1. , 1. , 0.5, 1. , 1. , 1. , 1. , 0.5, 1. , 1. ,
-       0.5]).to(self.device)
+       #  weights = torch.Tensor([1. , 1. , 1. , 1. , 0.5, 1. , 1. , 1. , 1. , 1. , 1. , 1. , 0.5,
+       # 0.5, 1. , 1. , 1. , 1. , 0.5, 1. , 1. , 1. , 1. , 0.5, 1. , 1. ,
+       # 0.5]).to(self.device)
 
 
-        self.loss = nn.BCELoss(weight=weights)# CompLoss(self.device) #
+        self.loss = nn.BCELoss(weight=None)# CompLoss(self.device) #
         self.decoder_loss = nn.MSELoss()
 
         # define early stopping
@@ -90,7 +90,7 @@ class Model:
             optimizer=self.optimizer,
             mode='max',
             factor=0.2,
-            patience=1,
+            patience=3,
             verbose=True,
             threshold=self.hparams['min_delta'],
             threshold_mode='abs',
@@ -137,7 +137,6 @@ class Model:
 
                 # process loss_1
                 pred = pred.view(-1, pred.shape[-1])
-                pred = pred ** 2
                 y_batch = y_batch.view(-1, y_batch.shape[-1])
                 train_loss = self.loss(pred, y_batch)
 
@@ -146,7 +145,7 @@ class Model:
                 pred = pred.float().cpu().detach()
 
                 # process loss_2
-                pred_decoder = pred_decoder.view(-1, pred_decoder.shape[-1])
+                pred_decoder = pred_decoder.reshape(-1, pred_decoder.shape[-1])
                 X_batch = X_batch.view(-1, X_batch.shape[-1])
                 decoder_train_loss = self.decoder_loss(pred_decoder, X_batch)
                 X_batch = X_batch.float().cpu().detach()
@@ -156,7 +155,7 @@ class Model:
                 avg_loss += train_loss.item() / len(train_loader)
 
                 #sum up multi-head losses
-                train_loss = train_loss + decoder_train_loss
+                #train_loss = train_loss + decoder_train_loss
 
                 self.scaler.scale(train_loss).backward()  # train_loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
@@ -174,9 +173,10 @@ class Model:
             train_preds = train_preds.numpy()
             train_true = train_true.numpy()
 
-            threshold = self.postprocessing.find_opt_thresold(train_true,train_preds)
-            self.postprocessing.update_threshold(threshold)
-            train_preds = self.postprocessing.run(train_preds)
+            # threshold = self.postprocessing.find_opt_thresold(train_true,train_preds)
+            # self.postprocessing.update_threshold(threshold)
+            train_preds[np.where(train_preds >= 0.5)] = 1
+            train_preds[np.where(train_preds < 0.5)] = 0
             metric_train = self.metric.compute(labels=train_true, outputs=train_preds)
 
             # evaluate the model
@@ -194,7 +194,6 @@ class Model:
                     X_batch = X_batch.float().cpu().detach()
 
                     pred = pred.reshape(-1, pred.shape[-1])
-                    pred = pred ** 2
                     y_batch = y_batch.view(-1, y_batch.shape[-1])
 
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
@@ -210,11 +209,12 @@ class Model:
             val_preds = val_preds.numpy()
             val_true = val_true.numpy()
             # val_true, val_preds = self.metric.find_opt_thresold(val_true, val_preds)
-            val_preds = self.postprocessing.run(val_preds)
+            val_preds[np.where(val_preds >= 0.5)] = 1
+            val_preds[np.where(val_preds < 0.5)] = 0
             metric_val = self.metric.compute(val_true, val_preds)
 
             self.scheduler.step(metric_val)#avg_val_loss)
-            res = self.early_stopping(score=metric_val, model=self.model,threshold=threshold)
+            res = self.early_stopping(score=metric_val, model=self.model,threshold=0.5)
 
             # print statistics
             if self.hparams['verbose_train']:
@@ -331,7 +331,6 @@ class Model:
 
         self.model.eval()
         predictions,pred_decoder = self.model.forward(torch.Tensor(X))
-        predictions = predictions **2
         predictions = predictions.detach().numpy()
         print(np.round(predictions,3))
 

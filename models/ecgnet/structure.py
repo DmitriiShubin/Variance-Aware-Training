@@ -148,8 +148,7 @@ class ECGNet(nn.Module):
 
 
         #main head
-        self.fc = nn.Linear(self.hparams['n_filt_out_conv_2'], 27)  #4733,27)#
-        self.out = torch.nn.Sigmoid()
+        self.fc = nn.Linear(self.hparams['n_filt_out_conv_2'], 1)
 
         #autoencoder head
         self.output_decoder_1 = decoder_out_block(self.hparams['n_filt_res'],self.hparams['n_filt_stem'],self.hparams['kern_size'],self.hparams['dropout'],
@@ -187,14 +186,14 @@ class ECGNet(nn.Module):
         #x = self.bn5(x)
         x, skip_4 = self.layer6(x)
         #x = self.bn6(x)
-        x, skip_5 = self.layer7(x)
-        #x = self.bn7(x)
-        x, skip_6 = self.layer8(x)
-        #x = self.bn8(x)
-        x, skip_7 = self.layer9(x)
-        #x = self.bn9(x)
-        x, skip_8 = self.layer10(x)
-        #x = self.bn10(x)
+        # x, skip_5 = self.layer7(x)
+        # #x = self.bn7(x)
+        # x, skip_6 = self.layer8(x)
+        # #x = self.bn8(x)
+        # x, skip_7 = self.layer9(x)
+        # #x = self.bn9(x)
+        # x, skip_8 = self.layer10(x)
+        # #x = self.bn10(x)
 
 
 
@@ -206,14 +205,14 @@ class ECGNet(nn.Module):
         decoder_out = decoder_out.reshape(-1, decoder_out.shape[2], decoder_out.shape[1])
 
         #main head
-        x = skip_1 + skip_2 + skip_3 + skip_4 + skip_5 + skip_6 + skip_7 + skip_8
+        x = skip_1 + skip_2 #+ skip_3 + skip_4 #+ skip_5 + skip_6 + skip_7 + skip_8
 
         x = self.conv_out_1(x)
-        x = self.conv_out_2(x)
+        #x = self.conv_out_2(x)
 
         x = torch.mean(x, dim=2)
 
 
-        x = self.out(self.fc(x))
+        x = torch.sigmoid(self.fc(x))
 
         return x,decoder_out

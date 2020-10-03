@@ -2,9 +2,9 @@ import os
 
 hparams = {}
 # training params
-hparams['n_epochs'] = 1
+hparams['n_epochs'] = 100
 hparams['lr'] = 0.001
-hparams['batch_size'] = 3
+hparams['batch_size'] = 64
 hparams['verbose_train'] = True
 
 # early stopping settings
@@ -12,7 +12,7 @@ hparams['min_delta'] = 0.001  # thresold of improvement
 hparams['patience'] = 10  # wait for n epoches for emprovement
 hparams['n_fold'] = 5  # number of folds for cross-validation
 hparams['verbose'] = True  # print score or not
-hparams['start_fold'] = 1
+hparams['start_fold'] = 2
 
 # directories
 hparams['model_path'] = './data/model_weights'
@@ -29,9 +29,9 @@ structure_hparams = dict()
 structure_hparams['dropout'] = 0.3
 # number of filers for the models
 structure_hparams['kern_size'] = 9
-structure_hparams['n_filt_stem'] = 32
-structure_hparams['n_filt_res'] = 64
-structure_hparams['n_filt_out_conv_1'] = 128
-structure_hparams['n_filt_out_conv_2'] = 256
+structure_hparams['n_filt_stem'] = 1
+structure_hparams['n_filt_res'] = 5
+structure_hparams['n_filt_out_conv_1'] = 3
+structure_hparams['n_filt_out_conv_2'] = 3
 
 hparams['model'] = structure_hparams

@@ -24,8 +24,8 @@ class PostProcessing():
         predictions_processed = predictions.copy()
 
         #if somth is found, its not a normal
-        predictions_processed[np.where(predictions_processed >= self.threshold)] = 1
-        predictions_processed[np.where(predictions_processed < self.threshold)] = 0
+        predictions_processed[np.where(predictions_processed >= 0.5)] = 1
+        predictions_processed[np.where(predictions_processed < 0.5)] = 0
 
         return predictions_processed
 

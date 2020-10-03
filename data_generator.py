@@ -5,6 +5,7 @@ import os
 import gc
 import random
 from scipy import signal
+import cv2
 
 # pytorch
 import torch
@@ -20,16 +21,21 @@ class Dataset_train(Dataset):
     def __init__(self, patients, aug,downsample):
 
         self.patients = patients
-        self.aug = aug
-        self.downsample=downsample
+        self.images_list = []
 
-        self.resampling = Resampling()
-        self.ptdetector = PTWaveDetection()
+        for patient in patients:
+            images = [i[:-4] for i in os.listdir(f'./data/brain_images/{patient}') if i.find('_mask')==-1]
+            for image in images:
+                self.images_list.append(f'./data/brain_images/{patient}/{image}')
+
+
+        self.aug = aug
+
 
         self.preprocessing = Preprocessing(aug=aug)
 
     def __len__(self):
-        return len(self.patients)
+        return len(self.images_list)
 
     def __getitem__(self, idx):
 
@@ -42,80 +48,15 @@ class Dataset_train(Dataset):
 
     def load_data(self, id, train=True):
 
-        if self.patients[id][0] == 'A':
-            data_folder = 'A'
-        elif self.patients[id][0] == 'Q':
-            data_folder = 'B'
-        elif self.patients[id][0] == 'I':
-            data_folder = 'C'
-        elif self.patients[id][0] == 'S':
-            data_folder = 'D'
-        elif self.patients[id][0] == 'H':
-            data_folder = 'E'
-        elif self.patients[id][0] == 'E':
-            data_folder = 'F'
-        else:
-            a = self.patients[id]
-            print(1)
+        X = cv2.imread(self.images_list[id] + '.tif', cv2.IMREAD_COLOR)
 
-        # TODO: FS experiment
-        #data_folder = f'./data/{data_folder}/formatted/' #for tests
+        y = cv2.imread(self.images_list[id] + '_mask.tif', cv2.IMREAD_COLOR)
 
-        # load waveforms
-        X = np.load(f'./data/{data_folder}/formatted/' + self.patients[id] + '.npy')
-        #X = np.load(f'./data/scipy_resample_1000_hz/{data_folder}/formatted/' + self.patients[id] + '.npy')
+        X,y = self.preprocessing.run(X=X,y=y)
 
 
 
-
-
-        # load annotation
-
-        #y = json.load(open(f'./data/scipy_resample_1000_hz/{data_folder}/formatted/' + self.patients[id] + '.json'))
-        y = json.load(open(f'./data/{data_folder}/formatted/' + self.patients[id] + '.json'))
-        if type(y['labels_training_merged'])!=list:
-            y['labes_training'] = [0.] * 27
-            y['labels_training_merged'] = [0.]*27
-
-
-
-        X,label = self.preprocessing.run(X=X,y=y)
-
-        return X,label
-
-
-
-
-
-
-
-    def my_collate(self, batch):
-        """
-        This function was created to handle a variable-length of the
-        :param batch: tuple(data,target)
-        :return: list[data_tensor(batch_size,n_samples_channels), target_tensor(batch_size,n_classes)]
-        """
-        data = [item[0] for item in batch]
-        target = [item[1] for item in batch]
-
-        # define the max size of the batch
-        m_size = 0
-        for element in data:
-            if m_size < element.shape[0]:
-                m_size = element.shape[0]
-
-        # zero pooling
-        for index, element in enumerate(data):
-            if m_size > element.shape[0]:
-                padding = np.zeros((m_size - element.shape[0], element.shape[1]))
-                padding = torch.from_numpy(padding)
-                data[index] = torch.cat([element, padding], dim=0)
-                padding = padding.detach()
-
-        data = torch.stack(data)
-        target = torch.stack(target)
-
-        return [data, target]
+        return X,y
 
 
 class Dataset_test(Dataset_train):
@@ -144,70 +85,17 @@ class Preprocessing():
 
     def run(self,X,y,label_process=True):
 
-        X = torch.tensor(X).float()
-        for i in range(12):
-            X[:,i] = X[:,i] - self.FIR_filt(X[:,i], self.weights_LPF, self.padding_LPF)
-        X = X.detach().numpy()
+        X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
+        y = cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).astype(np.float32)
+
+        X = X/ 255
+        X = X.reshape(1, X.shape[0], X.shape[1])
+
+        y = y / 255
+        y = y.reshape(1, y.shape[0], y.shape[1])
 
         if label_process:
-            label = y['labels_training_merged']
-            if label[4] > 0 or label[18] > 0:
-                label[4] = 1
-                label[18] = 1
-            if label[23] > 0 or label[12] > 0:
-                label[23] = 1
-                label[12] = 1
-            if label[26] > 0 or label[13] > 0:
-                label[26] = 1
-                label[13] = 1
-
-        X = self.apply_amplitude_scaling(X=X, y=y)
-
-
-        # add R, P, T waves
-        r_waves = np.zeros((X.shape[0], 1))
-        r_waves[y['rpeaks'][0], 0] = 1
-        X = np.concatenate([X, r_waves], axis=1)
-
-
-
-
-        if y['t_waves'] is None:
-            X = np.concatenate([X, np.zeros((X.shape[0], 1))], axis=1)
-        else:
-            t_waves = y['t_waves'][0]
-            t_waves_array = np.zeros((X.shape[0], 1))
-            t_waves_array[t_waves, 0] = 1
-            X = np.concatenate([X, t_waves_array], axis=1)
-
-
-        if y['p_waves'] is None:
-            X = np.concatenate([X, np.zeros((X.shape[0], 1))], axis=1)
-        else:
-            p_waves = y['p_waves'][0]
-            p_waves_array = np.zeros((X.shape[0], 1))
-            p_waves_array[p_waves, 0] = 1
-            X = np.concatenate([X, p_waves_array], axis=1)
-
-
-
-        fs_training = 1000
-
-        if self.aug is True:
-            # pass
-            X = self.apply_augmentation(waveform=X, meta_data=y, fs_training=fs_training)
-
-        # padding
-        sig_length = 19000
-
-        if X.shape[0] < sig_length:
-            padding = np.zeros((sig_length - X.shape[0], X.shape[1]))
-            X = np.concatenate([X, padding], axis=0)
-        if X.shape[0] > sig_length:
-            X = X[:sig_length,:]
-
-        if label_process:
-            return X,label
+            return X,y
         else:
             return X
 
@@ -235,6 +123,23 @@ class Preprocessing():
             X[:, 0] -= np.median(X[:, 0])
 
         return X / (X[:,0].std() + 0.001)
+
+    def medfilt(self,x, k):
+        """Apply a length-k median filter to a 1D array x.
+        Boundaries are extended by repeating endpoints.
+        """
+        assert k % 2 == 1, "Median filter length must be odd."
+        assert x.ndim == 1, "Input must be one-dimensional."
+        k2 = (k - 1) // 2
+        y = np.zeros((len(x), k), dtype=x.dtype)
+        y[:, k2] = x
+        for i in range(k2):
+            j = k2 - i
+            y[j:, i] = x[:-j]
+            y[:j, i] = x[0]
+            y[:-j, -(i + 1)] = x[j:]
+            y[-j:, -(i + 1)] = x[-1]
+        return np.median(y, axis=1)
 
     def apply_augmentation(self, waveform, meta_data, fs_training):
 

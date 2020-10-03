@@ -70,13 +70,11 @@ class CVPipeline:
                 if fold != self.hparams['start_fold']:
                     continue
             #TODO
-            train = Dataset_train(self.splits['train'].values[fold], aug=False,downsample=self.downsample)
-            valid = Dataset_train(self.splits['val'].values[fold], aug=False,downsample=self.downsample)
+            train = Dataset_train(self.splits['train'].values[fold][:2], aug=False,downsample=self.downsample)
+            valid = Dataset_train(self.splits['val'].values[fold][:2], aug=False,downsample=self.downsample)
 
             X, y = train.__getitem__(0)
-
-            self.model = self.model(
-                input_size=X.shape[0], n_channels=X.shape[1], hparams=self.hparams, gpu=self.gpu
+            self.model = self.model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu
             )
 
             # train model
@@ -104,8 +102,14 @@ class CVPipeline:
             )
 
 
+            images_list = valid.images_list.copy()
+
+            for index,record in enumerate(images_list):
+                a = record.split('/')
+                images_list[index] = f'{a[-2]}/{a[-1]}'
+
             # create a dictionary for debugging
-            self.save_debug_data(pred_val, self.splits['val'].values[fold])
+            self.save_debug_data(pred_val, images_list)
 
 
 
@@ -115,30 +119,16 @@ class CVPipeline:
 
         for index, data in enumerate(validation_list):
 
-            if data[0] == 'A':
-                data_folder = 'A'
-
-            elif data[0] == 'Q':
-                data_folder = 'B'
-
-            elif data[0] == 'I':
-                data_folder = 'C'
-
-            elif data[0] == 'S':
-                data_folder = 'D'
-
-            elif data[0] == 'H':
-                data_folder = 'E'
-
-            elif data[0] == 'E':
-                data_folder = 'F'
-
-            data_folder = f'./data/CV_debug/{data_folder}/'
+            data_folder = f'./data/CV_debug/'
+            patient_fold = data.split('/')[-2]
 
             prediction = {}
+            print(pred_val[index].shape)
+            print(pred_val[index])
             prediction['predicted_label'] = pred_val[index].tolist()
+            os.makedirs(data_folder + patient_fold, exist_ok=True)
             # save debug data
-            with open(data_folder + data + '.json', 'w') as outfile:
+            with open(data_folder +data+ '.json', 'w') as outfile:
                 json.dump(prediction, outfile)
 
         return True
