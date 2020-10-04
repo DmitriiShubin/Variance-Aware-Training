@@ -88,6 +88,7 @@ class Preprocessing():
 
         X = X/ 255
         X = X.reshape(1, X.shape[0], X.shape[1])
+        X = X**(1.5)#higher contrast
 
         y = y / 255
         y = y.reshape(1, y.shape[0], y.shape[1])
