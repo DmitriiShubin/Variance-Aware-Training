@@ -7,7 +7,7 @@ import pandas as pd
 # pytorch
 import torch
 import torch.nn as nn
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import ReduceLROnPlateau,CosineAnnealingLR
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
@@ -81,17 +81,21 @@ class Model:
             is_maximize=True,
         )
         # lr cheduler
-        self.scheduler = ReduceLROnPlateau(
-            optimizer=self.optimizer,
-            mode='max',
-            factor=0.2,
-            patience=3,
-            verbose=True,
-            threshold=self.hparams['min_delta'],
-            threshold_mode='abs',
-            cooldown=0,
-            eps=0,
-        )
+        # self.scheduler = ReduceLROnPlateau(
+        #     optimizer=self.optimizer,
+        #     mode='max',
+        #     factor=0.2,
+        #     patience=3,
+        #     verbose=True,
+        #     threshold=self.hparams['min_delta'],
+        #     threshold_mode='abs',
+        #     cooldown=0,
+        #     eps=0,
+        # )
+        self.scheduler = CosineAnnealingLR(self.optimizer,
+                                           T_max=10,
+                                           eta_min=1e-5,
+                                           last_epoch=50)
 
         self.seed_everything(42)
 
