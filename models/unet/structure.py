@@ -89,11 +89,13 @@ class UNet(nn.Module):
         self.n_classes = n_classes
         self.bilinear = bilinear
 
+        factor = 2 if bilinear else 1
+
         self.inc = DoubleConv(n_channels, self.hparams['n_filters_input'],self.hparams['kernel_size'],self.hparams['dropout'])
         self.down1 = Down(self.hparams['n_filters_input'], self.hparams['n_filters_input']*2,self.hparams['kernel_size'],self.hparams['dropout'])
         self.down2 = Down(self.hparams['n_filters_input']*2, self.hparams['n_filters_input']*4,self.hparams['kernel_size'],self.hparams['dropout'])
-        self.down3 = Down(self.hparams['n_filters_input']*4, self.hparams['n_filters_input']*8,self.hparams['kernel_size'],self.hparams['dropout'])
-        factor = 2 if bilinear else 1
+        self.down3 = Down(self.hparams['n_filters_input']*4, self.hparams['n_filters_input']*8 // factor,self.hparams['kernel_size'],self.hparams['dropout'])
+
         #self.down4 = Down(self.hparams['n_filters_input']*8, self.hparams['n_filters_input']*16 // factor,self.hparams['kernel_size'],self.hparams['dropout'])
         #self.up1 = Up(self.hparams['n_filters_input']*16, self.hparams['n_filters_input']*8 // factor,self.hparams['kernel_size'],self.hparams['dropout'],bilinear)
         self.up2 = Up(self.hparams['n_filters_input']*8, self.hparams['n_filters_input']*4 // factor,self.hparams['kernel_size'],self.hparams['dropout'],bilinear)
