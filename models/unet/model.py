@@ -68,9 +68,8 @@ class Model:
         ########################## compile the model ###############################
 
         # define optimizer
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.hparams['lr'], momentum=0.1)
-
-        #torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
+        #self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.hparams['lr'], momentum=0.1)
+        self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
         self.loss = Dice_loss() #nn.BCELoss(weight=None)
 
