@@ -6,7 +6,7 @@ from loss_functions import AngularPenaltySMLoss
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
-    def __init__(self, in_channels, out_channels, kernel_size,mid_channels=None):
+    def __init__(self, in_channels, out_channels, kernel_size,dropout,mid_channels=None):
         super().__init__()
         if not mid_channels:
             mid_channels = out_channels
@@ -14,9 +14,11 @@ class DoubleConv(nn.Module):
             nn.Conv2d(in_channels, mid_channels, kernel_size=kernel_size, padding=int(kernel_size / 2)),
             nn.BatchNorm2d(mid_channels),
             nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
             nn.Conv2d(mid_channels, out_channels, kernel_size=kernel_size, padding=int(kernel_size / 2)),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout)
         )
 
     def forward(self, x):
@@ -26,11 +28,11 @@ class DoubleConv(nn.Module):
 class Down(nn.Module):
     """Downscaling with maxpool then double conv"""
 
-    def __init__(self, in_channels, out_channels,kernel_size):
+    def __init__(self, in_channels, out_channels,kernel_size,dropout):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
-            DoubleConv(in_channels, out_channels,kernel_size)
+            DoubleConv(in_channels, out_channels,kernel_size,dropout)
         )
 
     def forward(self, x):
@@ -40,7 +42,7 @@ class Down(nn.Module):
 class Up(nn.Module):
     """Upscaling then double conv"""
 
-    def __init__(self, in_channels, out_channels, kernel_size,bilinear=True):
+    def __init__(self, in_channels, out_channels, kernel_size,dropout,bilinear=True):
         super().__init__()
 
         # if bilinear, use the normal convolutions to reduce the number of channels
@@ -49,7 +51,7 @@ class Up(nn.Module):
             self.conv = DoubleConv(in_channels, out_channels, kernel_size,in_channels // 2)
         else:
             self.up = nn.ConvTranspose2d(in_channels , in_channels // 2, kernel_size=2, stride=2)
-            self.conv = DoubleConv(in_channels, out_channels,kernel_size)
+            self.conv = DoubleConv(in_channels, out_channels,kernel_size,dropout)
 
 
     def forward(self, x1, x2):
@@ -87,16 +89,16 @@ class UNet(nn.Module):
         self.n_classes = n_classes
         self.bilinear = bilinear
 
-        self.inc = DoubleConv(n_channels, self.hparams['n_filters_input'],self.hparams['kernel_size'])
-        self.down1 = Down(self.hparams['n_filters_input'], self.hparams['n_filters_input']*2,self.hparams['kernel_size'])
-        self.down2 = Down(self.hparams['n_filters_input']*2, self.hparams['n_filters_input']*4,self.hparams['kernel_size'])
-        self.down3 = Down(self.hparams['n_filters_input']*4, self.hparams['n_filters_input']*8,self.hparams['kernel_size'])
+        self.inc = DoubleConv(n_channels, self.hparams['n_filters_input'],self.hparams['kernel_size'],self.hparams['dropout'])
+        self.down1 = Down(self.hparams['n_filters_input'], self.hparams['n_filters_input']*2,self.hparams['kernel_size'],self.hparams['dropout'])
+        self.down2 = Down(self.hparams['n_filters_input']*2, self.hparams['n_filters_input']*4,self.hparams['kernel_size'],self.hparams['dropout'])
+        self.down3 = Down(self.hparams['n_filters_input']*4, self.hparams['n_filters_input']*8,self.hparams['kernel_size'],self.hparams['dropout'])
         factor = 2 if bilinear else 1
-        self.down4 = Down(self.hparams['n_filters_input']*8, self.hparams['n_filters_input']*16 // factor,self.hparams['kernel_size'])
-        self.up1 = Up(self.hparams['n_filters_input']*16, self.hparams['n_filters_input']*8 // factor,self.hparams['kernel_size'],bilinear)
-        self.up2 = Up(self.hparams['n_filters_input']*8, self.hparams['n_filters_input']*4 // factor,self.hparams['kernel_size'],bilinear)
-        self.up3 = Up(self.hparams['n_filters_input']*4, self.hparams['n_filters_input']*2 // factor,self.hparams['kernel_size'],bilinear)
-        self.up4 = Up(self.hparams['n_filters_input']*2, self.hparams['n_filters_input'],self.hparams['kernel_size'],bilinear)
+        self.down4 = Down(self.hparams['n_filters_input']*8, self.hparams['n_filters_input']*16 // factor,self.hparams['kernel_size'],self.hparams['dropout'])
+        self.up1 = Up(self.hparams['n_filters_input']*16, self.hparams['n_filters_input']*8 // factor,self.hparams['kernel_size'],self.hparams['dropout'],bilinear)
+        self.up2 = Up(self.hparams['n_filters_input']*8, self.hparams['n_filters_input']*4 // factor,self.hparams['kernel_size'],self.hparams['dropout'],bilinear)
+        self.up3 = Up(self.hparams['n_filters_input']*4, self.hparams['n_filters_input']*2 // factor,self.hparams['kernel_size'],self.hparams['dropout'],bilinear)
+        self.up4 = Up(self.hparams['n_filters_input']*2, self.hparams['n_filters_input'],self.hparams['kernel_size'],self.hparams['dropout'],bilinear)
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
 
