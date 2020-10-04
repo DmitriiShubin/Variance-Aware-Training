@@ -123,8 +123,6 @@ class CVPipeline:
             patient_fold = data.split('/')[-2]
 
             prediction = {}
-            print(pred_val[index].shape)
-            print(pred_val[index])
             prediction['predicted_label'] = pred_val[index].tolist()
             os.makedirs(data_folder + patient_fold, exist_ok=True)
             # save debug data
