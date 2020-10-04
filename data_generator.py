@@ -12,8 +12,6 @@ import torch
 from torch.utils.data import Dataset
 
 #custom modules
-from kardioml.data.resample import Resampling
-from kardioml.data.p_t_wave_detection import PTWaveDetection
 np.random.seed(42)
 
 
