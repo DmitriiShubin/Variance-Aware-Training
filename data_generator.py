@@ -293,14 +293,17 @@ class Preprocessing():
 class Augmentations():
     def __init__(self,prob):
 
-        self.aug_flip_hor = A.HorizontalFlip(p=prob)
+        self.augs = A.Compose([
+                    A.HorizontalFlip(p=prob),
+                    A.Rotate(limit=10, p=prob)
+            ])
 
 
 
     def apply_augs(self,image,mask):
 
         #apply horizontal flip
-        augmented = self.aug_flip_hor(image=image, mask=mask)
+        augmented = self.augs(image=image, mask=mask)
 
         image = augmented['image']
         mask = augmented['mask']
