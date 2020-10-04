@@ -95,7 +95,7 @@ class Model:
         self.scheduler = CosineAnnealingLR(self.optimizer,
                                            T_max=10,
                                            eta_min=1e-5,
-                                           last_epoch=50)
+                                           last_epoch=-1)
 
         self.seed_everything(42)
 
