@@ -85,7 +85,7 @@ class Preprocessing():
 
     def run(self,X,y,label_process=True):
 
-        #X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
+        X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
         y = cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
 
@@ -95,7 +95,7 @@ class Preprocessing():
 
 
         X = X/ 255
-        X = X.reshape(3, X.shape[0], X.shape[1])
+        X = X.reshape(1, X.shape[0], X.shape[1])
         #X = X**(1.5)#higher contrast
 
         y = y / 255
