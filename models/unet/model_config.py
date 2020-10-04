@@ -3,7 +3,7 @@ import os
 hparams = {}
 # training params
 hparams['n_epochs'] = 150
-hparams['lr'] = 0.0003
+hparams['lr'] = 0.001
 hparams['batch_size'] = 32
 hparams['verbose_train'] = True
 
