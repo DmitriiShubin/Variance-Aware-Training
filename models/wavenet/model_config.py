@@ -2,9 +2,9 @@ import os
 
 hparams = {}
 # training params
-hparams['n_epochs'] = 1
-hparams['lr'] = 0.0001
-hparams['batch_size'] = 2
+hparams['n_epochs'] = 150
+hparams['lr'] = 0.001
+hparams['batch_size'] = 32
 hparams['verbose_train'] = True
 
 # early stopping settings
