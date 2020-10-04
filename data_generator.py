@@ -96,7 +96,7 @@ class Preprocessing():
         y = y.reshape(1, y.shape[0], y.shape[1])
 
         if self.aug:
-            X,y = self.aug.apply_augs(X,y)
+            X,y = self.augmentations.apply_augs(X,y)
 
         if label_process:
             return X,y
