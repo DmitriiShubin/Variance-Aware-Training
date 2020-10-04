@@ -16,7 +16,7 @@ from metrics import Metric
 from utils.torchsummary import summary
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
-from loss_functions import CompLoss,FocalLoss
+from loss_functions import CompLoss,FocalLoss,Dice_loss
 from postprocessing import PostProcessing
 from data_generator import Preprocessing
 
@@ -70,7 +70,7 @@ class Model:
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = nn.BCELoss(weight=None)
+        self.loss = Dice_loss() #nn.BCELoss(weight=None)
 
         # define early stopping
         self.early_stopping = EarlyStopping(

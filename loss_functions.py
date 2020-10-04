@@ -132,3 +132,18 @@ class FocalLoss(nn.Module):
         loss = -1 * (1-pt)**self.gamma * logpt
         if self.size_average: return loss.mean()
         else: return loss.sum()
+
+
+class Dice_loss(nn.Module):
+
+    def __init__(self):
+        super(Dice_loss, self).__init__()
+
+        self.smoothing=100
+
+    def forward(self,y_true, y_pred):
+        y_truef = torch.flatten(y_true)
+        y_predf = torch.flatten(y_pred)
+        And = torch.sum(y_truef * y_predf)
+        return -1*((2 * And + self.smoothing) / (torch.sum(y_truef) + torch.sum(y_predf) + self.smoothing))
+
