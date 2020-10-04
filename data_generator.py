@@ -85,18 +85,21 @@ class Preprocessing():
 
     def run(self,X,y,label_process=True):
 
-        X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
+        #X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
         y = cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
-        X = X/ 255
-        X = X.reshape(1, X.shape[0], X.shape[1])
-        X = X**(1.5)#higher contrast
 
-        y = y / 255
-        y = y.reshape(1, y.shape[0], y.shape[1])
 
         if self.aug:
             X,y = self.augmentations.apply_augs(X,y)
+
+
+        X = X/ 255
+        X = X.reshape(3, X.shape[0], X.shape[1])
+        #X = X**(1.5)#higher contrast
+
+        y = y / 255
+        y = y.reshape(1, y.shape[0], y.shape[1])
 
         if label_process:
             return X,y
@@ -295,7 +298,8 @@ class Augmentations():
 
         self.augs = A.Compose([
                     A.HorizontalFlip(p=prob),
-                    A.Rotate(limit=10, p=prob)
+                    A.Rotate(limit=10, p=prob),
+                    A.RandomSizedCrop(min_max_height=(220, 240), height=256, width=256, p=prob)
             ])
 
 
