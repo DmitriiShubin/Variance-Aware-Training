@@ -2,17 +2,17 @@ import os
 
 hparams = {}
 # training params
-hparams['n_epochs'] = 2
+hparams['n_epochs'] = 150
 hparams['lr'] = 0.001
-hparams['batch_size'] = 2
+hparams['batch_size'] = 32
 hparams['verbose_train'] = True
 
 # early stopping settings
 hparams['min_delta'] = 0.001  # thresold of improvement
-hparams['patience'] = 10  # wait for n epoches for emprovement
+hparams['patience'] = 20  # wait for n epoches for emprovement
 hparams['n_fold'] = 5  # number of folds for cross-validation
 hparams['verbose'] = True  # print score or not
-hparams['start_fold'] = 2
+hparams['start_fold'] = 0
 
 # directories
 hparams['model_path'] = './data/model_weights'
