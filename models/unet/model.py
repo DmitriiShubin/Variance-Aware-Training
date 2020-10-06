@@ -73,6 +73,9 @@ class Model:
 
         self.loss = Dice_loss() #nn.BCELoss(weight=None)
 
+        self.loss_s = nn.BCELoss(weight=None)
+        self.alpha = self.hparams['model']['alpha']
+
         # define early stopping
         self.early_stopping = EarlyStopping(
             checkpoint_path=self.hparams['checkpoint_path'] + '/checkpoint'+str(self.hparams['start_fold'])+'.pt',
@@ -126,29 +129,38 @@ class Model:
             avg_loss = 0.0
 
             train_preds, train_true = torch.Tensor([]), torch.Tensor([])
-            for (X_batch, y_batch) in tqdm(train_loader):
+            for (X_batch, y_batch,X_s_batch,y_s_batch) in tqdm(train_loader):
                 y_batch = y_batch.float().to(self.device)
                 X_batch = X_batch.float().to(self.device)
+                y_s_batch = y_s_batch.float().to(self.device)
+                X_s_batch = X_s_batch.float().to(self.device)
 
                 self.optimizer.zero_grad()
                 # get model predictions
-                pred = self.model(X_batch)
+                pred,pred_s = self.model([X_batch,X_s_batch])
 
                 # process loss_1
                 pred = pred.view(-1, pred.shape[-1])
                 y_batch = y_batch.view(-1, y_batch.shape[-1])
                 train_loss = self.loss(pred, y_batch)
 
-
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
+
+                # process loss_2
+                pred_s = pred_s.view(-1, pred_s.shape[-1])
+                y_s_batch = y_s_batch.view(-1, y_s_batch.shape[-1])
+                adv_loss = self.loss_s(pred_s, y_s_batch)
+
+                y_s_batch = y_s_batch.float().cpu().detach()
+                pred_s = pred_s.float().cpu().detach()
 
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
 
                 #sum up multi-head losses
-                #train_loss = train_loss + decoder_train_loss
+                train_loss = train_loss - self.alpha*adv_loss
 
                 self.scaler.scale(train_loss).backward()  # train_loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
@@ -178,11 +190,12 @@ class Model:
             val_preds, val_true = torch.Tensor([]), torch.Tensor([])
             avg_val_loss = 0.0
             with torch.no_grad():
-                for X_batch, y_batch in valid_loader:
+                for X_batch, y_batch,_,_ in valid_loader:
                     y_batch = y_batch.float().to(self.device)
                     X_batch = X_batch.float().to(self.device)
 
-                    pred = self.model(X_batch)
+
+                    pred,_ =  self.model.predictive_network(X_batch)
                     X_batch = X_batch.float().cpu().detach()
 
                     pred = pred.reshape(-1, pred.shape[-1])
@@ -259,10 +272,10 @@ class Model:
         test_val = torch.Tensor([])
         print('Start generation of predictions')
         with torch.no_grad():
-            for i, (X_batch, y_batch) in enumerate(tqdm(test_loader)):
+            for i, (X_batch, y_batch,_,_) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
 
-                pred = self.model(X_batch)
+                pred,_ = self.model.predictive_network(X_batch)
 
                 X_batch = X_batch.float().cpu().detach()
 

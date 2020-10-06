@@ -38,24 +38,46 @@ class Dataset_train(Dataset):
 
     def __getitem__(self, idx):
 
-        X, y = self.load_data(idx)
+        X, y,X_s,y_s= self.load_data(idx)
 
         X = torch.tensor(X, dtype=torch.float)
         y = torch.tensor(y, dtype=torch.float)
+        X_s = torch.tensor(X_s, dtype=torch.float)
+        y_s = torch.tensor(y_s, dtype=torch.float)
 
-        return X, y
+        return X, y,X_s,y_s
 
     def load_data(self, id, train=True):
 
         X = cv2.imread(self.images_list[id] + '.tif', cv2.IMREAD_COLOR)
 
         y = cv2.imread(self.images_list[id] + '_mask.tif', cv2.IMREAD_COLOR)
-
+        y_ = y.copy()
         X,y = self.preprocessing.run(X=X,y=y)
 
+        #second head
+        sampled_patient = np.random.uniform(size=1)[0]
+        if sampled_patient >= 0.5:
+
+            #NOT the same patient
+            images_subset = self.images_list.copy()
+            patient_id = self.images_list[id].split('/')[-2]
+            images_subset = [i for i in images_subset if i.find(patient_id)==-1]
+            X_s = cv2.imread(np.random.choice(np.array(images_subset)) + '.tif', cv2.IMREAD_COLOR)
+            y_s = [0]
+        else:
+            # the same patient
+            images_subset = self.images_list.copy()
+            patient_id = self.images_list[id].split('/')[-2]
+            images_subset = [i for i in images_subset if i.find(patient_id) != -1]
+            images_subset.remove(self.images_list[id])
+            X_s = cv2.imread(np.random.choice(np.array(images_subset)) + '.tif', cv2.IMREAD_COLOR)
+            y_s = [1]
 
 
-        return X,y
+        X_s, y_ = self.preprocessing.run(X=X_s, y=y_)
+
+        return X,y,X_s,y_s
 
 
 class Dataset_test(Dataset_train):
@@ -64,7 +86,7 @@ class Dataset_test(Dataset_train):
 
     def __getitem__(self, idx):
 
-        X, y = self.load_data(idx, train=False)
+        X, y,X_s,y_s = self.load_data(idx, train=False)
 
         X = torch.tensor(X, dtype=torch.float)
 
