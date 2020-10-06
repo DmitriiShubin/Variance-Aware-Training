@@ -35,7 +35,7 @@ class PostProcessing():
         unit_threshold= partial(self._unit_threshold,labels=labels,outputs=outputs)
 
         start = time.time()
-        with ProcessPoolExecutor(max_workers=15) as pool:
+        with ProcessPoolExecutor(max_workers=20) as pool:
             result = pool.map(
                  unit_threshold,threshold_grid
         )
