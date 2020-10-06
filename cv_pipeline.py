@@ -70,8 +70,8 @@ class CVPipeline:
                 if fold != self.hparams['start_fold']:
                     continue
             #TODO
-            train = Dataset_train(self.splits['train'].values[fold][:2], aug=True,downsample=self.downsample)
-            valid = Dataset_train(self.splits['val'].values[fold][:2], aug=False,downsample=self.downsample)
+            train = Dataset_train(self.splits['train'].values[fold], aug=True,downsample=self.downsample)
+            valid = Dataset_train(self.splits['val'].values[fold], aug=False,downsample=self.downsample)
 
             X, y,_,_ = train.__getitem__(0)
             self.model = self.model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu
