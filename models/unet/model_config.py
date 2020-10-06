@@ -27,7 +27,7 @@ for path in [hparams['model_path'], hparams['checkpoint_path']]:
 structure_hparams = dict()
 # global dropout rate
 structure_hparams['dropout'] = 0.2
-structure_hparams['alpha'] = 0.5
+structure_hparams['alpha'] = 2
 # number of filers for the models
 structure_hparams['kernel_size'] = 3
 structure_hparams['n_filters_input'] = 64
