@@ -73,7 +73,7 @@ class CVPipeline:
             train = Dataset_train(self.splits['train'].values[fold], aug=True,downsample=self.downsample)
             valid = Dataset_train(self.splits['val'].values[fold], aug=False,downsample=self.downsample)
 
-            X, y = train.__getitem__(0)
+            X, y,_,_ = train.__getitem__(0)
             self.model = self.model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu
             )
 
