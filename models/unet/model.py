@@ -139,6 +139,9 @@ class Model:
                 # get model predictions
                 pred,pred_s = self.model([X_batch,X_s_batch])
 
+                X_batch = X_batch.float().cpu().detach()
+                X_s_batch = X_s_batch.float().cpu().detach()
+
                 # process loss_1
                 pred = pred.view(-1, pred.shape[-1])
                 y_batch = y_batch.view(-1, y_batch.shape[-1])
@@ -196,8 +199,10 @@ class Model:
                     X_batch = X_batch.float().to(self.device)
                     X_s_batch = X_s_batch.float().to(self.device)
 
-                    pred,_ = self.model([X_batch,X_s_batch])
+                    pred,pred_s = self.model([X_batch,X_s_batch])
+                    pred_s = pred_s.float().cpu().detach()
                     X_batch = X_batch.float().cpu().detach()
+                    X_s_batch = X_s_batch.float().cpu().detach()
 
                     pred = pred.reshape(-1, pred.shape[-1])
                     y_batch = y_batch.view(-1, y_batch.shape[-1])
@@ -215,12 +220,12 @@ class Model:
             val_preds = val_preds.numpy()
             val_true = val_true.numpy()
             #val_true, val_preds = self.metric.find_opt_thresold(val_true, val_preds)
-            val_preds[np.where(val_preds >= 0.75)] = 1
-            val_preds[np.where(val_preds < 0.75)] = 0
+            val_preds[np.where(val_preds >= threshold)] = 1
+            val_preds[np.where(val_preds < threshold)] = 0
             metric_val = self.metric.compute(val_true, val_preds)
 
             self.scheduler.step(metric_val)#avg_val_loss)
-            res = self.early_stopping(score=metric_val, model=self.model,threshold=0.5)
+            res = self.early_stopping(score=metric_val, model=self.model,threshold=threshold)
 
             # print statistics
             if self.hparams['verbose_train']:
@@ -277,9 +282,10 @@ class Model:
                 X_batch = X_batch.float().to(self.device)
                 X_s_batch = X_s_batch.float().to(self.device)
 
-                pred,_ = self.model([X_batch,X_s_batch])
-
+                pred,pred_s = self.model([X_batch,X_s_batch])
+                pred_s = pred_s.float().cpu().detach()
                 X_batch = X_batch.float().cpu().detach()
+                X_s_batch = X_s_batch.float().cpu().detach()
 
                 test_preds = torch.cat([test_preds, pred.cpu().detach()], 0)
                 test_val = torch.cat([test_val, y_batch.cpu().detach()], 0)
