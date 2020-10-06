@@ -190,12 +190,12 @@ class Model:
             val_preds, val_true = torch.Tensor([]), torch.Tensor([])
             avg_val_loss = 0.0
             with torch.no_grad():
-                for X_batch, y_batch,_,_ in valid_loader:
+                for X_batch, y_batch,X_s_batch,_ in valid_loader:
                     y_batch = y_batch.float().to(self.device)
                     X_batch = X_batch.float().to(self.device)
+                    X_s_batch = X_s_batch.float().to(self.device)
 
-
-                    pred,_ =  self.model.predictive_network(X_batch)
+                    pred,_ = self.model([X_batch,X_s_batch])
                     X_batch = X_batch.float().cpu().detach()
 
                     pred = pred.reshape(-1, pred.shape[-1])
@@ -272,10 +272,11 @@ class Model:
         test_val = torch.Tensor([])
         print('Start generation of predictions')
         with torch.no_grad():
-            for i, (X_batch, y_batch,_,_) in enumerate(tqdm(test_loader)):
+            for i, (X_batch, y_batch,X_s_batch,_) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
+                X_s_batch = X_s_batch.float().to(self.device)
 
-                pred,_ = self.model.predictive_network(X_batch)
+                pred,_ = self.model([X_batch,X_s_batch])
 
                 X_batch = X_batch.float().cpu().detach()
 
