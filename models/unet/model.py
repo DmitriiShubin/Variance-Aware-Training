@@ -160,7 +160,7 @@ class Model:
                 avg_loss += train_loss.item() / len(train_loader)
 
                 #sum up multi-head losses
-                train_loss = train_loss + self.alpha*adv_loss
+                train_loss = train_loss - self.alpha*adv_loss
 
                 self.scaler.scale(train_loss).backward()  # train_loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
