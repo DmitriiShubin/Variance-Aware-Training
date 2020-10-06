@@ -164,8 +164,7 @@ class Model:
 
 
                 # calc loss
-                # TODO:
-                #avg_loss += train_loss.item() / len(train_loader)
+                avg_loss += train_loss.item() / len(train_loader)
 
                 #sum up multi-head losses
                 # TODO:
