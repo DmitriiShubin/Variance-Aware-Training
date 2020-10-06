@@ -111,8 +111,10 @@ class UNet(nn.Module):
         out,encoder_x = self.predictive_network(x)
 
         #additional head (adversarial)
-        out_s = self.adversarial_network(encoder_x,x_s)
-        return out,out_s
+        #TODO:
+        # out_s = self.adversarial_network(encoder_x,x_s)
+        # TODO:
+        return out#,out_s
 
     def encoder(self,x):
 

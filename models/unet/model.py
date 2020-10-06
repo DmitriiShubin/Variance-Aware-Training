@@ -137,7 +137,9 @@ class Model:
 
                 self.optimizer.zero_grad()
                 # get model predictions
-                pred,pred_s = self.model([X_batch,X_s_batch])
+                # TODO:
+                pred = self.model([X_batch, X_s_batch])
+                # pred,pred_s = self.model([X_batch,X_s_batch])
 
                 X_batch = X_batch.float().cpu().detach()
                 X_s_batch = X_s_batch.float().cpu().detach()
@@ -151,20 +153,24 @@ class Model:
                 pred = pred.float().cpu().detach()
 
                 # process loss_2
-                pred_s = pred_s.view(-1, pred_s.shape[-1])
-                y_s_batch = y_s_batch.view(-1, y_s_batch.shape[-1])
-                adv_loss = self.loss_s(pred_s, y_s_batch)
+                # TODO:
+                # pred_s = pred_s.view(-1, pred_s.shape[-1])
+                # y_s_batch = y_s_batch.view(-1, y_s_batch.shape[-1])
+                # adv_loss = self.loss_s(pred_s, y_s_batch)
 
                 y_s_batch = y_s_batch.float().cpu().detach()
-                pred_s = pred_s.float().cpu().detach()
+                # TODO:
+                #pred_s = pred_s.float().cpu().detach()
 
 
                 # calc loss
-                avg_loss += train_loss.item() / len(train_loader)
+                # TODO:
+                #avg_loss += train_loss.item() / len(train_loader)
 
                 #sum up multi-head losses
-                if epoch < 20:
-                    train_loss = train_loss - self.alpha*adv_loss
+                # TODO:
+                # if epoch < 20:
+                #     train_loss = train_loss - self.alpha*adv_loss
 
                 self.scaler.scale(train_loss).backward()  # train_loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
@@ -199,8 +205,11 @@ class Model:
                     X_batch = X_batch.float().to(self.device)
                     X_s_batch = X_s_batch.float().to(self.device)
 
-                    pred,pred_s = self.model([X_batch,X_s_batch])
-                    pred_s = pred_s.float().cpu().detach()
+                    # TODO:
+                    pred = self.model([X_batch, X_s_batch])
+                    #pred,pred_s = self.model([X_batch,X_s_batch])
+                    #pred_s = pred_s.float().cpu().detach()
+
                     X_batch = X_batch.float().cpu().detach()
                     X_s_batch = X_s_batch.float().cpu().detach()
 
@@ -282,8 +291,10 @@ class Model:
                 X_batch = X_batch.float().to(self.device)
                 X_s_batch = X_s_batch.float().to(self.device)
 
-                pred,pred_s = self.model([X_batch,X_s_batch])
-                pred_s = pred_s.float().cpu().detach()
+                # TODO:
+                pred = self.model([X_batch, X_s_batch])
+                #pred,pred_s = self.model([X_batch,X_s_batch])
+                #pred_s = pred_s.float().cpu().detach()
                 X_batch = X_batch.float().cpu().detach()
                 X_s_batch = X_s_batch.float().cpu().detach()
 
