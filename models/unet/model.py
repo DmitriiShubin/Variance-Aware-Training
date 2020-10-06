@@ -127,6 +127,7 @@ class Model:
             # trian the model
             self.model.train()
             avg_loss = 0.0
+            avg_loss_adv = 0.0
 
             train_preds, train_true = torch.Tensor([]), torch.Tensor([])
             for (X_batch, y_batch,X_s_batch,y_s_batch) in tqdm(train_loader):
@@ -138,8 +139,8 @@ class Model:
                 self.optimizer.zero_grad()
                 # get model predictions
                 # TODO:
-                pred = self.model([X_batch, X_s_batch])
-                # pred,pred_s = self.model([X_batch,X_s_batch])
+                #pred = self.model([X_batch, X_s_batch])
+                pred,pred_s = self.model([X_batch,X_s_batch])
 
                 X_batch = X_batch.float().cpu().detach()
                 X_s_batch = X_s_batch.float().cpu().detach()
@@ -154,22 +155,24 @@ class Model:
 
                 # process loss_2
                 # TODO:
-                # pred_s = pred_s.view(-1, pred_s.shape[-1])
-                # y_s_batch = y_s_batch.view(-1, y_s_batch.shape[-1])
-                # adv_loss = self.loss_s(pred_s, y_s_batch)
+                pred_s = pred_s.view(-1, pred_s.shape[-1])
+                y_s_batch = y_s_batch.view(-1, y_s_batch.shape[-1])
+                adv_loss = self.loss_s(pred_s, y_s_batch)
 
                 y_s_batch = y_s_batch.float().cpu().detach()
                 # TODO:
-                #pred_s = pred_s.float().cpu().detach()
+                pred_s = pred_s.float().cpu().detach()
 
 
                 # calc loss
+                #TODO:
+                avg_loss_adv += adv_loss.item() / len(train_loader)
                 avg_loss += train_loss.item() / len(train_loader)
 
                 #sum up multi-head losses
                 # TODO:
                 # if epoch < 20:
-                #     train_loss = train_loss - self.alpha*adv_loss
+                train_loss = train_loss - self.alpha*adv_loss
 
                 self.scaler.scale(train_loss).backward()  # train_loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
@@ -198,16 +201,19 @@ class Model:
             self.model.eval()
             val_preds, val_true = torch.Tensor([]), torch.Tensor([])
             avg_val_loss = 0.0
+            avg_val_loss_adv = 0.0
             with torch.no_grad():
-                for X_batch, y_batch,X_s_batch,_ in valid_loader:
+                for X_batch, y_batch,X_s_batch,y_s_batch in valid_loader:
                     y_batch = y_batch.float().to(self.device)
                     X_batch = X_batch.float().to(self.device)
                     X_s_batch = X_s_batch.float().to(self.device)
+                    #TODO:
+                    y_s_batch = y_s_batch.float().to(self.device)
 
                     # TODO:
-                    pred = self.model([X_batch, X_s_batch])
-                    #pred,pred_s = self.model([X_batch,X_s_batch])
-                    #pred_s = pred_s.float().cpu().detach()
+                    #pred = self.model([X_batch, X_s_batch])
+                    pred,pred_s = self.model([X_batch,X_s_batch])
+
 
                     X_batch = X_batch.float().cpu().detach()
                     X_s_batch = X_s_batch.float().cpu().detach()
@@ -215,9 +221,16 @@ class Model:
                     pred = pred.reshape(-1, pred.shape[-1])
                     y_batch = y_batch.view(-1, y_batch.shape[-1])
 
+                    pred_s = pred_s.reshape(-1, pred_s.shape[-1])
+                    y_s_batch = y_s_batch.view(-1, y_s_batch.shape[-1])
+
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
                     y_batch = y_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
+
+                    avg_val_loss_adv += self.loss_s(pred_s, y_s_batch).item() / len(valid_loader)
+                    y_s_batch = y_s_batch.float().cpu().detach()
+                    pred_s = pred_s.float().cpu().detach()
 
 
 
@@ -240,10 +253,16 @@ class Model:
                 print(
                     '| Epoch: ',
                     epoch + 1,
-                    '| Train_loss: ',
+                    '| Train_loss main: ',
                     avg_loss,
-                    '| Val_loss: ',
+                    # TODO:
+                    '| Train_loss adv: ',
+                    avg_loss_adv,
+                    '| Val_loss main: ',
                     avg_val_loss,
+                    #TODO:
+                    '| Val_loss adv: ',
+                    avg_val_loss_adv,
                     '| Metric_train: ',
                     metric_train,
                     '| Metric_val: ',
@@ -291,9 +310,9 @@ class Model:
                 X_s_batch = X_s_batch.float().to(self.device)
 
                 # TODO:
-                pred = self.model([X_batch, X_s_batch])
-                #pred,pred_s = self.model([X_batch,X_s_batch])
-                #pred_s = pred_s.float().cpu().detach()
+                #pred = self.model([X_batch, X_s_batch])
+                pred,pred_s = self.model([X_batch,X_s_batch])
+                pred_s = pred_s.float().cpu().detach()
                 X_batch = X_batch.float().cpu().detach()
                 X_s_batch = X_s_batch.float().cpu().detach()
 

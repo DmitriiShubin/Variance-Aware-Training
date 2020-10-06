@@ -112,9 +112,9 @@ class UNet(nn.Module):
 
         #additional head (adversarial)
         #TODO:
-        # out_s = self.adversarial_network(encoder_x,x_s)
+        out_s = self.adversarial_network(encoder_x,x_s)
         # TODO:
-        return out#,out_s
+        return out,out_s
 
     def encoder(self,x):
 
