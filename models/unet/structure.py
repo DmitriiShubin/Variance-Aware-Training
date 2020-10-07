@@ -103,16 +103,16 @@ class UNet(nn.Module):
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
         #adversarial deep net layers
-        self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
+        self.adv_fc1 = nn.Linear(self.hparams['n_filters_input']*8, 1)
 
     def forward(self, x):
         x,x_s = x #unpack training and adversarial images
         #main head (predictive)
-        out,decoder_x = self.predictive_network(x)
+        out,encoder_x = self.predictive_network(x)
 
         #additional head (adversarial)
         #TODO:
-        out_s = self.adversarial_network(decoder_x,x_s)
+        out_s = self.adversarial_network(encoder_x,x_s)
         # TODO:
         return out,out_s
 
@@ -136,9 +136,9 @@ class UNet(nn.Module):
     def adversarial_network(self,x,x_s):
 
         x1, x2, x3, x4, x5 = self.encoder(x_s)
-        x_s = self.decoder(x1, x2, x3, x4, x5)
+        #x_s = self.decoder(x1, x2, x3, x4, x5)
 
-        x = torch.stack([x,x_s],dim=1)
+        x = torch.stack([x,x5],dim=1)
 
         x = torch.mean(x, dim=3)#global average pooling only bottleneck of unet
         x = torch.mean(x, dim=3)
@@ -152,4 +152,4 @@ class UNet(nn.Module):
         x = self.decoder(x1,x2,x3,x4,x5)
         logits = self.outc(x)
         logits = torch.sigmoid(logits)
-        return logits,x
+        return logits,x5
