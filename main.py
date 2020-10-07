@@ -63,6 +63,7 @@ def main(start_fold, batch_size, lr, n_epochs, p_proc, train, gpu,downsample):
         logger.info(f'Model fold = {lr}')
         logger.info(f'Model fold = {n_epochs}')
         logger.info(f'GPU = {gpu}')
+        logger.info(f"Alpha = {hparams['model']['alpha']}")
         logger.info('=============================================')
 
 
