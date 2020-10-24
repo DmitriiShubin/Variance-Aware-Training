@@ -114,8 +114,13 @@ def waveform_plot_interact(dataset, save_eps=False):
 
     interact(
         waveform_plot,
-        filename_id=IntSlider(value=0, min=0, max=len(filenames) - 1, step=1,),
+        filename_id=IntSlider(
+            value=0,
+            min=0,
+            max=len(filenames) - 1,
+            step=1,
+        ),
         filenames=fixed(filenames),
         path=fixed(path),
-        save_eps=fixed(save_eps)
+        save_eps=fixed(save_eps),
     )

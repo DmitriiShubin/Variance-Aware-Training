@@ -64,7 +64,7 @@ class AbstractionPattern(object):
             the automata definition with a list of the observations of that
             observable as evidence of the pattern.
         finding:
-            A finding in the evidence that has still not been matched to an 
+            A finding in the evidence that has still not been matched to an
             actual observation, or None if there is not such finding.
         temporal_constraints:
             List with temporal networks that are used to introduce the temporal

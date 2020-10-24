@@ -13,18 +13,16 @@ from data_generator import Dataset_train
 from config import Model
 
 
-class Predict():
-
+class Predict:
     def __init__(self):
 
-
-        #load the model
+        # load the model
         self.model = Model()
         self.model.model_load("./inference_models/ecgnet_0_fold_0.6078759902401878.pt")
 
-        #load preprocessng pipeline
+        # load preprocessng pipeline
 
-        #load thresholds
+        # load thresholds
         self.postptocessing = PostProcessing(0)
 
         # threshold = 0
@@ -33,17 +31,16 @@ class Predict():
         #
         # self.postptocessing.threshold = threshold
 
-
-    def predict(self,signal,meta):
+    def predict(self, signal, meta):
 
         ############## Preprocessing ##############
-        #downsampling
+        # downsampling
         X_resampled = np.zeros((signal.shape[0] // 2, 12))
         for i in range(12):
             X_resampled[:, i] = self.resampling.downsample(signal[:, 0], order=2)
 
-        #apply preprocessing
-        signal = self.apply_amplitude_scaling(X=X_resampled,y=meta)
+        # apply preprocessing
+        signal = self.apply_amplitude_scaling(X=X_resampled, y=meta)
 
         # padding
         sig_length = 19000
@@ -82,6 +79,3 @@ class Predict():
                 if channel_rpeaks:
                     return X / np.median(X[y['rpeaks'][0], 0])
         return (X - X.mean()) / X.std()
-
-
-

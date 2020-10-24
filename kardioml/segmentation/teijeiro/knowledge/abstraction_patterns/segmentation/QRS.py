@@ -44,7 +44,17 @@ QRS_SHAPES = {
     'QRS': set(('qRs', 'QRs', 'R', 'RS', 'Rs', 'QR', 'qR', 'Qr', 'qr', 'rsR', 'Rr', 'r')),
     'QS': set(('QrS', 'QRs', 'rS', 'rSr', 'Q', 'QS', 'qS', 'Qs', 'Qr', 'rs')),
     'Qr': set(('QrS', 'r', 'rr', 'rs', 'rSr', 'rsr', 'Q', 'QS', 'QR', 'qR', 'Qr', 'qr')),
-    'QrS': set(('QrS', 'rS', 'rs', 'rSr', 'QS', 'qS', 'Qs',)),
+    'QrS': set(
+        (
+            'QrS',
+            'rS',
+            'rs',
+            'rSr',
+            'QS',
+            'qS',
+            'Qs',
+        )
+    ),
     'Qs': set(('Q', 'Qs', 'qS', 'QrS', 'QS', 'Qr', 'rsr')),
     'R': set(
         (

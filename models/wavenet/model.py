@@ -124,10 +124,10 @@ class Model:
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
 
-                train_loss.backward() #self.scaler.scale(train_loss).backward()  #
+                train_loss.backward()  # self.scaler.scale(train_loss).backward()  #
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
                 # torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.5)
-                self.optimizer.step() # self.scaler.step(self.optimizer)  #
+                self.optimizer.step()  # self.scaler.step(self.optimizer)  #
                 self.scaler.update()
 
                 # calc metric
@@ -194,7 +194,9 @@ class Model:
 
             # # add history to tensorboard
             writer.add_scalars(
-                'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
+                'Loss',
+                {'Train_loss': avg_loss, 'Val_loss': avg_val_loss},
+                epoch,
             )
 
             writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)

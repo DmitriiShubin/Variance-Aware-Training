@@ -29,6 +29,7 @@ class Stem_layer(nn.Module):
         x = self.drop(x)
         return x
 
+
 class Stem_layer_upsample(nn.Module):
     def __init__(self, in_ch, out_ch, kernel_size, drop_rate, scale_factor):
         super().__init__()
@@ -37,7 +38,7 @@ class Stem_layer_upsample(nn.Module):
             in_ch,
             out_ch,
             kernel_size,
-            padding=int((kernel_size + (kernel_size - 1) * (dilation - 1)) / 2)+1,
+            padding=int((kernel_size + (kernel_size - 1) * (dilation - 1)) / 2) + 1,
             dilation=dilation,
             stride=1,
             bias=False,
@@ -55,7 +56,7 @@ class Stem_layer_upsample(nn.Module):
 
 
 class Wave_block(nn.Module):
-    def __init__(self, out_ch, kernel_size, dilation,drop_rate):
+    def __init__(self, out_ch, kernel_size, dilation, drop_rate):
         super().__init__()
         self.kernel_size = kernel_size
         self.out_ch = out_ch
@@ -77,9 +78,23 @@ class Wave_block(nn.Module):
             bias=False,
         )
 
-        self.conv_res = nn.Conv1d(out_ch, out_ch, 1, padding=0, dilation=dilation, bias=False,)
+        self.conv_res = nn.Conv1d(
+            out_ch,
+            out_ch,
+            1,
+            padding=0,
+            dilation=dilation,
+            bias=False,
+        )
 
-        self.conv_skip = nn.Conv1d(out_ch, out_ch, 1, padding=0, dilation=dilation, bias=False,)
+        self.conv_skip = nn.Conv1d(
+            out_ch,
+            out_ch,
+            1,
+            padding=0,
+            dilation=dilation,
+            bias=False,
+        )
 
         self.tanh = nn.Tanh()
         self.sigmoid = nn.Sigmoid()
@@ -100,11 +115,15 @@ class Wave_block(nn.Module):
         return res_out, skip_out
 
 
-
-
-
 class ECGNet(nn.Module):
-    def __init__(self, n_channels, hparams, input_block=Stem_layer, basic_block=Wave_block,decoder_out_block = Stem_layer_upsample):
+    def __init__(
+        self,
+        n_channels,
+        hparams,
+        input_block=Stem_layer,
+        basic_block=Wave_block,
+        decoder_out_block=Stem_layer_upsample,
+    ):
         super().__init__()
 
         self.basic_block = basic_block
@@ -124,41 +143,63 @@ class ECGNet(nn.Module):
         )
 
         # wavenet(residual) layers
-        self.layer3 = self.basic_block(self.hparams['n_filt_res'], self.hparams['kern_size'], 2,self.hparams['dropout'])
-        self.layer4 = self.basic_block(self.hparams['n_filt_res'], self.hparams['kern_size'], 4,self.hparams['dropout'])
-        self.layer5 = self.basic_block(self.hparams['n_filt_res'], self.hparams['kern_size'], 8,self.hparams['dropout'])
-        self.layer6 = self.basic_block(self.hparams['n_filt_res'], self.hparams['kern_size'], 16,self.hparams['dropout'])
-        self.layer7 = self.basic_block(self.hparams['n_filt_res'], self.hparams['kern_size'], 32,self.hparams['dropout'])
-        self.layer8 = self.basic_block(self.hparams['n_filt_res'], self.hparams['kern_size'], 64,self.hparams['dropout'])
-        self.layer9 = self.basic_block(self.hparams['n_filt_res'], self.hparams['kern_size'], 128,self.hparams['dropout'])
-        self.layer10 = self.basic_block(self.hparams['n_filt_res'], self.hparams['kern_size'], 256,self.hparams['dropout'])
-
+        self.layer3 = self.basic_block(
+            self.hparams['n_filt_res'], self.hparams['kern_size'], 2, self.hparams['dropout']
+        )
+        self.layer4 = self.basic_block(
+            self.hparams['n_filt_res'], self.hparams['kern_size'], 4, self.hparams['dropout']
+        )
+        self.layer5 = self.basic_block(
+            self.hparams['n_filt_res'], self.hparams['kern_size'], 8, self.hparams['dropout']
+        )
+        self.layer6 = self.basic_block(
+            self.hparams['n_filt_res'], self.hparams['kern_size'], 16, self.hparams['dropout']
+        )
+        self.layer7 = self.basic_block(
+            self.hparams['n_filt_res'], self.hparams['kern_size'], 32, self.hparams['dropout']
+        )
+        self.layer8 = self.basic_block(
+            self.hparams['n_filt_res'], self.hparams['kern_size'], 64, self.hparams['dropout']
+        )
+        self.layer9 = self.basic_block(
+            self.hparams['n_filt_res'], self.hparams['kern_size'], 128, self.hparams['dropout']
+        )
+        self.layer10 = self.basic_block(
+            self.hparams['n_filt_res'], self.hparams['kern_size'], 256, self.hparams['dropout']
+        )
 
         self.conv_out_1 = input_block(
-            self.hparams['n_filt_res'], self.hparams['n_filt_out_conv_1'], self.hparams['kern_size'], self.hparams['dropout'], 3
+            self.hparams['n_filt_res'],
+            self.hparams['n_filt_out_conv_1'],
+            self.hparams['kern_size'],
+            self.hparams['dropout'],
+            3,
         )
 
-        #self.bn1 = nn.BatchNorm1d(self.hparams['n_filt_out_conv_1'])
+        # self.bn1 = nn.BatchNorm1d(self.hparams['n_filt_out_conv_1'])
 
         self.conv_out_2 = input_block(
-            self.hparams['n_filt_out_conv_1'], self.hparams['n_filt_out_conv_2'], self.hparams['kern_size'], self.hparams['dropout'], 2
+            self.hparams['n_filt_out_conv_1'],
+            self.hparams['n_filt_out_conv_2'],
+            self.hparams['kern_size'],
+            self.hparams['dropout'],
+            2,
         )
 
-
-
-
-        #main head
+        # main head
         self.fc = nn.Linear(self.hparams['n_filt_out_conv_2'], 1)
 
-        #autoencoder head
-        self.output_decoder_1 = decoder_out_block(self.hparams['n_filt_res'],self.hparams['n_filt_stem'],self.hparams['kern_size'],self.hparams['dropout'],
-            2)
-        self.output_decoder_2 = decoder_out_block(self.hparams['n_filt_stem'], n_channels,
-                                                  1, self.hparams['dropout'],
-                                                  2)
-
-
-
+        # autoencoder head
+        self.output_decoder_1 = decoder_out_block(
+            self.hparams['n_filt_res'],
+            self.hparams['n_filt_stem'],
+            self.hparams['kern_size'],
+            self.hparams['dropout'],
+            2,
+        )
+        self.output_decoder_2 = decoder_out_block(
+            self.hparams['n_filt_stem'], n_channels, 1, self.hparams['dropout'], 2
+        )
 
     def _make_layers(self, out_ch, kernel_size, n, basic_block):
         # dilation_rates = [2 ** i for i in range(n)]
@@ -179,13 +220,13 @@ class ECGNet(nn.Module):
         x = self.layer2(x)
 
         x, skip_1 = self.layer3(x)
-        #x = self.bn3(x)
+        # x = self.bn3(x)
         x, skip_2 = self.layer4(x)
-        #x = self.bn4(x)
+        # x = self.bn4(x)
         x, skip_3 = self.layer5(x)
-        #x = self.bn5(x)
+        # x = self.bn5(x)
         x, skip_4 = self.layer6(x)
-        #x = self.bn6(x)
+        # x = self.bn6(x)
         # x, skip_5 = self.layer7(x)
         # #x = self.bn7(x)
         # x, skip_6 = self.layer8(x)
@@ -195,24 +236,20 @@ class ECGNet(nn.Module):
         # x, skip_8 = self.layer10(x)
         # #x = self.bn10(x)
 
-
-
-
-        #decoder head
+        # decoder head
         decoder_out = torch.relu(self.output_decoder_1(x))
         decoder_out = self.output_decoder_2(decoder_out)
-        decoder_out = decoder_out[:,:,:-2]
+        decoder_out = decoder_out[:, :, :-2]
         decoder_out = decoder_out.reshape(-1, decoder_out.shape[2], decoder_out.shape[1])
 
-        #main head
-        x = skip_1 + skip_2 #+ skip_3 + skip_4 #+ skip_5 + skip_6 + skip_7 + skip_8
+        # main head
+        x = skip_1 + skip_2  # + skip_3 + skip_4 #+ skip_5 + skip_6 + skip_7 + skip_8
 
         x = self.conv_out_1(x)
-        #x = self.conv_out_2(x)
+        # x = self.conv_out_2(x)
 
         x = torch.mean(x, dim=2)
 
-
         x = torch.sigmoid(self.fc(x))
 
-        return x,decoder_out
+        return x, decoder_out

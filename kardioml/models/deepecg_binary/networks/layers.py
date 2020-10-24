@@ -112,8 +112,8 @@ def conv1d(
     name=None,
 ):
     """A general wrapper of tf.layers.conv1d() supporting
-       1. 'causal' padding method used for WaveNet.
-       2. batch normalization when use_bias is False for accuracy.
+    1. 'causal' padding method used for WaveNet.
+    2. batch normalization when use_bias is False for accuracy.
     """
 
     if padding == 'causal':

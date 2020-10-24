@@ -7,7 +7,7 @@ import pandas as pd
 # pytorch
 import torch
 import torch.nn as nn
-from torch.optim.lr_scheduler import ReduceLROnPlateau,CosineAnnealingLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
@@ -21,6 +21,7 @@ from torch.nn.parallel import DataParallel as DP
 # model
 from models.unet.structure import UNet
 
+
 class Model:
     """
     This class handles basic methods for handling the model:
@@ -30,31 +31,33 @@ class Model:
     4. Load
     """
 
-    def __init__(self, n_channels, hparams, gpu,inference=False):
+    def __init__(self, n_channels, hparams, gpu, inference=False):
 
         self.hparams = hparams
 
         if inference:
             self.device = torch.device('cpu')
-            self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=4).to(self.device)
+            self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 0:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=4).to(self.device)
-                    self.model = DP(self.model, device_ids=gpu,output_device=gpu[0])
+                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(
+                        self.device
+                    )
+                    self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Number of GPUs will be used: ", torch.cuda.device_count() - 5)
                     self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=4).to(self.device)
+                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(
+                        self.device
+                    )
                     self.model = DP(self.model, device_ids=list(range(torch.cuda.device_count() - 5)))
             else:
                 self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=4).to(self.device)
+                self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(self.device)
                 print('Only one GPU is available')
-
-
 
         self.metric = Metric()
         self.num_workers = 18
@@ -71,7 +74,10 @@ class Model:
 
         # define early stopping
         self.early_stopping = EarlyStopping(
-            checkpoint_path=self.hparams['checkpoint_path'] + '/checkpoint'+str(self.hparams['start_fold'])+'.pt',
+            checkpoint_path=self.hparams['checkpoint_path']
+            + '/checkpoint'
+            + str(self.hparams['start_fold'])
+            + '.pt',
             patience=self.hparams['patience'],
             delta=self.hparams['min_delta'],
             is_maximize=True,
@@ -89,10 +95,7 @@ class Model:
         #     cooldown=0,
         #     eps=0,
         # )
-        self.scheduler = CosineAnnealingLR(self.optimizer,
-                                           T_max=10,
-                                           eta_min=1e-5,
-                                           last_epoch=-1)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=10, eta_min=1e-5, last_epoch=-1)
 
         self.seed_everything(42)
 
@@ -123,7 +126,7 @@ class Model:
             avg_loss_adv = 0.0
 
             train_preds, train_true = torch.Tensor([]), torch.Tensor([])
-            for (X_batch, y_batch,X_s_batch,y_s_batch) in tqdm(train_loader):
+            for (X_batch, y_batch, X_s_batch, y_s_batch) in tqdm(train_loader):
                 y_batch = y_batch.float().to(self.device)
                 X_batch = X_batch.float().to(self.device)
                 y_s_batch = y_s_batch.float().to(self.device)
@@ -132,7 +135,7 @@ class Model:
                 self.optimizer.zero_grad()
                 # get model predictions
                 # TODO:
-                pred,pred_s = self.model([X_batch,X_s_batch])
+                pred, pred_s = self.model([X_batch, X_s_batch])
 
                 X_batch = X_batch.float().cpu().detach()
                 X_s_batch = X_s_batch.float().cpu().detach()
@@ -156,15 +159,14 @@ class Model:
                 # TODO:
                 pred_s = pred_s.float().cpu().detach()
 
-
                 # calc loss
-                #TODO:
+                # TODO:
                 avg_loss_adv += adv_loss.item() / len(train_loader)
                 avg_loss += train_loss.item() / len(train_loader)
 
-                #sum up multi-head losses
+                # sum up multi-head losses
                 # TODO:
-                #train_loss = train_loss - self.alpha*adv_loss
+                # train_loss = train_loss - self.alpha*adv_loss
 
                 self.scaler.scale(train_loss).backward()  # train_loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
@@ -180,7 +182,7 @@ class Model:
             train_preds = train_preds.numpy()
             train_true = train_true.numpy()
 
-            train_preds = np.argmax(train_preds,axis=1)
+            train_preds = np.argmax(train_preds, axis=1)
             metric_train = self.metric.compute(labels=train_true, outputs=train_preds)
 
             # evaluate the model
@@ -190,22 +192,19 @@ class Model:
             avg_val_loss = 0.0
             avg_val_loss_adv = 0.0
             with torch.no_grad():
-                for X_batch, y_batch,X_s_batch,y_s_batch in valid_loader:
+                for X_batch, y_batch, X_s_batch, y_s_batch in valid_loader:
                     y_batch = y_batch.float().to(self.device)
                     X_batch = X_batch.float().to(self.device)
                     X_s_batch = X_s_batch.float().to(self.device)
-                    #TODO:
+                    # TODO:
                     y_s_batch = y_s_batch.float().to(self.device)
 
                     # TODO:
-                    #pred = self.model([X_batch, X_s_batch])
-                    pred,pred_s = self.model([X_batch,X_s_batch])
-
+                    # pred = self.model([X_batch, X_s_batch])
+                    pred, pred_s = self.model([X_batch, X_s_batch])
 
                     X_batch = X_batch.float().cpu().detach()
                     X_s_batch = X_s_batch.float().cpu().detach()
-
-
 
                     pred = pred.view(-1, pred.shape[1])
                     y_batch = y_batch.view(-1)
@@ -221,8 +220,6 @@ class Model:
                     y_s_batch = y_s_batch.float().cpu().detach()
                     pred_s = pred_s.float().cpu().detach()
 
-
-
                     val_true = torch.cat([val_true, y_batch], 0)
                     val_preds = torch.cat([val_preds, pred], 0)
 
@@ -233,7 +230,7 @@ class Model:
             val_preds = np.argmax(val_preds, axis=1)
             metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
 
-            self.scheduler.step(metric_val)#avg_val_loss)
+            self.scheduler.step(metric_val)  # avg_val_loss)
             res = self.early_stopping(score=metric_val, model=self.model)
 
             # print statistics
@@ -248,7 +245,7 @@ class Model:
                     avg_loss_adv,
                     '| Val_loss main: ',
                     avg_val_loss,
-                    #TODO:
+                    # TODO:
                     '| Val_loss adv: ',
                     avg_val_loss_adv,
                     '| Metric_train: ',
@@ -261,7 +258,9 @@ class Model:
 
             # # add history to tensorboard
             writer.add_scalars(
-                'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
+                'Loss',
+                {'Train_loss': avg_loss, 'Val_loss': avg_val_loss},
+                epoch,
             )
 
             writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
@@ -292,13 +291,13 @@ class Model:
         test_val = torch.Tensor([])
         print('Start generation of predictions')
         with torch.no_grad():
-            for i, (X_batch, y_batch,X_s_batch,_) in enumerate(tqdm(test_loader)):
+            for i, (X_batch, y_batch, X_s_batch, _) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
                 X_s_batch = X_s_batch.float().to(self.device)
 
                 # TODO:
-                #pred = self.model([X_batch, X_s_batch])
-                pred,pred_s = self.model([X_batch,X_s_batch])
+                # pred = self.model([X_batch, X_s_batch])
+                pred, pred_s = self.model([X_batch, X_s_batch])
                 pred_s = pred_s.float().cpu().detach()
                 X_batch = X_batch.float().cpu().detach()
                 X_s_batch = X_s_batch.float().cpu().detach()
@@ -306,7 +305,7 @@ class Model:
                 test_preds = torch.cat([test_preds, pred.cpu().detach()], 0)
                 test_val = torch.cat([test_val, y_batch.cpu().detach()], 0)
 
-        return test_val.numpy(),test_preds.numpy()
+        return test_val.numpy(), test_preds.numpy()
 
     def model_save(self, model_path):
         torch.save(self.model.state_dict(), model_path)
@@ -315,11 +314,11 @@ class Model:
         return True
 
     def model_load(self, model_path):
-        self.model.load_state_dict(torch.load(model_path,map_location=self.device))
+        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         return True
 
     def model_load_old(self, model_path):
-        self.model = torch.load(model_path,map_location=self.device)
+        self.model = torch.load(model_path, map_location=self.device)
         return True
 
     ################## Utils #####################
