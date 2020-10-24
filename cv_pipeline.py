@@ -7,8 +7,9 @@ import pandas as pd
 import torch
 import os
 from tqdm import tqdm
+from config import SPLIT_TABLE_PATH, SPLIT_TABLE_NAME, DEBUG_FOLDER, Model
 
-from data_generator import Dataset_train, Dataset_test
+from data_generator import Dataset_train
 from metrics import Metric
 from postprocessing import PostProcessing
 
@@ -22,12 +23,11 @@ seed_everything(42)
 
 
 class CVPipeline:
-    def __init__(self, hparams, split_table_path, split_table_name, debug_folder, model, gpu,downsample):
+    def __init__(self, hparams, gpu,downsample):
 
         # load the model
 
         self.hparams = hparams
-        self.model = model
         self.gpu = gpu
         self.downsample = downsample
 
@@ -35,9 +35,6 @@ class CVPipeline:
         print('Selected Learning rate:', self.hparams['lr'])
         print('\n')
 
-        self.debug_folder = debug_folder
-        self.split_table_path = split_table_path
-        self.split_table_name = split_table_name
         self.exclusions = []
 
 
@@ -50,10 +47,10 @@ class CVPipeline:
 
         splits = []
 
-        split_files = [i for i in os.listdir(self.split_table_path) if i.find('.json')!=-1]
+        split_files = [i for i in os.listdir(SPLIT_TABLE_PATH) if i.find('.json')!=-1]
 
         for i in range(len(split_files)):
-            data = json.load(open(self.split_table_path + str(i) + '_' + self.split_table_name))
+            data = json.load(open(SPLIT_TABLE_PATH + str(i) + '_' + SPLIT_TABLE_NAME))
 
             splits.append(data)
 
@@ -70,11 +67,11 @@ class CVPipeline:
                 if fold != self.hparams['start_fold']:
                     continue
             #TODO
-            train = Dataset_train(self.splits['train'].values[fold], aug=True,downsample=self.downsample)
-            valid = Dataset_train(self.splits['val'].values[fold], aug=False,downsample=self.downsample)
+            train = Dataset_train(self.splits['train'].values[fold], aug=True)
+            valid = Dataset_train(self.splits['val'].values[fold], aug=False)
 
             X, y,_,_ = train.__getitem__(0)
-            self.model = self.model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu
+            self.model = Model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu
             )
 
             # train model
@@ -82,13 +79,13 @@ class CVPipeline:
 
             # get model predictions
             y_val,pred_val = self.model.predict(valid)
-            self.postprocessing = PostProcessing(fold=self.hparams['start_fold'])
 
-            pred_val_processed = self.postprocessing.run(pred_val)
 
-            # TODO: add activations
-            # heatmap = self.model.get_heatmap(valid)
 
+            pred_val_processed = np.argmax(pred_val,axis=1)
+
+            pred_val_processed = pred_val_processed.reshape(-1)
+            y_val = y_val.reshape(-1)
 
             fold_score = self.metric.compute(y_val, pred_val_processed)
             print("Model's final scrore: ",fold_score)
@@ -119,14 +116,13 @@ class CVPipeline:
 
         for index, data in enumerate(validation_list):
 
-            data_folder = f'./data/CV_debug/'
             patient_fold = data.split('/')[-2]
 
             prediction = {}
             prediction['predicted_label'] = pred_val[index].tolist()
-            os.makedirs(data_folder + patient_fold, exist_ok=True)
+            os.makedirs(DEBUG_FOLDER + patient_fold, exist_ok=True)
             # save debug data
-            with open(data_folder +data+ '.json', 'w') as outfile:
+            with open(DEBUG_FOLDER +data+ '.json', 'w') as outfile:
                 json.dump(prediction, outfile)
 
         return True

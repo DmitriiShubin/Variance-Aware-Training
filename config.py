@@ -2,16 +2,15 @@ import ast
 import os
 
 # select the type of the model here
-from models.unet import Model, hparams
+from models.adv_unet import Model, hparams
 
 # names:
-DATA_PATH = './data/brain_images/'
+DATA_PATH = './data/brats/MICCAI_BraTS2020_TrainingData/'
 
 SPLIT_TABLE_PATH = './data/split_table/'
 SPLIT_TABLE_NAME = 'split_table.json'
 
-PIC_FOLDER = './data/pictures/'
 DEBUG_FOLDER = './data/CV_debug/'
 
-for f in [PIC_FOLDER, DEBUG_FOLDER]:
+for f in [DEBUG_FOLDER]:
     os.makedirs(f, exist_ok=True)

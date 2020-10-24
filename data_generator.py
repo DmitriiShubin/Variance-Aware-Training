@@ -7,6 +7,7 @@ import random
 from scipy import signal
 import cv2
 import albumentations as A
+from config import DATA_PATH
 
 # pytorch
 import torch
@@ -17,19 +18,15 @@ np.random.seed(42)
 
 
 class Dataset_train(Dataset):
-    def __init__(self, patients, aug,downsample):
+    def __init__(self, patients, aug):
 
         self.patients = patients
         self.images_list = []
 
         for patient in patients:
-            images = [i[:-4] for i in os.listdir(f'./data/brain_images/{patient}') if i.find('_mask')==-1]
+            images = [i[:-10] for i in os.listdir(DATA_PATH+patient) if i.find('.npy')!=-1 and i.find('flair')!=-1]
             for image in images:
-                self.images_list.append(f'./data/brain_images/{patient}/{image}')
-
-
-
-
+                self.images_list.append(DATA_PATH+patient+'/'+image)
 
         self.preprocessing = Preprocessing(aug)
 
@@ -47,23 +44,32 @@ class Dataset_train(Dataset):
 
         return X, y,X_s,y_s
 
-    def load_data(self, id, train=True):
+    def load_data(self, id):
 
-        X = cv2.imread(self.images_list[id] + '.tif', cv2.IMREAD_COLOR)
+        X=np.load(self.images_list[id] + '_flair.npy')
+        X = np.append(X, np.load(self.images_list[id] + '_t1.npy'),axis=2)
+        X = np.append(X, np.load(self.images_list[id] + '_t1ce.npy'),axis=2)
+        X = np.append(X, np.load(self.images_list[id] + '_t2.npy'),axis=2)
 
-        y = cv2.imread(self.images_list[id] + '_mask.tif', cv2.IMREAD_COLOR)
+
+        y = np.load(self.images_list[id] + '_seg.npy').astype(np.float32) #cv2.imread(self.images_list[id] + '_mask.tif', cv2.IMREAD_COLOR)
         y_ = y.copy()
         X,y = self.preprocessing.run(X=X,y=y)
 
         #second head
         sampled_patient = np.random.uniform(size=1)[0]
         if sampled_patient >= 0.5:
-
             #NOT the same patient
             images_subset = self.images_list.copy()
             patient_id = self.images_list[id].split('/')[-2]
             images_subset = [i for i in images_subset if i.find(patient_id)==-1]
-            X_s = cv2.imread(np.random.choice(np.array(images_subset)) + '.tif', cv2.IMREAD_COLOR)
+            #X_s = cv2.imread(np.random.choice(np.array(images_subset)) + '.tif', cv2.IMREAD_COLOR)
+
+            X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
+            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
+            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
+            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
+
             y_s = [0]
         else:
             # the same patient
@@ -71,7 +77,12 @@ class Dataset_train(Dataset):
             patient_id = self.images_list[id].split('/')[-2]
             images_subset = [i for i in images_subset if i.find(patient_id) != -1]
             images_subset.remove(self.images_list[id])
-            X_s = cv2.imread(np.random.choice(np.array(images_subset)) + '.tif', cv2.IMREAD_COLOR)
+            #X_s = cv2.imread(np.random.choice(np.array(images_subset)) + '.tif', cv2.IMREAD_COLOR)
+
+            X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
+            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
+            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
+            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
             y_s = [1]
 
 
@@ -107,20 +118,32 @@ class Preprocessing():
 
     def run(self,X,y,label_process=True):
 
-        X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
-        y = cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).astype(np.float32)
+        # X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
+        # y = cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
 
 
         if self.aug:
             X,y = self.augmentations.apply_augs(X,y)
 
+        #apply scaling
+        for i in range(4):
+            if np.std(X[:,:,i])>0:
+                X[:,:,i] = (X[:,:,i] - np.mean(X[:,:,i]))/np.std(X[:,:,i])
+            else:
+                X[:, :, i] = X[:, :, i] - np.mean(X[:, :, i])
 
-        X = X/ 255
-        X = X.reshape(1, X.shape[0], X.shape[1])
-        #X = X**(1.5)#higher contrast
+        y[np.where(y == 4)] = 3
+        # y_binary = np.zeros((y.shape[0], y.shape[1], 4))
+        #
+        # for i in range(4):
+        #     a = list(np.where(y ==i))
+        #     a[-1]+=i
+        #     y_binary[a] = 1
 
-        y = y / 255
+
+        #reshape to match pytorch
+        X = X.reshape(X.shape[2], X.shape[0], X.shape[1])
         y = y.reshape(1, y.shape[0], y.shape[1])
 
         if label_process:
@@ -128,191 +151,7 @@ class Preprocessing():
         else:
             return X
 
-    def FIR_filt(self, input, weight, padding_vector):
-        input = torch.cat((input, padding_vector), 0)
-        input = torch.cat((padding_vector, input), 0)
-        input = input.view(1, 1, input.shape[0])
-        output = torch.conv1d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1)
-        output = output.view(output.shape[2])
-        return output
 
-
-    @staticmethod
-    def apply_amplitude_scaling(X, y):
-        """Get rpeaks for each channel and scale waveform amplitude by median rpeak amplitude of lead I."""
-        if y['rpeaks']:
-            #for channel_rpeaks in y['rpeaks']:
-            if y['rpeaks'][0]:
-                #remove baseline
-                for i in range(12):
-                    X[:,0] -= np.median(X[:,0])
-                return X / np.median(X[y['rpeaks'][0], 0] + 0.001)
-
-        for i in range(12):
-            X[:, 0] -= np.median(X[:, 0])
-
-        return X / (X[:,0].std() + 0.001)
-
-    def medfilt(self,x, k):
-        """Apply a length-k median filter to a 1D array x.
-        Boundaries are extended by repeating endpoints.
-        """
-        assert k % 2 == 1, "Median filter length must be odd."
-        assert x.ndim == 1, "Input must be one-dimensional."
-        k2 = (k - 1) // 2
-        y = np.zeros((len(x), k), dtype=x.dtype)
-        y[:, k2] = x
-        for i in range(k2):
-            j = k2 - i
-            y[j:, i] = x[:-j]
-            y[:j, i] = x[0]
-            y[:-j, -(i + 1)] = x[j:]
-            y[-j:, -(i + 1)] = x[-1]
-        return np.median(y, axis=1)
-
-    def apply_augmentation(self, waveform, meta_data, fs_training):
-
-        # Random resample
-        # waveform = self._random_resample(waveform=waveform, meta_data=meta_data,
-        #                                  fs_training=fs_training, probability=0.25)
-
-        # Random amplitude scale
-        waveform = self._random_scale(waveform=waveform, probability=0.5)
-
-        # Apply synthetic noise
-        #waveform = self._add_synthetic_noise(waveform=waveform, fs_training=fs_training, probability=0.25)
-
-        return waveform
-
-    def _random_resample(self, waveform, meta_data, fs_training, probability):
-        """Randomly resample waveform.
-        bradycardia=3, sinus bradycardia=20, sinus tachycardia=22
-        """
-        if (
-            meta_data['hr'] != 'nan'
-            and all(meta_data['labels_training_merged'][label] == 0 for label in [3, 20, 22])
-            and self._coin_flip(probability=probability)
-        ):
-            # Get waveform duration
-            duration = waveform.shape[0] / fs_training
-
-            # Get new heart rate
-            hr_new = int(meta_data['hr'] * np.random.uniform(1, 1.25))
-            if hr_new > 300:
-                hr_new = 300
-            elif hr_new < 40:
-                hr_new = 40
-            else:
-                pass
-
-            # Get new duration
-            duration_new = duration * meta_data['hr'] / hr_new
-
-            # Get number of samples
-            samples = int(duration_new * fs_training)
-
-            # Resample waveform
-            waveform = signal.resample_poly(waveform, samples, waveform.shape[0], axis=0).astype(np.float32)
-
-            return waveform
-        else:
-            return waveform
-
-    def _random_scale(self, waveform, probability):
-        """Apply random scale factor between 0.25 and 3 to the waveform amplitudes."""
-        # Get random scale factor
-        scale_factor = random.uniform(0.25, 3.0)
-
-        if self._coin_flip(probability):
-            return waveform * scale_factor
-        return waveform
-
-    def _add_synthetic_noise(self, waveform, fs_training, probability):
-        """Add different kinds of synthetic noise to the signal."""
-        waveform = waveform.squeeze()
-        for idx in range(waveform.shape[1]):
-            waveform[:, idx] = self._generate_baseline_wandering_noise(
-                waveform=waveform[:, idx], fs=fs_training, probability=probability
-            )
-            waveform[:, idx] = self._generate_high_frequency_noise(
-                waveform=waveform[:, idx], fs=fs_training, probability=probability
-            )
-            waveform[:, idx] = self._generate_gaussian_noise(
-                waveform=waveform[:, idx], probability=probability
-            )
-            waveform[:, idx] = self._generate_pulse_noise(waveform=waveform[:, idx], probability=probability)
-        return waveform
-
-    def _generate_baseline_wandering_noise(self, waveform, fs, probability):
-        """Adds baseline wandering to the input signal."""
-        waveform = waveform.squeeze()
-        if self._coin_flip(probability):
-
-            # Generate time array
-            time = np.arange(len(waveform)) * 1 / fs
-
-            # Get number of baseline signals
-            baseline_signals = random.randint(1, 5)
-
-            # Loop through baseline signals
-            for baseline_signal in range(baseline_signals):
-                # Add noise
-                waveform += random.uniform(0.01, 0.75) * np.sin(
-                    2 * np.pi * random.uniform(0.001, 0.5) * time + random.uniform(0, 60)
-                )
-
-        return waveform
-
-    def _generate_high_frequency_noise(self, waveform, fs, probability=0.5):
-        """Adds high frequency sinusoidal noise to the input signal."""
-        waveform = waveform.squeeze()
-        if self._coin_flip(probability):
-            # Generate time array
-            time = np.arange(len(waveform)) * 1 / fs
-
-            # Add noise
-            waveform += random.uniform(0.001, 0.3) * np.sin(
-                2 * np.pi * random.uniform(50, 200) * time + random.uniform(0, 60)
-            )
-
-        return waveform
-
-    def _generate_gaussian_noise(self, waveform, probability=0.5):
-        """Adds white noise noise to the input signal."""
-        waveform = waveform.squeeze()
-        if self._coin_flip(probability):
-            waveform += np.random.normal(loc=0.0, scale=random.uniform(0.01, 0.25), size=len(waveform))
-
-        return waveform
-
-    def _generate_pulse_noise(self, waveform, probability=0.5):
-        """Adds gaussian pulse to the input signal."""
-        waveform = waveform.squeeze()
-        if self._coin_flip(probability):
-
-            # Get pulse
-            pulse = signal.gaussian(
-                int(len(waveform) * random.uniform(0.05, 0.010)), std=random.randint(50, 200)
-            )
-            pulse = np.diff(pulse)
-
-            # Get remainder
-            remainder = len(waveform) - len(pulse)
-            if remainder >= 0:
-                left_pad = int(remainder * random.uniform(0.0, 1.0))
-                right_pad = remainder - left_pad
-                pulse = np.pad(pulse, (left_pad, right_pad), 'constant', constant_values=0)
-                pulse = pulse / pulse.max()
-
-            waveform += pulse * random.uniform(waveform.max() * 1.5, waveform.max() * 2)
-
-        return waveform
-
-    @staticmethod
-    def _coin_flip(probability):
-        if random.random() < probability:
-            return True
-        return False
 
 
 class Augmentations():
@@ -321,7 +160,7 @@ class Augmentations():
         self.augs = A.Compose([
                     A.HorizontalFlip(p=prob),
                     A.Rotate(limit=10, p=prob),
-                    A.RandomSizedCrop(min_max_height=(220, 240), height=256, width=256, p=prob)
+                    A.RandomSizedCrop(min_max_height=(240, 240), height=240, width=240, p=prob)
             ])
 
 

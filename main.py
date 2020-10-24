@@ -4,8 +4,7 @@ import time
 
 # import modules
 from cv_pipeline import CVPipeline
-from pre_processing import PrepareData
-from config import hparams, DATA_PATH, SPLIT_TABLE_PATH, SPLIT_TABLE_NAME, DEBUG_FOLDER, Model
+from config import hparams
 
 
 @click.command()
@@ -37,10 +36,6 @@ def main(start_fold, batch_size, lr, n_epochs, p_proc, train, gpu,downsample):
     if train:
         cross_val = CVPipeline(
             hparams=hparams,
-            split_table_path=SPLIT_TABLE_PATH,
-            split_table_name=SPLIT_TABLE_NAME,
-            debug_folder=DEBUG_FOLDER,
-            model=Model,
             gpu=gpu,
             downsample = downsample
         )

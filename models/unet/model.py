@@ -16,9 +16,7 @@ from metrics import Metric
 from utils.torchsummary import summary
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
-from loss_functions import CompLoss,FocalLoss,Dice_loss
-from postprocessing import PostProcessing
-from data_generator import Preprocessing
+
 
 # model
 from models.unet.structure import UNet
@@ -38,40 +36,35 @@ class Model:
 
         if inference:
             self.device = torch.device('cpu')
-            self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=1).to(self.device)
+            self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=4).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 0:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=1).to(self.device)
+                    self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=4).to(self.device)
                     self.model = DP(self.model, device_ids=gpu,output_device=gpu[0])
                 else:
                     print("Number of GPUs will be used: ", torch.cuda.device_count() - 5)
                     self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=1).to(self.device)
+                    self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=4).to(self.device)
                     self.model = DP(self.model, device_ids=list(range(torch.cuda.device_count() - 5)))
             else:
                 self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=1).to(self.device)
+                self.model = UNet(hparams=self.hparams,n_channels=n_channels, n_classes=4).to(self.device)
                 print('Only one GPU is available')
 
 
-        # define the models
-        #summary(self.model, (input_size, n_channels))
-        #print(torch.cuda.is_available())
 
         self.metric = Metric()
         self.num_workers = 18
-        self.threshold = 0.5
 
         ########################## compile the model ###############################
 
         # define optimizer
-        #self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.hparams['lr'], momentum=0.1)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = Dice_loss() #nn.BCELoss(weight=None)
+        self.loss = nn.NLLLoss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
@@ -83,7 +76,8 @@ class Model:
             delta=self.hparams['min_delta'],
             is_maximize=True,
         )
-        # lr cheduler
+
+        # lr scheduler
         # self.scheduler = ReduceLROnPlateau(
         #     optimizer=self.optimizer,
         #     mode='max',
@@ -102,7 +96,6 @@ class Model:
 
         self.seed_everything(42)
 
-        self.postprocessing = PostProcessing(fold=self.hparams['start_fold'])
         self.scaler = torch.cuda.amp.GradScaler()
 
     def seed_everything(self, seed):
@@ -139,16 +132,16 @@ class Model:
                 self.optimizer.zero_grad()
                 # get model predictions
                 # TODO:
-                #pred = self.model([X_batch, X_s_batch])
                 pred,pred_s = self.model([X_batch,X_s_batch])
 
                 X_batch = X_batch.float().cpu().detach()
                 X_s_batch = X_s_batch.float().cpu().detach()
 
                 # process loss_1
-                pred = pred.view(-1, pred.shape[-1])
-                y_batch = y_batch.view(-1, y_batch.shape[-1])
-                train_loss = self.loss(pred, y_batch)
+                pred = pred.view(-1, pred.shape[1])
+                y_batch = y_batch.view(-1)
+
+                train_loss = self.loss(pred, y_batch.long())
 
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
@@ -171,8 +164,7 @@ class Model:
 
                 #sum up multi-head losses
                 # TODO:
-                # if epoch < 20:
-                train_loss = train_loss - self.alpha*adv_loss
+                #train_loss = train_loss - self.alpha*adv_loss
 
                 self.scaler.scale(train_loss).backward()  # train_loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
@@ -181,8 +173,6 @@ class Model:
                 self.scaler.step(self.optimizer)  # self.optimizer.step()
                 self.scaler.update()
 
-
-
                 train_true = torch.cat([train_true, y_batch], 0)
                 train_preds = torch.cat([train_preds, pred], 0)
 
@@ -190,10 +180,7 @@ class Model:
             train_preds = train_preds.numpy()
             train_true = train_true.numpy()
 
-            threshold = self.postprocessing.find_opt_thresold(train_true,train_preds)
-            self.postprocessing.update_threshold(threshold)
-            train_preds[np.where(train_preds >= threshold)] = 1
-            train_preds[np.where(train_preds < threshold)] = 0
+            train_preds = np.argmax(train_preds,axis=1)
             metric_train = self.metric.compute(labels=train_true, outputs=train_preds)
 
             # evaluate the model
@@ -218,13 +205,15 @@ class Model:
                     X_batch = X_batch.float().cpu().detach()
                     X_s_batch = X_s_batch.float().cpu().detach()
 
-                    pred = pred.reshape(-1, pred.shape[-1])
-                    y_batch = y_batch.view(-1, y_batch.shape[-1])
+
+
+                    pred = pred.view(-1, pred.shape[1])
+                    y_batch = y_batch.view(-1)
 
                     pred_s = pred_s.reshape(-1, pred_s.shape[-1])
                     y_s_batch = y_s_batch.view(-1, y_s_batch.shape[-1])
 
-                    avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
+                    avg_val_loss += self.loss(pred, y_batch.long()).item() / len(valid_loader)
                     y_batch = y_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
 
@@ -240,13 +229,12 @@ class Model:
             # evalueate metric
             val_preds = val_preds.numpy()
             val_true = val_true.numpy()
-            #val_true, val_preds = self.metric.find_opt_thresold(val_true, val_preds)
-            val_preds[np.where(val_preds >= threshold)] = 1
-            val_preds[np.where(val_preds < threshold)] = 0
-            metric_val = self.metric.compute(val_true, val_preds)
+
+            val_preds = np.argmax(val_preds, axis=1)
+            metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
 
             self.scheduler.step(metric_val)#avg_val_loss)
-            res = self.early_stopping(score=metric_val, model=self.model,threshold=threshold)
+            res = self.early_stopping(score=metric_val, model=self.model)
 
             # print statistics
             if self.hparams['verbose_train']:
@@ -288,7 +276,6 @@ class Model:
         writer.close()
 
         self.model = self.early_stopping.load_best_weights()
-        self.postprocessing.update_threshold(self.early_stopping.threshold)
 
         return True
 
