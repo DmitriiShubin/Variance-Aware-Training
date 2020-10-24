@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 import os
 import pandas as pd
+from time import time
 
 # pytorch
 import torch
@@ -60,7 +61,7 @@ class Model:
                 print('Only one GPU is available')
 
         self.metric = Metric()
-        self.num_workers = 4
+        self.num_workers = 32
 
         ########################## compile the model ###############################
 
@@ -177,6 +178,7 @@ class Model:
 
                 train_true = torch.cat([train_true, y_batch], 0)
                 train_preds = torch.cat([train_preds, pred], 0)
+
 
             # calc triaing metric
             train_preds = train_preds.numpy()

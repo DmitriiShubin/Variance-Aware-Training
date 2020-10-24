@@ -147,13 +147,12 @@ class UNet(nn.Module):
 
     def forward(self, x):
         x, x_s = x  # unpack training and adversarial images
+
         # main head (predictive)
         out, decoder_x = self.predictive_network(x)
 
         # additional head (adversarial)
-        # TODO:
         out_s = self.adversarial_network(decoder_x, x_s)
-        # TODO:
         return out, out_s
 
     def encoder(self, x):
