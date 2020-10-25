@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 # custom modules
 from metrics import Metric
 from utils.torchsummary import summary
+from loss_functions import Dice_loss
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 
@@ -60,14 +61,14 @@ class Model:
                 print('Only one GPU is available')
 
         self.metric = Metric()
-        self.num_workers = 18
+        self.num_workers = 32
 
         ########################## compile the model ###############################
 
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = nn.BCELoss(weight=None) #nn.NLLLoss()
+        self.loss = Dice_loss()#nn.BCELoss(weight=None) #nn.NLLLoss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
