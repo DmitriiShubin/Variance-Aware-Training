@@ -142,7 +142,7 @@ class Preprocessing:
 
         # reshape to match pytorch
         X = X.reshape(X.shape[2], X.shape[0], X.shape[1])
-        y = y.reshape(4, y.shape[0], y.shape[1])
+        y = y.reshape(y.shape[2], y.shape[0], y.shape[1])
 
         if label_process:
             return X, y

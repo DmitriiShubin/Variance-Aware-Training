@@ -78,6 +78,7 @@ class CVPipeline:
             y_val, pred_val = self.model.predict(valid)
 
             pred_val_processed = np.argmax(pred_val, axis=1)
+            y_val = np.argmax(y_val, axis=1)
 
             pred_val_processed = pred_val_processed.reshape(-1)
             y_val = y_val.reshape(-1)

@@ -186,7 +186,7 @@ class Model:
                     X_batch = X_batch.float().cpu().detach()
 
                     pred = pred.view(-1, pred.shape[1])
-                    y_batch = y_batch.view(-1)
+                    y_batch = y_batch.view(-1, y_batch.shape[1])
 
                     y_batch = y_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
@@ -199,6 +199,7 @@ class Model:
             val_true = val_true.numpy()
 
             val_preds = np.argmax(val_preds, axis=1)
+            val_true = np.argmax(val_true, axis=1)
             metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
 
             self.scheduler.step(metric_val)  # avg_val_loss)
