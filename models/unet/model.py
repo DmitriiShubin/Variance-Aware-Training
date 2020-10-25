@@ -139,8 +139,11 @@ class Model:
                 X_batch = X_batch.float().cpu().detach()
 
                 # process loss_1
-                pred = pred.permute(1,0,2,3).reshape(-1, pred.shape[0])
-                y_batch = y_batch.permute(1,0,2,3).reshape(-1, y_batch.shape[0])
+                pred = pred.permute(0, 2, 3, 1)
+                pred = pred.reshape(-1, pred.shape[-1])
+
+                y_batch = y_batch.permute(0, 2, 3, 1)
+                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
 
                 train_loss = self.loss(pred, y_batch)
 
@@ -186,7 +189,6 @@ class Model:
                     X_batch = X_batch.float().cpu().detach()
 
                     pred = pred.permute(0, 2, 3, 1)
-                    pred1 = pred.float().cpu().detach().numpy()
                     pred = pred.reshape(-1,pred.shape[-1])
 
                     y_batch = y_batch.permute(0, 2, 3, 1)
@@ -206,6 +208,9 @@ class Model:
             # val_true = np.argmax(val_true, axis=1)
             val_preds = np.argmax(val_preds, axis=1)
             val_true = np.argmax(val_true, axis=1)
+            # val_preds = np.eye(4, dtype=np.float32)[val_preds.astype(np.int8)]
+            # val_true = np.eye(4, dtype=np.float32)[val_true.astype(np.int8)]
+
 
             metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
 
