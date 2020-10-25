@@ -2,7 +2,7 @@ import ast
 import os
 
 # select the type of the model here
-from models.adv_unet import Model, hparams
+from models.unet import Model, hparams
 
 # names:
 DATA_PATH = './data/brats/MICCAI_BraTS2020_TrainingData/'

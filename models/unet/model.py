@@ -126,19 +126,16 @@ class Model:
             avg_loss_adv = 0.0
 
             train_preds, train_true = torch.Tensor([]), torch.Tensor([])
-            for (X_batch, y_batch, X_s_batch, y_s_batch) in tqdm(train_loader):
+            for (X_batch, y_batch, _, _) in tqdm(train_loader):
                 y_batch = y_batch.float().to(self.device)
                 X_batch = X_batch.float().to(self.device)
-                y_s_batch = y_s_batch.float().to(self.device)
-                X_s_batch = X_s_batch.float().to(self.device)
 
                 self.optimizer.zero_grad()
                 # get model predictions
                 # TODO:
-                pred, pred_s = self.model([X_batch, X_s_batch])
+                pred = self.model(X_batch)
 
                 X_batch = X_batch.float().cpu().detach()
-                X_s_batch = X_s_batch.float().cpu().detach()
 
                 # process loss_1
                 pred = pred.view(-1, pred.shape[1])
@@ -149,41 +146,26 @@ class Model:
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
 
-                # process loss_2
-                # TODO:
-                pred_s = pred_s.view(-1, pred_s.shape[-1])
-                y_s_batch = y_s_batch.view(-1, y_s_batch.shape[-1])
-                adv_loss = self.loss_s(pred_s, y_s_batch)
-
-                y_s_batch = y_s_batch.float().cpu().detach()
-                # TODO:
-                pred_s = pred_s.float().cpu().detach()
-
                 # calc loss
-                # TODO:
-                avg_loss_adv += adv_loss.item() / len(train_loader)
                 avg_loss += train_loss.item() / len(train_loader)
 
-                # sum up multi-head losses
-                # TODO:
-                # train_loss = train_loss - self.alpha*adv_loss
 
                 self.scaler.scale(train_loss).backward()  # train_loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
-                torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.5)
+                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
+                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
+                # torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.5)
                 self.scaler.step(self.optimizer)  # self.optimizer.step()
                 self.scaler.update()
 
-                train_true = torch.cat([train_true, y_batch], 0)
-                train_preds = torch.cat([train_preds, pred], 0)
+                # train_true = torch.cat([train_true, y_batch], 0)
+                # train_preds = torch.cat([train_preds, pred], 0)
 
             # calc triaing metric
-            train_preds = train_preds.numpy()
-            train_true = train_true.numpy()
-
-            train_preds = np.argmax(train_preds, axis=1)
-            metric_train = self.metric.compute(labels=train_true, outputs=train_preds)
+            # train_preds = train_preds.numpy()
+            # train_true = train_true.numpy()
+            #
+            # train_preds = np.argmax(train_preds, axis=1)
+            # metric_train = self.metric.compute(labels=train_true, outputs=train_preds)
 
             # evaluate the model
             print('Model evaluation...')
@@ -192,33 +174,24 @@ class Model:
             avg_val_loss = 0.0
             avg_val_loss_adv = 0.0
             with torch.no_grad():
-                for X_batch, y_batch, X_s_batch, y_s_batch in valid_loader:
+                for X_batch, y_batch,_,_ in valid_loader:
                     y_batch = y_batch.float().to(self.device)
                     X_batch = X_batch.float().to(self.device)
-                    X_s_batch = X_s_batch.float().to(self.device)
+
                     # TODO:
                     y_s_batch = y_s_batch.float().to(self.device)
 
                     # TODO:
                     # pred = self.model([X_batch, X_s_batch])
-                    pred, pred_s = self.model([X_batch, X_s_batch])
+                    pred, pred_s = self.model(X_batch)
 
                     X_batch = X_batch.float().cpu().detach()
-                    X_s_batch = X_s_batch.float().cpu().detach()
 
                     pred = pred.view(-1, pred.shape[1])
                     y_batch = y_batch.view(-1)
 
-                    pred_s = pred_s.reshape(-1, pred_s.shape[-1])
-                    y_s_batch = y_s_batch.view(-1, y_s_batch.shape[-1])
-
-                    avg_val_loss += self.loss(pred, y_batch.long()).item() / len(valid_loader)
                     y_batch = y_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
-
-                    avg_val_loss_adv += self.loss_s(pred_s, y_s_batch).item() / len(valid_loader)
-                    y_s_batch = y_s_batch.float().cpu().detach()
-                    pred_s = pred_s.float().cpu().detach()
 
                     val_true = torch.cat([val_true, y_batch], 0)
                     val_preds = torch.cat([val_preds, pred], 0)
@@ -248,8 +221,8 @@ class Model:
                     # TODO:
                     '| Val_loss adv: ',
                     avg_val_loss_adv,
-                    '| Metric_train: ',
-                    metric_train,
+                    # '| Metric_train: ',
+                    # metric_train,
                     '| Metric_val: ',
                     metric_val,
                     '| Current LR: ',
@@ -263,7 +236,8 @@ class Model:
                 epoch,
             )
 
-            writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            #writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            writer.add_scalars('Metric', {'Metric_val': metric_val}, epoch)
 
             if res == 2:
                 print("Early Stopping")
@@ -291,16 +265,14 @@ class Model:
         test_val = torch.Tensor([])
         print('Start generation of predictions')
         with torch.no_grad():
-            for i, (X_batch, y_batch, X_s_batch, _) in enumerate(tqdm(test_loader)):
+            for i, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
-                X_s_batch = X_s_batch.float().to(self.device)
+
 
                 # TODO:
                 # pred = self.model([X_batch, X_s_batch])
-                pred, pred_s = self.model([X_batch, X_s_batch])
-                pred_s = pred_s.float().cpu().detach()
+                pred = self.model(X_batch)
                 X_batch = X_batch.float().cpu().detach()
-                X_s_batch = X_s_batch.float().cpu().detach()
 
                 test_preds = torch.cat([test_preds, pred.cpu().detach()], 0)
                 test_val = torch.cat([test_val, y_batch.cpu().detach()], 0)
