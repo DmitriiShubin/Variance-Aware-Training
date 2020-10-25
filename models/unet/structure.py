@@ -77,6 +77,9 @@ class OutConv(nn.Module):
 class UNet(nn.Module):
     def __init__(self, hparams, n_channels, n_classes, bilinear=True):
         super(UNet, self).__init__()
+
+
+
         self.hparams = hparams['model']
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -149,7 +152,7 @@ class UNet(nn.Module):
         x1, x2, x3, x4, x5 = self.encoder(x)
         x = self.decoder(x1, x2, x3, x4, x5)
         logits = self.outc(x)
-        logits = torch.softmax(logits, dim=1)
+        logits = torch.nn.functional.softmax(logits, dim=1)
         return logits
 
     def encoder(self, x):

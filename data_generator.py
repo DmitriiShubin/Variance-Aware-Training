@@ -122,8 +122,8 @@ class Preprocessing:
         # X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
         # y = cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
-        if self.aug:
-            X, y = self.augmentations.apply_augs(X, y)
+        # if self.aug:
+        #     X, y = self.augmentations.apply_augs(X, y)
 
         # apply scaling
         for i in range(4):
@@ -133,16 +133,16 @@ class Preprocessing:
                 X[:, :, i] = X[:, :, i] - np.mean(X[:, :, i])
 
         y[np.where(y == 4)] = 3
-        y_binary = np.zeros((y.shape[0], y.shape[1], 4))
 
-        for i in range(4):
-            y_binary[np.where(y == i), i] = 1
+        a = np.where(y==1)
 
-        y = y_binary
+        y = np.eye(4, dtype=np.float32)[y.astype(np.int8)]
+        y = y.reshape(y.shape[0],y.shape[1],y.shape[-1])
 
         # reshape to match pytorch
-        X = X.reshape(X.shape[2], X.shape[0], X.shape[1])
-        y = y.reshape(y.shape[2], y.shape[0], y.shape[1])
+        X = X.transpose(2, 0, 1)
+        y = y.transpose(2, 0, 1)
+
 
         if label_process:
             return X, y
