@@ -178,12 +178,10 @@ class Model:
                     y_batch = y_batch.float().to(self.device)
                     X_batch = X_batch.float().to(self.device)
 
-                    # TODO:
-                    y_s_batch = y_s_batch.float().to(self.device)
 
                     # TODO:
                     # pred = self.model([X_batch, X_s_batch])
-                    pred, pred_s = self.model(X_batch)
+                    pred = self.model(X_batch)
 
                     X_batch = X_batch.float().cpu().detach()
 
