@@ -115,7 +115,7 @@ class Preprocessing:
     def __init__(self, aug):
 
         self.aug = aug
-        self.augmentations = Augmentations(0.5)
+        self.augmentations = Augmentations(0.0)
 
     def run(self, X, y, label_process=True):
 
