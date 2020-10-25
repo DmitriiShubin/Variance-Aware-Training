@@ -14,15 +14,15 @@ class Metric:
         labels = self.get_one_hot(labels)
         outputs = self.get_one_hot(outputs)
 
-        return jaccard_score(labels, outputs, average='micro')
+       # return jaccard_score(labels, outputs, average='micro')
 
         #
-        # intersection = np.sum(labels * outputs)
-        # union = np.sum(labels) + np.sum(outputs) - intersection
-        # if union == 0:
-        #     return 1
-        # else:
-        #     return intersection/union
+        intersection = np.sum(labels * outputs)
+        union = np.sum(labels) + np.sum(outputs) - intersection
+        if union == 0:
+            return 1
+        else:
+            return intersection/union
 
     def get_one_hot(self, y):
 
