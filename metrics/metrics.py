@@ -9,10 +9,11 @@ class Metric:
 
     # Compute the evaluation metric for the Challenge.
     def compute(self, labels, outputs,smooth=1):
-        intersection = np.sum(labels * outputs)
-        union = np.sum(labels) + np.sum(outputs)
-        dice = (2. * intersection + smooth) / (union + smooth)
-        return dice
+        return f1_score(labels,outputs,average='micro')
+        # intersection = np.sum(labels * outputs)
+        # union = np.sum(labels) + np.sum(outputs)
+        # dice = (2. * intersection + smooth) / (union + smooth)
+        # return dice
 
         #
         # intersection = np.sum(labels * outputs)

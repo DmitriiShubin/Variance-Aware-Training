@@ -139,8 +139,8 @@ class Model:
                 X_batch = X_batch.float().cpu().detach()
 
                 # process loss_1
-                pred = pred.view(-1, pred.shape[1])
-                y_batch = y_batch.view(-1, y_batch.shape[1])
+                pred = pred.permute(1,0,2,3).reshape(-1, pred.shape[0])
+                y_batch = y_batch.permute(1,0,2,3).reshape(-1, y_batch.shape[0])
 
                 train_loss = self.loss(pred, y_batch)
 
@@ -185,8 +185,12 @@ class Model:
 
                     X_batch = X_batch.float().cpu().detach()
 
-                    pred = pred.view(-1, pred.shape[1])
-                    y_batch = y_batch.view(-1, y_batch.shape[1])
+                    pred = pred.permute(0, 2, 3, 1)
+                    pred1 = pred.float().cpu().detach().numpy()
+                    pred = pred.reshape(-1,pred.shape[-1])
+
+                    y_batch = y_batch.permute(0, 2, 3, 1)
+                    y_batch = y_batch.reshape(-1,y_batch.shape[-1])
 
                     y_batch = y_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
@@ -198,8 +202,11 @@ class Model:
             val_preds = val_preds.numpy()
             val_true = val_true.numpy()
 
+            # val_preds = np.argmax(val_preds, axis=1)
+            # val_true = np.argmax(val_true, axis=1)
             val_preds = np.argmax(val_preds, axis=1)
             val_true = np.argmax(val_true, axis=1)
+
             metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
 
             self.scheduler.step(metric_val)  # avg_val_loss)
