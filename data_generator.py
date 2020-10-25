@@ -133,16 +133,18 @@ class Preprocessing:
                 X[:, :, i] = X[:, :, i] - np.mean(X[:, :, i])
 
         y[np.where(y == 4)] = 3
-        # y_binary = np.zeros((y.shape[0], y.shape[1], 4))
-        #
-        # for i in range(4):
-        #     a = list(np.where(y ==i))
-        #     a[-1]+=i
-        #     y_binary[a] = 1
+        y_binary = np.zeros((y.shape[0], y.shape[1], 4))
+
+        for i in range(4):
+            a = list(np.where(y ==i))
+            a[-1]+=i
+            y_binary[a] = 1
+
+        y = y_binary
 
         # reshape to match pytorch
         X = X.reshape(X.shape[2], X.shape[0], X.shape[1])
-        y = y.reshape(1, y.shape[0], y.shape[1])
+        y = y.reshape(4, y.shape[0], y.shape[1])
 
         if label_process:
             return X, y

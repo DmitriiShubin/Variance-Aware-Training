@@ -67,7 +67,7 @@ class Model:
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = nn.NLLLoss()
+        self.loss = nn.BCELoss(weight=None) #nn.NLLLoss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
@@ -139,9 +139,9 @@ class Model:
 
                 # process loss_1
                 pred = pred.view(-1, pred.shape[1])
-                y_batch = y_batch.view(-1)
+                y_batch = y_batch.view(-1, y_batch.shape[1])
 
-                train_loss = self.loss(pred, y_batch.long())
+                train_loss = self.loss(pred, y_batch)
 
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
@@ -180,7 +180,6 @@ class Model:
 
 
                     # TODO:
-                    # pred = self.model([X_batch, X_s_batch])
                     pred = self.model(X_batch)
 
                     X_batch = X_batch.float().cpu().detach()
