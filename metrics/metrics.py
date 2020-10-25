@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from sklearn.metrics import jaccard_score
 
-
 class Metric:
 
     # Compute the evaluation metric for the Challenge.
