@@ -176,15 +176,15 @@ class Model:
                 self.scaler.step(self.optimizer)  # self.optimizer.step()
                 self.scaler.update()
 
-                train_true = torch.cat([train_true, y_batch], 0)
-                train_preds = torch.cat([train_preds, pred], 0)
+                train_true =  torch.cat([train_true, y_batch], 0).type(torch.int8)
+                train_preds = torch.cat([train_preds, np.argmax(pred, axis=1)], 0).type(torch.int8)
 
 
             # calc triaing metric
-            train_preds = train_preds.numpy()
-            train_true = train_true.numpy()
+            train_preds = train_preds.numpy().astype(np.float32)
+            train_true = train_true.numpy().astype(np.float32)
 
-            train_preds = np.argmax(train_preds, axis=1)
+            #train_preds = np.argmax(train_preds, axis=1)
             metric_train = self.metric.compute(labels=train_true, outputs=train_preds)
 
             # evaluate the model
