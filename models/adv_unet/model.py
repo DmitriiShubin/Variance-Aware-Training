@@ -179,7 +179,6 @@ class Model:
                 # train_true =  torch.cat([train_true, y_batch], 0).type(torch.int8)
                 # train_preds = torch.cat([train_preds, np.argmax(pred, axis=1)], 0).type(torch.int8)
 
-
             # calc triaing metric
             # train_preds = train_preds.numpy().astype(np.float32)
             # train_true = train_true.numpy().astype(np.float32)
@@ -265,7 +264,7 @@ class Model:
                 epoch,
             )
 
-            #writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            # writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
             writer.add_scalars('Metric', {'Metric_val': metric_val}, epoch)
 
             if res == 2:

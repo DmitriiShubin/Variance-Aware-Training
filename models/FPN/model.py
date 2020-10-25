@@ -149,7 +149,6 @@ class Model:
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
 
-
                 self.scaler.scale(train_loss).backward()  # train_loss.backward()
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
@@ -174,10 +173,9 @@ class Model:
             avg_val_loss = 0.0
             avg_val_loss_adv = 0.0
             with torch.no_grad():
-                for X_batch, y_batch,_,_ in valid_loader:
+                for X_batch, y_batch, _, _ in valid_loader:
                     y_batch = y_batch.float().to(self.device)
                     X_batch = X_batch.float().to(self.device)
-
 
                     # TODO:
                     # pred = self.model([X_batch, X_s_batch])
@@ -234,7 +232,7 @@ class Model:
                 epoch,
             )
 
-            #writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            # writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
             writer.add_scalars('Metric', {'Metric_val': metric_val}, epoch)
 
             if res == 2:
@@ -265,7 +263,6 @@ class Model:
         with torch.no_grad():
             for i, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
-
 
                 # TODO:
                 # pred = self.model([X_batch, X_s_batch])

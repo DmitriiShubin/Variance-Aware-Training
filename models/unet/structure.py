@@ -78,8 +78,6 @@ class UNet(nn.Module):
     def __init__(self, hparams, n_channels, n_classes, bilinear=True):
         super(UNet, self).__init__()
 
-
-
         self.hparams = hparams['model']
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -171,4 +169,3 @@ class UNet(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         return x
-

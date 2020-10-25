@@ -5,23 +5,13 @@ import torch
 from tqdm import tqdm
 from sklearn.metrics import f1_score
 
+
 class Metric:
 
     # Compute the evaluation metric for the Challenge.
-    def compute(self, labels, outputs,smooth=1):
-        dice= f1_score(labels,outputs,average='macro')
-        # intersection = np.sum(labels * outputs,axis=1)
-        # union = np.sum(labels) + np.sum(outputs)
-        # dice = (2. * intersection + smooth) / (union + smooth)
+    def compute(self, labels, outputs, smooth=1):
+        dice = f1_score(labels, outputs, average='macro')
         return dice
-
-        #
-        # intersection = np.sum(labels * outputs)
-        # union = np.sum(labels) + np.sum(outputs) - intersection
-        # if union == 0:
-        #     return 1
-        # else:
-        #     return intersection/union
 
     def get_one_hot(self, y):
 

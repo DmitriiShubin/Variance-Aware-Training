@@ -68,7 +68,7 @@ class Model:
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = Dice_loss()#nn.BCELoss(weight=None) #nn.NLLLoss()
+        self.loss = Dice_loss()  # nn.BCELoss(weight=None) #nn.NLLLoss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
@@ -153,7 +153,6 @@ class Model:
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
 
-
                 self.scaler.scale(train_loss).backward()  # train_loss.backward()
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
@@ -178,10 +177,9 @@ class Model:
             avg_val_loss = 0.0
             avg_val_loss_adv = 0.0
             with torch.no_grad():
-                for X_batch, y_batch,_,_ in tqdm(valid_loader):
+                for X_batch, y_batch, _, _ in tqdm(valid_loader):
                     y_batch = y_batch.float().to(self.device)
                     X_batch = X_batch.float().to(self.device)
-
 
                     # TODO:
                     pred = self.model(X_batch)
@@ -189,10 +187,12 @@ class Model:
                     X_batch = X_batch.float().cpu().detach()
 
                     pred = pred.permute(0, 2, 3, 1)
-                    pred = pred.reshape(-1,pred.shape[-1])
+                    pred = pred.reshape(-1, pred.shape[-1])
 
                     y_batch = y_batch.permute(0, 2, 3, 1)
-                    y_batch = y_batch.reshape(-1,y_batch.shape[-1])
+                    y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+
+                    avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
                     y_batch = y_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
@@ -210,7 +210,6 @@ class Model:
             val_true = np.argmax(val_true, axis=1)
             # val_preds = np.eye(4, dtype=np.float32)[val_preds.astype(np.int8)]
             # val_true = np.eye(4, dtype=np.float32)[val_true.astype(np.int8)]
-
 
             metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
 
@@ -247,7 +246,7 @@ class Model:
                 epoch,
             )
 
-            #writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            # writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
             writer.add_scalars('Metric', {'Metric_val': metric_val}, epoch)
 
             if res == 2:
@@ -278,7 +277,6 @@ class Model:
         with torch.no_grad():
             for i, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
-
 
                 # TODO:
                 # pred = self.model([X_batch, X_s_batch])
