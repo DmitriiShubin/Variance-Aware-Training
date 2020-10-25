@@ -176,16 +176,16 @@ class Model:
                 self.scaler.step(self.optimizer)  # self.optimizer.step()
                 self.scaler.update()
 
-                train_true =  torch.cat([train_true, y_batch], 0).type(torch.int8)
-                train_preds = torch.cat([train_preds, np.argmax(pred, axis=1)], 0).type(torch.int8)
+                # train_true =  torch.cat([train_true, y_batch], 0).type(torch.int8)
+                # train_preds = torch.cat([train_preds, np.argmax(pred, axis=1)], 0).type(torch.int8)
 
 
             # calc triaing metric
-            train_preds = train_preds.numpy().astype(np.float32)
-            train_true = train_true.numpy().astype(np.float32)
-
-            #train_preds = np.argmax(train_preds, axis=1)
-            metric_train = self.metric.compute(labels=train_true, outputs=train_preds)
+            # train_preds = train_preds.numpy().astype(np.float32)
+            # train_true = train_true.numpy().astype(np.float32)
+            #
+            # #train_preds = np.argmax(train_preds, axis=1)
+            # metric_train = self.metric.compute(labels=train_true, outputs=train_preds)
 
             # evaluate the model
             print('Model evaluation...')
@@ -250,8 +250,8 @@ class Model:
                     # TODO:
                     '| Val_loss adv: ',
                     avg_val_loss_adv,
-                    '| Metric_train: ',
-                    metric_train,
+                    # '| Metric_train: ',
+                    # metric_train,
                     '| Metric_val: ',
                     metric_val,
                     '| Current LR: ',
@@ -265,7 +265,8 @@ class Model:
                 epoch,
             )
 
-            writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            #writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            writer.add_scalars('Metric', {'Metric_val': metric_val}, epoch)
 
             if res == 2:
                 print("Early Stopping")
