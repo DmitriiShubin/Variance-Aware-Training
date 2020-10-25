@@ -136,9 +136,7 @@ class Preprocessing:
         y_binary = np.zeros((y.shape[0], y.shape[1], 4))
 
         for i in range(4):
-            a = list(np.where(y ==i))
-            a[-1]+=i
-            y_binary[a] = 1
+            y_binary[np.where(y == i), i] = 1
 
         y = y_binary
 
