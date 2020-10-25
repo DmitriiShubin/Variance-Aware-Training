@@ -1,27 +1,26 @@
 import numpy as np, os, os.path, sys
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import torch
 from tqdm import tqdm
-from sklearn.metrics import jaccard_score
+from sklearn.metrics import f1_score
 
 class Metric:
 
     # Compute the evaluation metric for the Challenge.
-    def compute(self, labels, outputs):
-
-        labels = self.get_one_hot(labels)
-        outputs = self.get_one_hot(outputs)
-
-       # return jaccard_score(labels, outputs, average='micro')
+    def compute(self, labels, outputs,smooth=1):
+        intersection = np.sum(labels * outputs)
+        union = np.sum(labels) + np.sum(outputs)
+        dice = (2. * intersection + smooth) / (union + smooth)
+        return dice
 
         #
-        intersection = np.sum(labels * outputs)
-        union = np.sum(labels) + np.sum(outputs) - intersection
-        if union == 0:
-            return 1
-        else:
-            return intersection/union
+        # intersection = np.sum(labels * outputs)
+        # union = np.sum(labels) + np.sum(outputs) - intersection
+        # if union == 0:
+        #     return 1
+        # else:
+        #     return intersection/union
 
     def get_one_hot(self, y):
 
