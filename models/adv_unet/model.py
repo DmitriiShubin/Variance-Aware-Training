@@ -194,7 +194,7 @@ class Model:
             avg_val_loss = 0.0
             avg_val_loss_adv = 0.0
             with torch.no_grad():
-                for X_batch, y_batch, X_s_batch, y_s_batch in valid_loader:
+                for X_batch, y_batch, X_s_batch, y_s_batch in tqdm(valid_loader):
                     y_batch = y_batch.float().to(self.device)
                     X_batch = X_batch.float().to(self.device)
                     X_s_batch = X_s_batch.float().to(self.device)
