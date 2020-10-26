@@ -1,1 +1,1 @@
-python main.py --start_fold 3 --n_epochs 100 --batch_size 128 --lr 0.001 --gpu 4,5
+python main.py --start_fold 3 --n_epochs 100 --batch_size 128 --lr 0.001 --gpu 6,7
