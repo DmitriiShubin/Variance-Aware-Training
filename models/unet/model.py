@@ -85,18 +85,18 @@ class Model:
         )
 
         # lr scheduler
-        # self.scheduler = ReduceLROnPlateau(
-        #     optimizer=self.optimizer,
-        #     mode='max',
-        #     factor=0.2,
-        #     patience=3,
-        #     verbose=True,
-        #     threshold=self.hparams['min_delta'],
-        #     threshold_mode='abs',
-        #     cooldown=0,
-        #     eps=0,
-        # )
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=10, eta_min=1e-5, last_epoch=-1)
+        self.scheduler = ReduceLROnPlateau(
+            optimizer=self.optimizer,
+            mode='max',
+            factor=0.2,
+            patience=3,
+            verbose=True,
+            threshold=self.hparams['min_delta'],
+            threshold_mode='abs',
+            cooldown=0,
+            eps=0,
+        )
+        #self.scheduler = CosineAnnealingLR(self.optimizer, T_max=10, eta_min=1e-5, last_epoch=-1)
 
         self.seed_everything(42)
 
