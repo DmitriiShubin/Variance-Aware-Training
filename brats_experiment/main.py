@@ -3,8 +3,8 @@ import click
 import time
 
 # import modules
-from brats_experiment.cv_pipeline import CVPipeline
-from brats_experiment.config import hparams
+from cv_pipeline import CVPipeline
+from config import hparams
 
 
 @click.command()

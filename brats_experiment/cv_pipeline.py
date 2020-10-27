@@ -7,11 +7,11 @@ import pandas as pd
 import torch
 import os
 from tqdm import tqdm
-from brats_experiment.config import SPLIT_TABLE_PATH, SPLIT_TABLE_NAME, DEBUG_FOLDER, Model
+from config import SPLIT_TABLE_PATH, SPLIT_TABLE_NAME, DEBUG_FOLDER, Model
 
-from brats_experiment.data_generator import Dataset_train
-from brats_experiment.metrics import Metric
-from brats_experiment.postprocessing import PostProcessing
+from data_generator import Dataset_train
+from metrics import Metric
+from postprocessing import PostProcessing
 
 
 def seed_everything(seed):

@@ -1,2 +1,2 @@
-from brats_experiment.models.adv_unet.model import Model
-from brats_experiment.models.adv_unet.model_config import hparams
+from models.adv_unet.model import Model
+from models.adv_unet.model_config import hparams

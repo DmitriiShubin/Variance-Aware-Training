@@ -20,7 +20,7 @@ from torch.nn.parallel import DataParallel as DP
 
 
 # model
-from brats_experiment.models.unet.structure import UNet
+from models.unet.structure import UNet
 
 
 class Model:

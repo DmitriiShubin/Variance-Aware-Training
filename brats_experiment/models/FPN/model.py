@@ -20,7 +20,7 @@ from torch.nn.parallel import DataParallel as DP
 
 
 # model
-from brats_experiment.models.FPN.structure import FPN
+from models.FPN.structure import FPN
 
 
 class Model:

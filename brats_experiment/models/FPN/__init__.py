@@ -1,2 +1,2 @@
-from brats_experiment.models.FPN.model import Model
-from brats_experiment.models.FPN.model_config import hparams
+from models.FPN.model import Model
+from models.FPN.model_config import hparams

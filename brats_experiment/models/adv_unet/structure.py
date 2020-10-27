@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from brats_experiment.loss_functions import AngularPenaltySMLoss
+from loss_functions import AngularPenaltySMLoss
 
 
 class DoubleConv(nn.Module):

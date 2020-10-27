@@ -7,7 +7,7 @@ import random
 from scipy import signal
 import cv2
 import albumentations as A
-from brats_experiment.config import DATA_PATH
+from config import DATA_PATH
 from time import time
 
 # pytorch
