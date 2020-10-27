@@ -19,7 +19,6 @@ hparams['model_name']='Unet'
 hparams['model_path'] = './data/model_weights'
 hparams['model_path'] += '/unet_model'
 hparams['checkpoint_path'] = hparams['model_path'] + '/checkpoint'
-hparams['model_name'] = '/unet'
 
 for path in [hparams['model_path'], hparams['checkpoint_path']]:
     os.makedirs(path, exist_ok=True)

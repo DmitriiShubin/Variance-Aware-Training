@@ -17,9 +17,8 @@ hparams['model_name']='Adv FPN'
 
 # directories
 hparams['model_path'] = './data/model_weights'
-hparams['model_path'] += '/unet_model'
+hparams['model_path'] += '/adv_FPN_model'
 hparams['checkpoint_path'] = hparams['model_path'] + '/checkpoint'
-hparams['model_name'] = '/unet'
 
 for path in [hparams['model_path'], hparams['checkpoint_path']]:
     os.makedirs(path, exist_ok=True)
