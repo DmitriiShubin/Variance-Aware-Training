@@ -12,10 +12,10 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from brats_experiment.metrics import Metric
-from brats_experiment.utils.torchsummary import summary
-from brats_experiment.loss_functions import Dice_loss
-from brats_experiment.utils.pytorchtools import EarlyStopping
+from metrics import Metric
+from utils.torchsummary import summary
+from loss_functions import Dice_loss
+from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 
 
@@ -96,7 +96,7 @@ class Model:
         #     cooldown=0,
         #     eps=0,
         # )
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=10, eta_min=1e-5, last_epoch=-1)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=5, eta_min=1e-9, last_epoch=-1)
 
         self.seed_everything(42)
 

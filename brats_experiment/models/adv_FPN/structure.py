@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from brats_experiment.loss_functions import AngularPenaltySMLoss
+from loss_functions import AngularPenaltySMLoss
 from segmentation_models_pytorch import FPN as smp_FPN
 
 class OutConv(nn.Module):

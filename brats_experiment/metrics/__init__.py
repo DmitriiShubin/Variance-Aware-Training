@@ -1,1 +1,1 @@
-from brats_experiment.metrics.metrics import Metric
+from metrics.metrics import Metric
