@@ -95,14 +95,14 @@ class CVPipeline:
                 + '.pt'
             )
 
-            images_list = valid.images_list.copy()
-
-            for index, record in enumerate(images_list):
-                a = record.split('/')
-                images_list[index] = f'{a[-2]}/{a[-1]}'
-
-            # create a dictionary for debugging
-            self.save_debug_data(pred_val, images_list)
+            # images_list = valid.images_list.copy()
+            #
+            # for index, record in enumerate(images_list):
+            #     a = record.split('/')
+            #     images_list[index] = f'{a[-2]}/{a[-1]}'
+            #
+            # # create a dictionary for debugging
+            # self.save_debug_data(pred_val, images_list)
 
         return fold_score
 
