@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 import os
 import pandas as pd
+import gc
 
 # pytorch
 import torch
@@ -215,8 +216,10 @@ class Model:
             val_true = np.argmax(val_true, axis=1)
 
             metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
+            del val_true,val_preds
+            gc.collect()
 
-            self.scheduler.step(metric_val)  # avg_val_loss)
+            self.scheduler.step(metric_val)
             res = self.early_stopping(score=metric_val, model=self.model)
 
             # print statistics
