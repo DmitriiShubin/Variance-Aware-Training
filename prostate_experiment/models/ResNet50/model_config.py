@@ -13,13 +13,12 @@ hparams['patience'] = 10  # wait for n epoches for emprovement
 hparams['n_fold'] = 5  # number of folds for cross-validation
 hparams['verbose'] = True  # print score or not
 hparams['start_fold'] = 1
-hparams['model_name']='Unet'
+hparams['model_name']='ResNet50'
 
 # directories
 hparams['model_path'] = './data/model_weights'
 hparams['model_path'] += '/ResNet50'
 hparams['checkpoint_path'] = hparams['model_path'] + '/checkpoint'
-hparams['model_name'] = 'ResNet50'
 
 for path in [hparams['model_path'], hparams['checkpoint_path']]:
     os.makedirs(path, exist_ok=True)

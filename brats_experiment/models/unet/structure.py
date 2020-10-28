@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from loss_functions import AngularPenaltySMLoss
-
+from time import time
 
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""

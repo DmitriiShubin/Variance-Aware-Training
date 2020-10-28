@@ -144,10 +144,8 @@ class Model:
                 # process loss_1
                 pred = pred.permute(0, 2, 3, 1)
                 pred = pred.reshape(-1, pred.shape[-1])
-
                 y_batch = y_batch.permute(0, 2, 3, 1)
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
-
                 train_loss = self.loss(pred, y_batch)
 
                 y_batch = y_batch.float().cpu().detach()
@@ -156,9 +154,7 @@ class Model:
                 # process loss_2
                 pred_s = pred_s.reshape(-1)
                 y_s_batch = y_s_batch.reshape(-1)
-
                 adv_loss = self.loss_s(pred_s, y_s_batch)
-
                 y_s_batch = y_s_batch.float().cpu().detach()
                 pred_s = pred_s.float().cpu().detach()
 
@@ -169,11 +165,8 @@ class Model:
 
                 train_loss = train_loss + self.alpha*adv_loss
 
-                self.scaler.scale(train_loss).backward()  # train_loss.backward()
-                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
-                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
-                # torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.5)
-                self.scaler.step(self.optimizer)  # self.optimizer.step()
+                self.scaler.scale(train_loss).backward()
+                self.scaler.step(self.optimizer)
                 self.scaler.update()
 
 

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from loss_functions import AngularPenaltySMLoss
-
+from time import time
 
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
@@ -146,6 +146,7 @@ class UNet(nn.Module):
         self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
 
     def forward(self, x):
+        start = time()
         x, x_s = x  # unpack training and adversarial images
 
         # main head (predictive)
@@ -153,6 +154,7 @@ class UNet(nn.Module):
 
         # additional head (adversarial)
         out_s = self.adversarial_network(decoder_x, x_s)
+
         return out, out_s
 
     def encoder(self, x):
