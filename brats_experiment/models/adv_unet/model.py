@@ -139,8 +139,8 @@ class Model:
                 # TODO:
                 pred,pred_s = self.model([X_batch,X_s_batch])
 
-                X_batch = X_batch.float().cpu().detach()
-                X_s_batch = X_s_batch.float().cpu().detach()
+                X_batch = X_batch.cpu().detach()
+                X_s_batch = X_s_batch.cpu().detach()
 
                 # process loss_1
                 pred = pred.permute(0, 2, 3, 1)
@@ -149,15 +149,15 @@ class Model:
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
                 train_loss = self.loss(pred, y_batch)
 
-                y_batch = y_batch.float().cpu().detach()
-                pred = pred.float().cpu().detach()
+                y_batch = y_batch.cpu().detach()
+                pred = pred.cpu().detach()
 
                 # process loss_2
                 pred_s = pred_s.reshape(-1)
                 y_s_batch = y_s_batch.reshape(-1)
                 adv_loss = self.loss_s(pred_s, y_s_batch)
-                y_s_batch = y_s_batch.float().cpu().detach()
-                pred_s = pred_s.float().cpu().detach()
+                y_s_batch = y_s_batch.cpu().detach()
+                pred_s = pred_s.cpu().detach()
 
 
                 # calc loss
@@ -188,8 +188,8 @@ class Model:
                     # TODO:
                     pred,pred_s = self.model([X_batch,X_s_batch])
 
-                    X_batch = X_batch.float().cpu().detach()
-                    X_s_batch = X_s_batch.float().cpu().detach()
+                    X_batch = X_batch.cpu().detach()
+                    X_s_batch = X_s_batch.cpu().detach()
 
                     pred = pred.permute(0, 2, 3, 1)
                     pred = pred.reshape(-1, pred.shape[-1])
@@ -200,10 +200,10 @@ class Model:
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
                     avg_val_loss_adv += self.loss_s(pred_s, y_s_batch).item() / len(valid_loader)
 
-                    y_s_batch = y_s_batch.float().cpu().detach()
-                    y_batch = y_batch.float().cpu().detach()
-                    pred = pred.float().cpu().detach()
-                    pred_s = pred_s.float().cpu().detach()
+                    y_s_batch = y_s_batch.cpu().detach()
+                    y_batch = y_batch.cpu().detach()
+                    pred = pred.cpu().detach()
+                    pred_s = pred_s.cpu().detach()
 
                     val_true = torch.cat([val_true, y_batch], 0)
                     val_preds = torch.cat([val_preds, pred], 0)
@@ -288,8 +288,8 @@ class Model:
                 # TODO:
                 # pred = self.model([X_batch, X_s_batch])
                 pred,pred_s = self.model([X_batch,X_s_batch])
-                X_batch = X_batch.float().cpu().detach()
-                pred_s = pred_s.float().cpu().detach()
+                X_batch = X_batch.cpu().detach()
+                pred_s = pred_s.cpu().detach()
 
                 test_preds = torch.cat([test_preds, pred.cpu().detach()], 0)
                 test_val = torch.cat([test_val, y_batch.cpu().detach()], 0)
