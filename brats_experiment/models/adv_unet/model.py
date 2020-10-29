@@ -2,8 +2,6 @@
 import numpy as np
 from tqdm import tqdm
 import os
-import pandas as pd
-import gc
 
 # pytorch
 import torch
@@ -136,8 +134,7 @@ class Model:
 
                 self.optimizer.zero_grad()
                 # get model predictions
-                # TODO:
-                pred,pred_s = self.model([X_batch,X_s_batch])
+                pred, pred_s = self.model([X_batch, X_s_batch])
 
                 X_batch = X_batch.cpu().detach()
                 X_s_batch = X_s_batch.cpu().detach()
@@ -154,31 +151,31 @@ class Model:
                 # process loss_2
                 pred_s = pred_s.reshape(-1)
                 y_s_batch = y_s_batch.reshape(-1)
-                # print(pred_s)
-                # print(y_s_batch)
                 adv_loss = self.loss_s(pred_s, y_s_batch)
                 y_s_batch = y_s_batch.cpu().detach()
                 pred_s = pred_s.cpu().detach()
 
-
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
-                avg_loss_adv += adv_loss.item()/len(train_loader)
+                avg_loss_adv += adv_loss.item() / len(train_loader)
 
-                train_loss = train_loss + self.alpha*adv_loss
+                train_loss = train_loss + self.alpha * adv_loss
 
-                # self.scaler.scale(train_loss).backward()
-                # self.scaler.step(self.optimizer)
-                # self.scaler.update()
                 train_loss.backward()
                 self.optimizer.step()
 
+                y_batch = y_batch.numpy()
+                pred = pred.numpy()
+                y_batch = np.argmax(y_batch, axis=1)
+                pred = np.argmax(pred, axis=1)
 
+                self.metric.calc_cm(labels=y_batch, outputs=pred)
+
+            metric_train = self.metric.compute()
 
             # evaluate the model
             print('Model evaluation...')
             self.model.eval()
-            val_preds, val_true = torch.Tensor([]), torch.Tensor([])
             avg_val_loss = 0.0
             avg_val_loss_adv = 0.0
             with torch.no_grad():
@@ -188,8 +185,7 @@ class Model:
                     X_s_batch = X_s_batch.float().to(self.device)
                     y_s_batch = y_s_batch.float().to(self.device)
 
-                    # TODO:
-                    pred,pred_s = self.model([X_batch,X_s_batch])
+                    pred, pred_s = self.model([X_batch, X_s_batch])
 
                     X_batch = X_batch.cpu().detach()
                     X_s_batch = X_s_batch.cpu().detach()
@@ -208,8 +204,6 @@ class Model:
                     pred = pred.cpu().detach()
                     pred_s = pred_s.cpu().detach()
 
-                    # val_true = torch.cat([val_true, y_batch], 0)
-                    # val_preds = torch.cat([val_preds, pred], 0)
                     y_batch = y_batch.numpy()
                     pred = pred.numpy()
                     y_batch = np.argmax(y_batch, axis=1)
@@ -217,16 +211,7 @@ class Model:
 
                     self.metric.calc_cm(labels=y_batch, outputs=pred)
 
-            # evalueate metric
-            # val_preds = val_preds.numpy()
-            # val_true = val_true.numpy()
-            #
-            # val_preds = np.argmax(val_preds, axis=1)
-            # val_true = np.argmax(val_true, axis=1)
-
-            metric_val = self.metric.compute()#(labels=val_true, outputs=val_preds)
-            del val_true,val_preds
-            gc.collect()
+            metric_val = self.metric.compute()
 
             self.scheduler.step(metric_val)
             res = self.early_stopping(score=metric_val, model=self.model)
@@ -238,16 +223,14 @@ class Model:
                     epoch + 1,
                     '| Train_loss main: ',
                     avg_loss,
-                    # TODO:
                     '| Train_loss adv: ',
                     avg_loss_adv,
                     '| Val_loss main: ',
                     avg_val_loss,
-                    # TODO:
                     '| Val_loss adv: ',
                     avg_val_loss_adv,
-                    # '| Metric_train: ',
-                    # metric_train,
+                    '| Metric_train: ',
+                    metric_train,
                     '| Metric_val: ',
                     metric_val,
                     '| Current LR: ',
@@ -261,8 +244,7 @@ class Model:
                 epoch,
             )
 
-            # writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
-            writer.add_scalars('Metric', {'Metric_val': metric_val}, epoch)
+            writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
 
             if res == 2:
                 print("Early Stopping")
@@ -296,7 +278,7 @@ class Model:
 
                 # TODO:
                 # pred = self.model([X_batch, X_s_batch])
-                pred,pred_s = self.model([X_batch,X_s_batch])
+                pred, pred_s = self.model([X_batch, X_s_batch])
                 X_batch = X_batch.cpu().detach()
                 pred_s = pred_s.cpu().detach()
 

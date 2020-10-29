@@ -2,7 +2,6 @@
 import numpy as np
 from tqdm import tqdm
 import os
-import pandas as pd
 
 # pytorch
 import torch
@@ -13,7 +12,6 @@ from torch.utils.data import DataLoader
 
 # custom modules
 from metrics import Metric
-from utils.torchsummary import summary
 from loss_functions import Dice_loss
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
@@ -61,7 +59,7 @@ class Model:
                 print('Only one GPU is available')
 
         self.metric = Metric()
-        self.num_workers = 32
+        self.num_workers = 16
 
         ########################## compile the model ###############################
 
@@ -133,7 +131,6 @@ class Model:
 
                 self.optimizer.zero_grad()
                 # get model predictions
-                # TODO:
                 pred = self.model(X_batch)
 
                 X_batch = X_batch.float().cpu().detach()
@@ -153,26 +150,21 @@ class Model:
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
 
-                # self.scaler.scale(train_loss).backward()
-                # self.scaler.step(self.optimizer)
-                # self.scaler.update()
                 train_loss.backward()
                 self.optimizer.step()
 
-                # train_true = torch.cat([train_true, y_batch], 0)
-                # train_preds = torch.cat([train_preds, pred], 0)
+                y_batch = y_batch.numpy()
+                pred = pred.numpy()
+                y_batch = np.argmax(y_batch, axis=1)
+                pred = np.argmax(pred, axis=1)
 
-            # calc triaing metric
-            # train_preds = train_preds.numpy()
-            # train_true = train_true.numpy()
-            #
-            # train_preds = np.argmax(train_preds, axis=1)
-            # metric_train = self.metric.compute(labels=train_true, outputs=train_preds)
+                self.metric.calc_cm(labels=y_batch, outputs=pred)
+
+            metric_train = self.metric.compute()
 
             # evaluate the model
             print('Model evaluation...')
             self.model.eval()
-            val_preds, val_true = torch.Tensor([]), torch.Tensor([])
             avg_val_loss = 0.0
             with torch.no_grad():
                 for X_batch, y_batch, _, _ in tqdm(valid_loader):
@@ -181,7 +173,6 @@ class Model:
 
                     # TODO:
                     pred = self.model(X_batch)
-
                     X_batch = X_batch.float().cpu().detach()
 
                     pred = pred.permute(0, 2, 3, 1)
@@ -195,23 +186,16 @@ class Model:
                     y_batch = y_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
 
-                    val_true = torch.cat([val_true, y_batch], 0)
-                    val_preds = torch.cat([val_preds, pred], 0)
+                    y_batch = y_batch.numpy()
+                    pred = pred.numpy()
+                    y_batch = np.argmax(y_batch, axis=1)
+                    pred = np.argmax(pred, axis=1)
 
-            # evalueate metric
-            val_preds = val_preds.numpy()
-            val_true = val_true.numpy()
+                    self.metric.calc_cm(labels=y_batch, outputs=pred)
 
-            # val_preds = np.argmax(val_preds, axis=1)
-            # val_true = np.argmax(val_true, axis=1)
-            val_preds = np.argmax(val_preds, axis=1)
-            val_true = np.argmax(val_true, axis=1)
-            # val_preds = np.eye(4, dtype=np.float32)[val_preds.astype(np.int8)]
-            # val_true = np.eye(4, dtype=np.float32)[val_true.astype(np.int8)]
+            metric_val = self.metric.compute()
 
-            metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
-
-            self.scheduler.step(metric_val)  # avg_val_loss)
+            self.scheduler.step(metric_val)
             res = self.early_stopping(score=metric_val, model=self.model)
 
             # print statistics
@@ -223,6 +207,8 @@ class Model:
                     avg_loss,
                     '| Val_loss main: ',
                     avg_val_loss,
+                    '| Metric_train: ',
+                    metric_train,
                     '| Metric_val: ',
                     metric_val,
                     '| Current LR: ',
@@ -236,8 +222,7 @@ class Model:
                 epoch,
             )
 
-            # writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
-            writer.add_scalars('Metric', {'Metric_val': metric_val}, epoch)
+            writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
 
             if res == 2:
                 print("Early Stopping")
@@ -268,8 +253,6 @@ class Model:
             for i, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
 
-                # TODO:
-                # pred = self.model([X_batch, X_s_batch])
                 pred = self.model(X_batch)
                 X_batch = X_batch.float().cpu().detach()
 
@@ -280,8 +263,6 @@ class Model:
 
     def model_save(self, model_path):
         torch.save(self.model.state_dict(), model_path)
-        # self.model.module.state_dict(), PATH
-        # torch.save(self.model, model_path)
         return True
 
     def model_load(self, model_path):

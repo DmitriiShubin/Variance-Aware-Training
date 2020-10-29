@@ -3,6 +3,7 @@ import torch.nn as nn
 from loss_functions import AngularPenaltySMLoss
 from segmentation_models_pytorch import FPN as smp_FPN
 
+
 class OutConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(OutConv, self).__init__()
@@ -15,23 +16,24 @@ class OutConv(nn.Module):
 class FPN(smp_FPN):
     def __init__(self, hparams, n_channels, n_classes):
         super(FPN, self).__init__(
-
             encoder_name='resnet34',
-            encoder_depth = 4,
+            encoder_depth=4,
             encoder_weights=None,
             decoder_pyramid_channels=hparams['model']['n_filters_input'],
             decoder_segmentation_channels=hparams['model']['n_filters_input'],
             decoder_dropout=hparams['model']['dropout'],
             in_channels=n_channels,
-
         )
 
-        self.conv2d = nn.Conv2d(hparams['model']['n_filters_input'], hparams['model']['n_filters_input'], kernel_size=1, padding=0)
+        self.conv2d = nn.Conv2d(
+            hparams['model']['n_filters_input'],
+            hparams['model']['n_filters_input'],
+            kernel_size=1,
+            padding=0,
+        )
         self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
 
         self.hparams = hparams['model']
-
-
 
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
@@ -56,6 +58,6 @@ class FPN(smp_FPN):
 
         x = self.outc(x)
 
-        x = torch.softmax(x,dim=1)
+        x = torch.softmax(x, dim=1)
 
         return x

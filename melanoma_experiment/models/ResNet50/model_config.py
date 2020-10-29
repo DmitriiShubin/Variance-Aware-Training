@@ -13,7 +13,7 @@ hparams['patience'] = 10  # wait for n epoches for emprovement
 hparams['n_fold'] = 5  # number of folds for cross-validation
 hparams['verbose'] = True  # print score or not
 hparams['start_fold'] = 1
-hparams['model_name']='ResNet50'
+hparams['model_name'] = 'ResNet50'
 
 # directories
 hparams['model_path'] = './data/model_weights'

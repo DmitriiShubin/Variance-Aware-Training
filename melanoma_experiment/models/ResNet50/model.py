@@ -57,7 +57,9 @@ class Model:
                     self.model = DP(self.model, device_ids=list(range(torch.cuda.device_count() - 5)))
             else:
                 self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                self.model = ResNet50(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(self.device)
+                self.model = ResNet50(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(
+                    self.device
+                )
                 print('Only one GPU is available')
 
         self.metric = Metric()

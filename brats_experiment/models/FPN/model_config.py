@@ -13,7 +13,7 @@ hparams['patience'] = 20  # wait for n epoches for emprovement
 hparams['n_fold'] = 5  # number of folds for cross-validation
 hparams['verbose'] = True  # print score or not
 hparams['start_fold'] = 0
-hparams['model_name']='FPN'
+hparams['model_name'] = 'FPN'
 
 # directories
 hparams['model_path'] = './data/model_weights'

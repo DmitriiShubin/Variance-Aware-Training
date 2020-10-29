@@ -56,9 +56,7 @@ class Dataset_train(Dataset):
         X = np.append(X, np.load(self.images_list[id] + '_t1ce.npy'), axis=2)
         X = np.append(X, np.load(self.images_list[id] + '_t2.npy'), axis=2)
 
-        y = np.load(self.images_list[id] + '_seg.npy').astype(
-            np.float32
-        ) 
+        y = np.load(self.images_list[id] + '_seg.npy').astype(np.float32)
         y_ = y.copy()
 
         X, y = self.preprocessing.run(X=X, y=y)

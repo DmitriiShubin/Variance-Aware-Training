@@ -136,7 +136,7 @@ class Model:
                 self.optimizer.zero_grad()
                 # get model predictions
                 # TODO:
-                pred,pred_s = self.model([X_batch,X_s_batch])
+                pred, pred_s = self.model([X_batch, X_s_batch])
 
                 X_batch = X_batch.float().cpu().detach()
                 X_s_batch = X_s_batch.float().cpu().detach()
@@ -162,12 +162,11 @@ class Model:
                 y_s_batch = y_s_batch.float().cpu().detach()
                 pred_s = pred_s.float().cpu().detach()
 
-
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
-                avg_loss_adv += adv_loss.item()/len(train_loader)
+                avg_loss_adv += adv_loss.item() / len(train_loader)
 
-                train_loss = train_loss + self.alpha*adv_loss
+                train_loss = train_loss + self.alpha * adv_loss
 
                 self.scaler.scale(train_loss).backward()  # train_loss.backward()
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
@@ -200,7 +199,7 @@ class Model:
                     y_s_batch = y_s_batch.float().to(self.device)
 
                     # TODO:
-                    pred,pred_s = self.model([X_batch,X_s_batch])
+                    pred, pred_s = self.model([X_batch, X_s_batch])
 
                     X_batch = X_batch.float().cpu().detach()
                     X_s_batch = X_s_batch.float().cpu().detach()

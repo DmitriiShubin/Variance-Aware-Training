@@ -137,7 +137,7 @@ class Model:
                 self.optimizer.zero_grad()
                 # get model predictions
                 # TODO:
-                pred,pred_s = self.model([X_batch,X_s_batch])
+                pred, pred_s = self.model([X_batch, X_s_batch])
 
                 X_batch = X_batch.cpu().detach()
                 X_s_batch = X_s_batch.cpu().detach()
@@ -159,18 +159,15 @@ class Model:
                 y_s_batch = y_s_batch.cpu().detach()
                 pred_s = pred_s.cpu().detach()
 
-
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
-                avg_loss_adv += adv_loss.item()/len(train_loader)
+                avg_loss_adv += adv_loss.item() / len(train_loader)
 
-                train_loss = train_loss + self.alpha*adv_loss
+                train_loss = train_loss + self.alpha * adv_loss
 
                 self.scaler.scale(train_loss).backward()
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
-
-
 
             # evaluate the model
             print('Model evaluation...')
@@ -186,7 +183,7 @@ class Model:
                     y_s_batch = y_s_batch.float().to(self.device)
 
                     # TODO:
-                    pred,pred_s = self.model([X_batch,X_s_batch])
+                    pred, pred_s = self.model([X_batch, X_s_batch])
 
                     X_batch = X_batch.cpu().detach()
                     X_s_batch = X_s_batch.cpu().detach()
@@ -216,7 +213,7 @@ class Model:
             val_true = np.argmax(val_true, axis=1)
 
             metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
-            del val_true,val_preds
+            del val_true, val_preds
             gc.collect()
 
             self.scheduler.step(metric_val)
@@ -287,7 +284,7 @@ class Model:
 
                 # TODO:
                 # pred = self.model([X_batch, X_s_batch])
-                pred,pred_s = self.model([X_batch,X_s_batch])
+                pred, pred_s = self.model([X_batch, X_s_batch])
                 X_batch = X_batch.cpu().detach()
                 pred_s = pred_s.cpu().detach()
 
