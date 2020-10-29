@@ -62,7 +62,7 @@ class Model:
                 print('Only one GPU is available')
 
         self.metric = Metric()
-        self.num_workers = 9
+        self.num_workers = 3
 
         ########################## compile the model ###############################
 
@@ -208,17 +208,23 @@ class Model:
                     pred = pred.cpu().detach()
                     pred_s = pred_s.cpu().detach()
 
-                    val_true = torch.cat([val_true, y_batch], 0)
-                    val_preds = torch.cat([val_preds, pred], 0)
+                    # val_true = torch.cat([val_true, y_batch], 0)
+                    # val_preds = torch.cat([val_preds, pred], 0)
+                    y_batch = y_batch.numpy()
+                    pred = pred.numpy()
+                    y_batch = np.argmax(y_batch, axis=1)
+                    pred = np.argmax(pred, axis=1)
+
+                    self.metric.calc_cm(labels=y_batch, outputs=pred)
 
             # evalueate metric
-            val_preds = val_preds.numpy()
-            val_true = val_true.numpy()
+            # val_preds = val_preds.numpy()
+            # val_true = val_true.numpy()
+            #
+            # val_preds = np.argmax(val_preds, axis=1)
+            # val_true = np.argmax(val_true, axis=1)
 
-            val_preds = np.argmax(val_preds, axis=1)
-            val_true = np.argmax(val_true, axis=1)
-
-            metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
+            metric_val = self.metric.compute()#(labels=val_true, outputs=val_preds)
             del val_true,val_preds
             gc.collect()
 

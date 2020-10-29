@@ -188,7 +188,7 @@ class Model:
             # evaluate the model
             print('Model evaluation...')
             self.model.eval()
-            val_preds, val_true = torch.Tensor([]), torch.Tensor([])
+            #val_preds, val_true = torch.Tensor([]), torch.Tensor([])
             avg_val_loss = 0.0
             avg_val_loss_adv = 0.0
             with torch.no_grad():
@@ -218,8 +218,15 @@ class Model:
                     pred = pred.float().cpu().detach()
                     pred_s = pred_s.float().cpu().detach()
 
-                    val_true = torch.cat([val_true, y_batch], 0)
-                    val_preds = torch.cat([val_preds, pred], 0)
+                    y_batch = y_batch.numpy()
+                    pred = pred.numpy()
+                    y_batch = np.argmax(y_batch, axis=1)
+                    pred = np.argmax(pred, axis=1)
+
+                    self.metric.calc_cm(labels=y_batch, outputs=pred)
+
+                    # val_true = torch.cat([val_true, y_batch], 0)
+                    # val_preds = torch.cat([val_preds, pred], 0)
 
             # evalueate metric
             val_preds = val_preds.numpy()
@@ -232,7 +239,7 @@ class Model:
             # val_preds = np.eye(4, dtype=np.float32)[val_preds.astype(np.int8)]
             # val_true = np.eye(4, dtype=np.float32)[val_true.astype(np.int8)]
 
-            metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
+            metric_val = self.metric.compute()#labels=val_true, outputs=val_preds)
 
             self.scheduler.step(metric_val)  # avg_val_loss)
             res = self.early_stopping(score=metric_val, model=self.model)
