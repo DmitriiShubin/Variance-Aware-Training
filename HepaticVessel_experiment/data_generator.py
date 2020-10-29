@@ -26,9 +26,9 @@ class Dataset_train(Dataset):
 
         for patient in patients:
             images = [
-                i[:-10]
+                i[:-4]
                 for i in os.listdir(DATA_PATH + patient)
-                if i.find('.npy') != -1 and i.find('flair') != -1
+                if i.find('.npy') != -1 and i.find('seg') == -1
             ]
             for image in images:
                 self.images_list.append(DATA_PATH + patient + '/' + image)
@@ -51,10 +51,7 @@ class Dataset_train(Dataset):
 
     def load_data(self, id):
 
-        X = np.load(self.images_list[id] + '_flair.npy')
-        X = np.append(X, np.load(self.images_list[id] + '_t1.npy'), axis=2)
-        X = np.append(X, np.load(self.images_list[id] + '_t1ce.npy'), axis=2)
-        X = np.append(X, np.load(self.images_list[id] + '_t2.npy'), axis=2)
+        X = np.load(self.images_list[id] + '.npy').astype(np.float32)
 
         y = np.load(self.images_list[id] + '_seg.npy').astype(
             np.float32
@@ -70,12 +67,8 @@ class Dataset_train(Dataset):
             images_subset = self.images_list.copy()
             patient_id = self.images_list[id].split('/')[-2]
             images_subset = [i for i in images_subset if i.find(patient_id) == -1]
-            # X_s = cv2.imread(np.random.choice(np.array(images_subset)) + '.tif', cv2.IMREAD_COLOR)
 
-            X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
+            X_s = np.load(np.random.choice(np.array(images_subset)) + '.npy')
 
             y_s = [0]
         else:
@@ -84,12 +77,8 @@ class Dataset_train(Dataset):
             patient_id = self.images_list[id].split('/')[-2]
             images_subset = [i for i in images_subset if i.find(patient_id) != -1]
             images_subset.remove(self.images_list[id])
-            # X_s = cv2.imread(np.random.choice(np.array(images_subset)) + '.tif', cv2.IMREAD_COLOR)
 
-            X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
+            X_s = np.load(np.random.choice(np.array(images_subset)) + '.npy')
             y_s = [1]
 
         X_s, y_ = self.preprocessing.run(X=X_s, y=y_)
@@ -125,17 +114,15 @@ class Preprocessing:
         #     X, y = self.augmentations.apply_augs(X, y)
 
         # apply scaling
-        for i in range(4):
+        for i in range(X.shape[2]):
             if np.std(X[:, :, i]) > 0:
                 X[:, :, i] = (X[:, :, i] - np.mean(X[:, :, i])) / np.std(X[:, :, i])
             else:
                 X[:, :, i] = X[:, :, i] - np.mean(X[:, :, i])
 
-        y[np.where(y == 4)] = 3
 
-        a = np.where(y == 1)
 
-        y = np.eye(4, dtype=np.float32)[y.astype(np.int8)]
+        y = np.eye(3, dtype=np.float32)[y.astype(np.int8)]
         y = y.reshape(y.shape[0], y.shape[1], y.shape[-1])
 
         # reshape to match pytorch

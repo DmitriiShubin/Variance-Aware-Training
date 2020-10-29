@@ -148,13 +148,14 @@ class Model:
                 y_batch = y_batch.permute(0, 2, 3, 1)
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
                 train_loss = self.loss(pred, y_batch)
-
                 y_batch = y_batch.cpu().detach()
                 pred = pred.cpu().detach()
 
                 # process loss_2
                 pred_s = pred_s.reshape(-1)
                 y_s_batch = y_s_batch.reshape(-1)
+                print(pred_s)
+                print(y_s_batch)
                 adv_loss = self.loss_s(pred_s, y_s_batch)
                 y_s_batch = y_s_batch.cpu().detach()
                 pred_s = pred_s.cpu().detach()

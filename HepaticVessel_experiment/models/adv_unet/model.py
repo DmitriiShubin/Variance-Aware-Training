@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 import os
 import pandas as pd
+import gc
 
 # pytorch
 import torch
@@ -38,26 +39,26 @@ class Model:
 
         if inference:
             self.device = torch.device('cpu')
-            self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(self.device)
+            self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=3).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 0:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(
+                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=3).to(
                         self.device
                     )
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Number of GPUs will be used: ", torch.cuda.device_count() - 5)
                     self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(
+                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=3).to(
                         self.device
                     )
                     self.model = DP(self.model, device_ids=list(range(torch.cuda.device_count() - 5)))
             else:
                 self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(self.device)
+                self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=3).to(self.device)
                 print('Only one GPU is available')
 
         self.metric = Metric()
@@ -138,29 +139,25 @@ class Model:
                 # TODO:
                 pred,pred_s = self.model([X_batch,X_s_batch])
 
-                X_batch = X_batch.float().cpu().detach()
-                X_s_batch = X_s_batch.float().cpu().detach()
+                X_batch = X_batch.cpu().detach()
+                X_s_batch = X_s_batch.cpu().detach()
 
                 # process loss_1
                 pred = pred.permute(0, 2, 3, 1)
                 pred = pred.reshape(-1, pred.shape[-1])
-
                 y_batch = y_batch.permute(0, 2, 3, 1)
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
-
                 train_loss = self.loss(pred, y_batch)
 
-                y_batch = y_batch.float().cpu().detach()
-                pred = pred.float().cpu().detach()
+                y_batch = y_batch.cpu().detach()
+                pred = pred.cpu().detach()
 
                 # process loss_2
                 pred_s = pred_s.reshape(-1)
                 y_s_batch = y_s_batch.reshape(-1)
-
                 adv_loss = self.loss_s(pred_s, y_s_batch)
-
-                y_s_batch = y_s_batch.float().cpu().detach()
-                pred_s = pred_s.float().cpu().detach()
+                y_s_batch = y_s_batch.cpu().detach()
+                pred_s = pred_s.cpu().detach()
 
 
                 # calc loss
@@ -169,11 +166,8 @@ class Model:
 
                 train_loss = train_loss + self.alpha*adv_loss
 
-                self.scaler.scale(train_loss).backward()  # train_loss.backward()
-                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
-                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
-                # torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.5)
-                self.scaler.step(self.optimizer)  # self.optimizer.step()
+                self.scaler.scale(train_loss).backward()
+                self.scaler.step(self.optimizer)
                 self.scaler.update()
 
 
@@ -194,8 +188,8 @@ class Model:
                     # TODO:
                     pred,pred_s = self.model([X_batch,X_s_batch])
 
-                    X_batch = X_batch.float().cpu().detach()
-                    X_s_batch = X_s_batch.float().cpu().detach()
+                    X_batch = X_batch.cpu().detach()
+                    X_s_batch = X_s_batch.cpu().detach()
 
                     pred = pred.permute(0, 2, 3, 1)
                     pred = pred.reshape(-1, pred.shape[-1])
@@ -206,10 +200,10 @@ class Model:
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
                     avg_val_loss_adv += self.loss_s(pred_s, y_s_batch).item() / len(valid_loader)
 
-                    y_s_batch = y_s_batch.float().cpu().detach()
-                    y_batch = y_batch.float().cpu().detach()
-                    pred = pred.float().cpu().detach()
-                    pred_s = pred_s.float().cpu().detach()
+                    y_s_batch = y_s_batch.cpu().detach()
+                    y_batch = y_batch.cpu().detach()
+                    pred = pred.cpu().detach()
+                    pred_s = pred_s.cpu().detach()
 
                     val_true = torch.cat([val_true, y_batch], 0)
                     val_preds = torch.cat([val_preds, pred], 0)
@@ -222,8 +216,10 @@ class Model:
             val_true = np.argmax(val_true, axis=1)
 
             metric_val = self.metric.compute(labels=val_true, outputs=val_preds)
+            del val_true,val_preds
+            gc.collect()
 
-            self.scheduler.step(metric_val)  # avg_val_loss)
+            self.scheduler.step(metric_val)
             res = self.early_stopping(score=metric_val, model=self.model)
 
             # print statistics
@@ -292,8 +288,8 @@ class Model:
                 # TODO:
                 # pred = self.model([X_batch, X_s_batch])
                 pred,pred_s = self.model([X_batch,X_s_batch])
-                X_batch = X_batch.float().cpu().detach()
-                pred_s = pred_s.float().cpu().detach()
+                X_batch = X_batch.cpu().detach()
+                pred_s = pred_s.cpu().detach()
 
                 test_preds = torch.cat([test_preds, pred.cpu().detach()], 0)
                 test_val = torch.cat([test_val, y_batch.cpu().detach()], 0)

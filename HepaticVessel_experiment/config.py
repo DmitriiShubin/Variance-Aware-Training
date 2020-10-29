@@ -2,10 +2,10 @@ import ast
 import os
 
 # select the type of the model here
-from models.adv_unet import Model, hparams
+from models.adv_FPN import Model, hparams
 
 # names:
-DATA_PATH = '../data/brats/MICCAI_BraTS2020_TrainingData/'
+DATA_PATH = '../data/HepaticVessel/processed_data/'
 
 SPLIT_TABLE_PATH = './split_table/'
 SPLIT_TABLE_NAME = 'split_table.json'
