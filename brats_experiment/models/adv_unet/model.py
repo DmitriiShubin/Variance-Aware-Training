@@ -154,8 +154,8 @@ class Model:
                 # process loss_2
                 pred_s = pred_s.reshape(-1)
                 y_s_batch = y_s_batch.reshape(-1)
-                print(pred_s)
-                print(y_s_batch)
+                # print(pred_s)
+                # print(y_s_batch)
                 adv_loss = self.loss_s(pred_s, y_s_batch)
                 y_s_batch = y_s_batch.cpu().detach()
                 pred_s = pred_s.cpu().detach()
@@ -167,9 +167,11 @@ class Model:
 
                 train_loss = train_loss + self.alpha*adv_loss
 
-                self.scaler.scale(train_loss).backward()
-                self.scaler.step(self.optimizer)
-                self.scaler.update()
+                # self.scaler.scale(train_loss).backward()
+                # self.scaler.step(self.optimizer)
+                # self.scaler.update()
+                train_loss.backward()
+                self.optimizer.step()
 
 
 
