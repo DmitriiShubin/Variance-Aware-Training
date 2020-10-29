@@ -58,7 +58,7 @@ class Dataset_train(Dataset):
 
         y = np.load(self.images_list[id] + '_seg.npy').astype(
             np.float32
-        )  # cv2.imread(self.images_list[id] + '_mask.tif', cv2.IMREAD_COLOR)
+        ) 
         y_ = y.copy()
 
         X, y = self.preprocessing.run(X=X, y=y)
@@ -70,7 +70,6 @@ class Dataset_train(Dataset):
             images_subset = self.images_list.copy()
             patient_id = self.images_list[id].split('/')[-2]
             images_subset = [i for i in images_subset if i.find(patient_id) == -1]
-            # X_s = cv2.imread(np.random.choice(np.array(images_subset)) + '.tif', cv2.IMREAD_COLOR)
 
             X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
@@ -84,7 +83,6 @@ class Dataset_train(Dataset):
             patient_id = self.images_list[id].split('/')[-2]
             images_subset = [i for i in images_subset if i.find(patient_id) != -1]
             images_subset.remove(self.images_list[id])
-            # X_s = cv2.imread(np.random.choice(np.array(images_subset)) + '.tif', cv2.IMREAD_COLOR)
 
             X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
