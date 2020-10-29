@@ -62,7 +62,7 @@ class Model:
                 print('Only one GPU is available')
 
         self.metric = Metric()
-        self.num_workers = 18
+        self.num_workers = 9
 
         ########################## compile the model ###############################
 
