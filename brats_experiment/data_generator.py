@@ -97,19 +97,6 @@ class Dataset_train(Dataset):
         return X, y, X_s, y_s
 
 
-class Dataset_test(Dataset_train):
-    def __init__(self, patients):
-        super().__init__(patients=patients, aug=False, downsample=False)
-
-    def __getitem__(self, idx):
-
-        X, y, X_s, y_s = self.load_data(idx, train=False)
-
-        X = torch.tensor(X, dtype=torch.float)
-
-        return X
-
-
 class Preprocessing:
     def __init__(self, aug):
 
@@ -117,12 +104,6 @@ class Preprocessing:
         self.augmentations = Augmentations(0.5)
 
     def run(self, X, y, label_process=True):
-
-        # X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
-        # y = cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).astype(np.float32)
-
-        # if self.aug:
-        #     X, y = self.augmentations.apply_augs(X, y)
 
         # apply scaling
         for i in range(4):
