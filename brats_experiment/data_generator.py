@@ -9,6 +9,7 @@ import cv2
 import albumentations as A
 from config import DATA_PATH
 from time import time
+import itertools
 
 # pytorch
 import torch
@@ -65,40 +66,36 @@ class Dataset_train(Dataset):
         X, y = self.preprocessing.run(X=X, y=y)
 
 
-
         # second head
         for i in self.datasets.keys():
             if self.images_list[id].split('/')[-1][:20] in self.datasets[i]:
                 dataset_number = i
 
+
         sampled_patient = np.random.uniform(size=1)[0]
         if sampled_patient >= 0.5:
             # NOT the same patient
-            dataset_subset = self.datasets.copy()
-            del dataset_subset[dataset_number]
-            patient_id = list(dataset_subset.values())
-            patient_id = []+patient_id[0]+patient_id[1]+patient_id[2]
+            dataset_adv = list(self.datasets.keys())
+            dataset_adv.remove(dataset_number)
+            dataset_adv = np.random.choice(dataset_adv)
             images_subset = self.images_list.copy()
-            images_subset = [i for i in images_subset if i.split('/')[-1][:20] in patient_id]
-
+            images_subset = [i for i in images_subset if (i.split('/')[-1][:20] in self.datasets[dataset_adv])]
             X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
-
             y_s = [0]
+
         else:
             # the same patient
-            dataset_subset = self.datasets.copy()
-            patient_id = dataset_subset[dataset_number]
             images_subset = self.images_list.copy()
-            images_subset = [i for i in images_subset if i.split('/')[-1][:20] in patient_id]
-
+            images_subset = [i for i in images_subset if (i.split('/')[-1][:20] in self.datasets[dataset_number]) and (self.images_list[id] != i)]
             X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
             y_s = [1]
+
 
         # sampled_patient = np.random.uniform(size=1)[0]
         # if sampled_patient >= 0.5:
@@ -125,6 +122,7 @@ class Dataset_train(Dataset):
         #     X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
         #     X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
         #     y_s = [1]
+
 
         X_s, y_ = self.preprocessing.run(X=X_s, y=y_)
 
