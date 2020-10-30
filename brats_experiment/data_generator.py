@@ -130,7 +130,7 @@ class Augmentations:
 
         self.augs = A.Compose(
             [
-                A.HorizontalFlip(p=prob),
+                #A.HorizontalFlip(p=prob),
                 A.Rotate(limit=10, p=prob),
                 A.RandomSizedCrop(min_max_height=(200, 200), height=240, width=240, p=prob),
             ]
