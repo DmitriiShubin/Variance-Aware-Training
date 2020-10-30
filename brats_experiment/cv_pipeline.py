@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 import os
 from tqdm import tqdm
-from config import SPLIT_TABLE_PATH, SPLIT_TABLE_NAME, DEBUG_FOLDER, Model
+from config import SPLIT_TABLE_PATH, SPLIT_TABLE_NAME, DEBUG_FOLDER
 
 from data_generator import Dataset_train
 from metrics import Metric
@@ -24,7 +24,7 @@ seed_everything(42)
 
 
 class CVPipeline:
-    def __init__(self, hparams, gpu):
+    def __init__(self, hparams, gpu,model):
 
         # load the model
 
@@ -39,6 +39,8 @@ class CVPipeline:
 
         self.splits = self.load_split_table()
         self.metric = Metric()
+
+        self.model = model
 
     def load_split_table(self):
 
@@ -68,7 +70,7 @@ class CVPipeline:
             valid = Dataset_train(self.splits['val'].values[fold], aug=False)
 
             X, y, _, _ = train.__getitem__(0)
-            self.model = Model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu)
+            self.model = self.model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu)
 
             # train model
             self.model.fit(train=train, valid=valid)
