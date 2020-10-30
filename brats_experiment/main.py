@@ -36,17 +36,16 @@ def main(start_fold, alpha,batch_size, lr, n_epochs, gpu,model):
         hparams['start_fold'] = int(start_fold)
 
     if alpha is not None:
-        hparams['model']['alpha'] = alpha
+        hparams['model']['alpha'] = float(alpha)
 
     if batch_size is not None:
-        hparams['batch_size'] = batch_size
+        hparams['batch_size'] = int(batch_size)
 
     if lr is not None:
-        hparams['lr'] = lr
+        hparams['lr'] = float(lr)
 
     if n_epochs is not None:
-        hparams['n_epochs'] = n_epochs
-
+        hparams['n_epochs'] = int(n_epochs)
 
 
     cross_val = CVPipeline(hparams=hparams, gpu=gpu,model=Model)
