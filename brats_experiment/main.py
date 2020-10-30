@@ -5,8 +5,7 @@ import time
 # import modules
 from cv_pipeline import CVPipeline
 
-# select the type of the model here
-from models.unet import hparams
+
 
 @click.command()
 @click.option('--start_fold', default=hparams['start_fold'], help='fold to train')
