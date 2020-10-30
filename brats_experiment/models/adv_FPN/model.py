@@ -159,7 +159,7 @@ class Model:
                 avg_loss += train_loss.item() / len(train_loader)
                 avg_loss_adv += adv_loss.item() / len(train_loader)
 
-                train_loss = train_loss + self.alpha * adv_loss
+                train_loss = train_loss - self.alpha * adv_loss
 
                 train_loss.backward()
                 self.optimizer.step()
