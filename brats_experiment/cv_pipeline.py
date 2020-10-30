@@ -24,13 +24,12 @@ seed_everything(42)
 
 
 class CVPipeline:
-    def __init__(self, hparams, gpu, downsample):
+    def __init__(self, hparams, gpu):
 
         # load the model
 
         self.hparams = hparams
         self.gpu = gpu
-        self.downsample = downsample
 
         print('\n')
         print('Selected Learning rate:', self.hparams['lr'])
