@@ -46,7 +46,7 @@ class CVPipeline:
 
         splits = []
 
-        split_files = [i for i in os.listdir(SPLIT_TABLE_PATH) if i.find('.json') != -1]
+        split_files = [i for i in os.listdir(SPLIT_TABLE_PATH) if i.find('table.json') != -1]
 
         for i in range(len(split_files)):
             data = json.load(open(SPLIT_TABLE_PATH + str(i) + '_' + SPLIT_TABLE_NAME))
