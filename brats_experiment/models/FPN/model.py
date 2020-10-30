@@ -15,7 +15,7 @@ from metrics import Metric
 from loss_functions import Dice_loss
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
-
+from time import time
 
 # model
 from models.FPN.structure import FPN
@@ -114,8 +114,11 @@ class Model:
             valid, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=self.num_workers
         )
 
+        self.start_training = time()
+
         # tensorboard object
-        writer = SummaryWriter()
+        writer = SummaryWriter(
+            f"runs/{self.hparams['model_name']}_{self.hparams['model']['alpha']}_{self.start_training}")
 
         for epoch in range(self.hparams['n_epochs']):
 
@@ -235,7 +238,7 @@ class Model:
 
         self.model = self.early_stopping.load_best_weights()
 
-        return True
+        return self.start_training
 
     def predict(self, X_test):
 
@@ -248,7 +251,7 @@ class Model:
 
         test_preds = torch.Tensor([])
         test_val = torch.Tensor([])
-        print('Start generation of predictions')
+        print('Generating predictions')
         with torch.no_grad():
             for i, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)

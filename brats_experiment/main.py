@@ -14,7 +14,7 @@ from cv_pipeline import CVPipeline
 @click.option('--lr', default=None, help='learning rate')
 @click.option('--n_epochs', default=None, help='number of epoches to run')
 @click.option('--gpu', default='0,1,2', help='list of GPUs will be used for training')
-@click.option('--model', default='unet', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn')
+@click.option('--model', default='fpn', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn')
 def main(start_fold, alpha,batch_size, lr, n_epochs, gpu,model):
 
     #check model type input
@@ -24,9 +24,9 @@ def main(start_fold, alpha,batch_size, lr, n_epochs, gpu,model):
         from models.unet import Model,hparams
     elif model == 'adv_unet':
         from models.adv_unet import Model,hparams
-    elif model == 'FPN':
+    elif model == 'fpn':
         from models.FPN import Model,hparams
-    elif model == 'adv_FPN':
+    elif model == 'adv_fpn':
         from models.adv_FPN import Model,hparams
 
     # update hparams
@@ -52,7 +52,7 @@ def main(start_fold, alpha,batch_size, lr, n_epochs, gpu,model):
 
     cross_val = CVPipeline(hparams=hparams, gpu=gpu,model=Model)
 
-    score = cross_val.train()
+    score,start_training = cross_val.train()
 
     logger = logging.getLogger('Training pipeline')
     logger.setLevel(logging.DEBUG)
@@ -61,12 +61,12 @@ def main(start_fold, alpha,batch_size, lr, n_epochs, gpu,model):
     fh.setLevel(logging.DEBUG)
     logger.addHandler(fh)
     logger.info('=============================================')
-    logger.info(f'Datetime = {time.time()}')
+    logger.info(f'Datetime = {start_training}')
     logger.info(f'Model metric = {score}')
-    logger.info(f'Model fold = {start_fold}')
-    logger.info(f'Model fold = {batch_size}')
-    logger.info(f'Model fold = {lr}')
-    logger.info(f'Model fold = {n_epochs}')
+    logger.info(f"Model fold = {hparams['start_fold']}")
+    logger.info(f"Batch size = {hparams['batch_size']}")
+    logger.info(f"Lr = {hparams['lr']}")
+    logger.info(f"N epochs = {hparams['n_epochs']}")
     logger.info(f'GPU = {gpu}')
     logger.info(f"Alpha = {hparams['model']['alpha']}")
     logger.info(f"Model name: = {hparams['model_name']}")

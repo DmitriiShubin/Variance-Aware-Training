@@ -73,7 +73,7 @@ class CVPipeline:
             self.model = self.model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu)
 
             # train model
-            self.model.fit(train=train, valid=valid)
+            start_training = self.model.fit(train=train, valid=valid)
 
             # get model predictions
             y_val, pred_val = self.model.predict(valid)
@@ -97,7 +97,7 @@ class CVPipeline:
                 + '.pt'
             )
 
-        return fold_score
+        return fold_score,start_training
 
     def save_debug_data(self, pred_val, validation_list):
 
