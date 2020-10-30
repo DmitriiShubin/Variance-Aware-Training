@@ -48,6 +48,8 @@ def main(start_fold, alpha,batch_size, lr, n_epochs, gpu,model):
         hparams['n_epochs'] = int(n_epochs)
 
 
+    print(f'Selected type of the model: {model}')
+
     cross_val = CVPipeline(hparams=hparams, gpu=gpu,model=Model)
 
     score = cross_val.train()
