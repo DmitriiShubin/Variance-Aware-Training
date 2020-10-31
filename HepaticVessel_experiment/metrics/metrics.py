@@ -9,10 +9,10 @@ class Metric:
     def calc_cm(self, labels, outputs):
 
         if self.confustion_matrix is None:
-            self.confustion_matrix = multilabel_confusion_matrix(labels, outputs, labels=[0, 1, 2, 3])
+            self.confustion_matrix = multilabel_confusion_matrix(labels, outputs, labels=[0, 1, 2])
 
         else:
-            self.confustion_matrix += multilabel_confusion_matrix(labels, outputs, labels=[0, 1, 2, 3])
+            self.confustion_matrix += multilabel_confusion_matrix(labels, outputs, labels=[0, 1, 2])
 
     def compute(self):
         f1 = 0

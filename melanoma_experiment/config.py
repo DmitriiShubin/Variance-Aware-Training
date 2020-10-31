@@ -5,7 +5,7 @@ import os
 
 
 # names:
-DATA_PATH = '../data/HepaticVessel/processed_data/'
+DATA_PATH = '../data/siim-isic-melanoma-classification/train'
 
 SPLIT_TABLE_PATH = './split_table/'
 SPLIT_TABLE_NAME = 'split_table.json'
