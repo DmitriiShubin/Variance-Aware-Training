@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 import os
 from tqdm import tqdm
-from config import SPLIT_TABLE_PATH, SPLIT_TABLE_NAME, DEBUG_FOLDER, Model
+from config import SPLIT_TABLE_PATH, SPLIT_TABLE_NAME, DEBUG_FOLDER
 
 from data_generator import Dataset_train
 from metrics import Metric
@@ -24,13 +24,12 @@ seed_everything(42)
 
 
 class CVPipeline:
-    def __init__(self, hparams, gpu, downsample):
+    def __init__(self, hparams, gpu,model):
 
         # load the model
 
         self.hparams = hparams
         self.gpu = gpu
-        self.downsample = downsample
 
         print('\n')
         print('Selected Learning rate:', self.hparams['lr'])
@@ -41,11 +40,13 @@ class CVPipeline:
         self.splits = self.load_split_table()
         self.metric = Metric()
 
+        self.model = model
+
     def load_split_table(self):
 
         splits = []
 
-        split_files = [i for i in os.listdir(SPLIT_TABLE_PATH) if i.find('.json') != -1]
+        split_files = [i for i in os.listdir(SPLIT_TABLE_PATH) if i.find('table.json') != -1]
 
         for i in range(len(split_files)):
             data = json.load(open(SPLIT_TABLE_PATH + str(i) + '_' + SPLIT_TABLE_NAME))
@@ -69,10 +70,10 @@ class CVPipeline:
             valid = Dataset_train(self.splits['val'].values[fold][:2], aug=False)
 
             X, y, _, _ = train.__getitem__(0)
-            self.model = Model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu)
+            self.model = self.model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu)
 
             # train model
-            self.model.fit(train=train, valid=valid)
+            start_training = self.model.fit(train=train, valid=valid)
 
             # get model predictions
             y_val, pred_val = self.model.predict(valid)
@@ -83,7 +84,8 @@ class CVPipeline:
             pred_val_processed = pred_val_processed.reshape(-1)
             y_val = y_val.reshape(-1)
 
-            fold_score = self.metric.compute(y_val, pred_val_processed)
+            self.metric.calc_cm(labels=y_val, outputs=pred_val_processed)
+            fold_score = self.metric.compute()  # y_val, pred_val_processed)
             print("Model's final scrore: ", fold_score)
             # save the model
             self.model.model_save(
@@ -95,16 +97,7 @@ class CVPipeline:
                 + '.pt'
             )
 
-            # images_list = valid.images_list.copy()
-            #
-            # for index, record in enumerate(images_list):
-            #     a = record.split('/')
-            #     images_list[index] = f'{a[-2]}/{a[-1]}'
-            #
-            # # create a dictionary for debugging
-            # self.save_debug_data(pred_val, images_list)
-
-        return fold_score
+        return fold_score,start_training
 
     def save_debug_data(self, pred_val, validation_list):
 

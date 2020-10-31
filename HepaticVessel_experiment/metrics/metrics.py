@@ -1,22 +1,24 @@
-import numpy as np, os, os.path, sys
-import pandas as pd
-import matplotlib.pyplot as plt
-import torch
-from tqdm import tqdm
-from sklearn.metrics import f1_score
+from sklearn.metrics import multilabel_confusion_matrix
 
 
 class Metric:
+    def __init__(self):
 
-    # Compute the evaluation metric for the Challenge.
-    def compute(self, labels, outputs, smooth=1):
-        dice = f1_score(labels, outputs, average='macro')
-        return dice
+        self.confustion_matrix = None
 
-    def get_one_hot(self, y):
+    def calc_cm(self, labels, outputs):
 
-        y_binary = np.zeros((y.shape[0], 4))
-        for i in range(4):
-            y_binary[np.where(y == i), i] = 1
+        if self.confustion_matrix is None:
+            self.confustion_matrix = multilabel_confusion_matrix(labels, outputs, labels=[0, 1, 2, 3])
 
-        return y_binary
+        else:
+            self.confustion_matrix += multilabel_confusion_matrix(labels, outputs, labels=[0, 1, 2, 3])
+
+    def compute(self):
+        f1 = 0
+        for i in range(self.confustion_matrix.shape[0]):
+            tn, fp, fn, tp = self.confustion_matrix[i, :, :].ravel()
+            f1 += tp / (tp + 0.5 * (fp + fn)) / self.confustion_matrix.shape[0]
+
+        self.confustion_matrix = None
+        return f1

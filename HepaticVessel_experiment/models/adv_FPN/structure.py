@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from loss_functions import AngularPenaltySMLoss
 from segmentation_models_pytorch import FPN as smp_FPN
 
 
@@ -34,6 +33,7 @@ class FPN(smp_FPN):
         self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
 
         self.hparams = hparams['model']
+
 
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
