@@ -32,9 +32,9 @@ class FPN(smp_FPN):
         )
         self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
 
-        # self.hparams = hparams['model']
-        #
-        # self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
+        self.hparams = hparams['model']
+
+        #self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
         # adversarial deep net layers
         #self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
