@@ -32,12 +32,19 @@ class FPN(smp_FPN):
         )
         self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
 
-        self.hparams = hparams['model']
+        # self.hparams = hparams['model']
+        #
+        # self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
+
+        # adversarial deep net layers
+        #self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
 
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
         # adversarial deep net layers
-        self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
+        self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 2, 1, kernel_size=1, padding=0)
+        self.adv_fc1 = nn.Linear(320, 1)
+        self.adv_fc2 = nn.Linear(self.hparams['n_filters_input'], 1)
 
     # def forward(self, x):
     #     x1, x2, x3, x4, x5 = self.encoder(x)
