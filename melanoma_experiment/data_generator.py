@@ -9,6 +9,8 @@ import cv2
 import albumentations as A
 from config import DATA_PATH
 from time import time
+import itertools
+import pandas as pd
 
 # pytorch
 import torch
@@ -26,13 +28,18 @@ class Dataset_train(Dataset):
 
         for patient in patients:
             images = [
-                i[:-4]
+                i
                 for i in os.listdir(DATA_PATH + patient)
-                if i.find('.npy') != -1 and i.find('seg') == -1
+                if i.find('.jpg') != -1
             ]
             for image in images:
                 self.images_list.append(DATA_PATH + patient + '/' + image)
 
+        #read labels table
+        self.df = pd.read_csv('../data/melanoma/train.csv')
+        self.df = self.df.drop(['patient_id','sex','age_approx','anatom_site_general_challenge','diagnosis','benign_malignant'],axis=1)
+        self.df.index = self.df['image_name']
+        self.df = self.df.drop(['image_name'],axis=1).to_dict('index')
         self.preprocessing = Preprocessing(aug)
 
     def __len__(self):
@@ -51,16 +58,14 @@ class Dataset_train(Dataset):
 
     def load_data(self, id):
 
-        X = np.load(self.images_list[id] + '.npy').astype(np.float32)
+        X = cv2.imread(self.images_list[id])
 
-        y = np.load(self.images_list[id] + '_seg.npy').astype(
-            np.float32
-        )  # cv2.imread(self.images_list[id] + '_mask.tif', cv2.IMREAD_COLOR)
-        y_ = y.copy()
+        y = [self.df[self.images_list[id].split('/')[-1][:-4]]['target']]
 
         X, y = self.preprocessing.run(X=X, y=y)
 
-        # second head
+
+
         sampled_patient = np.random.uniform(size=1)[0]
         if sampled_patient >= 0.5:
             # NOT the same patient
@@ -68,8 +73,7 @@ class Dataset_train(Dataset):
             patient_id = self.images_list[id].split('/')[-2]
             images_subset = [i for i in images_subset if i.find(patient_id) == -1]
 
-            X_s = np.load(np.random.choice(np.array(images_subset)) + '.npy')
-
+            X_s = cv2.imread(np.random.choice(np.array(images_subset)))
             y_s = [0]
         else:
             # the same patient
@@ -78,54 +82,32 @@ class Dataset_train(Dataset):
             images_subset = [i for i in images_subset if i.find(patient_id) != -1]
             images_subset.remove(self.images_list[id])
 
-            X_s = np.load(np.random.choice(np.array(images_subset)) + '.npy')
+            X_s = cv2.imread(np.random.choice(np.array(images_subset)))
             y_s = [1]
 
-        X_s, y_ = self.preprocessing.run(X=X_s, y=y_)
+
+        X_s, y_ = self.preprocessing.run(X=X_s, y=y_s)
 
         return X, y, X_s, y_s
-
-
-class Dataset_test(Dataset_train):
-    def __init__(self, patients):
-        super().__init__(patients=patients, aug=False, downsample=False)
-
-    def __getitem__(self, idx):
-
-        X, y, X_s, y_s = self.load_data(idx, train=False)
-
-        X = torch.tensor(X, dtype=torch.float)
-
-        return X
 
 
 class Preprocessing:
     def __init__(self, aug):
 
         self.aug = aug
-        self.augmentations = Augmentations(0.5)
+        self.augmentations = Augmentations(0.0)
 
     def run(self, X, y, label_process=True):
 
-        # X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
-        # y = cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).astype(np.float32)
-
-        # if self.aug:
-        #     X, y = self.augmentations.apply_augs(X, y)
-
         # apply scaling
-        for i in range(X.shape[2]):
-            if np.std(X[:, :, i]) > 0:
-                X[:, :, i] = (X[:, :, i] - np.mean(X[:, :, i])) / np.std(X[:, :, i])
-            else:
-                X[:, :, i] = X[:, :, i] - np.mean(X[:, :, i])
+        X = X.astype(np.float32)/255
 
-        y = np.eye(3, dtype=np.float32)[y.astype(np.int8)]
-        y = y.reshape(y.shape[0], y.shape[1], y.shape[-1])
+
+
+
 
         # reshape to match pytorch
         X = X.transpose(2, 0, 1)
-        y = y.transpose(2, 0, 1)
 
         if label_process:
             return X, y
@@ -138,9 +120,9 @@ class Augmentations:
 
         self.augs = A.Compose(
             [
-                A.HorizontalFlip(p=prob),
+                #A.HorizontalFlip(p=prob),
                 A.Rotate(limit=10, p=prob),
-                A.RandomSizedCrop(min_max_height=(240, 240), height=240, width=240, p=prob),
+                A.RandomSizedCrop(min_max_height=(200, 200), height=240, width=240, p=prob),
             ]
         )
 

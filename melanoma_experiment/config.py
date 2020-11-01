@@ -1,11 +1,12 @@
 import ast
 import os
 
+
 # select the type of the model here
 
 
 # names:
-DATA_PATH = '../data/siim-isic-melanoma-classification/train'
+DATA_PATH = '../data/melanoma/processed_data/'
 
 SPLIT_TABLE_PATH = './split_table/'
 SPLIT_TABLE_NAME = 'split_table.json'

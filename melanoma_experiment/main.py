@@ -14,20 +14,18 @@ from cv_pipeline import CVPipeline
 @click.option('--lr', default=None, help='learning rate')
 @click.option('--n_epochs', default=None, help='number of epoches to run')
 @click.option('--gpu', default='0,1,2', help='list of GPUs will be used for training')
-@click.option('--model', default='unet', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn')
+@click.option('--model', default='adv_resnet50', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn')
 def main(start_fold, alpha,batch_size, lr, n_epochs, gpu,model):
 
     #check model type input
-    assert model == 'unet' or model == 'adv_unet' or model == 'fpn' or model == 'adv_fpn' , 'The following set of models is supported: unet, adv_unet, fpn, adv_fpn'
+    assert model == 'resnet50' or model == 'adv_resnet50'  , 'The following set of models is supported: resnet50, adv_resnet50,'
 
-    if model == 'unet':
-        from models.unet import Model,hparams
-    elif model == 'adv_unet':
+    if model == 'resnet50':
+        from models.ResNet50 import Model,hparams
+    elif model == 'adv_resnet50':
+        #TODO
         from models.adv_unet import Model,hparams
-    elif model == 'fpn':
-        from models.FPN import Model,hparams
-    elif model == 'adv_fpn':
-        from models.adv_FPN import Model,hparams
+
 
     # update hparams
     gpu = [int(i) for i in gpu.split(",")]

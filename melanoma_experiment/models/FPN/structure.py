@@ -21,7 +21,7 @@ class FPN(smp_FPN):
             decoder_pyramid_channels=hparams['model']['n_filters_input'],
             decoder_segmentation_channels=hparams['model']['n_filters_input'],
             decoder_dropout=hparams['model']['dropout'],
-            in_channels=n_channels,
+            in_channels=4,
         )
 
         self.conv2d = nn.Conv2d(
@@ -33,6 +33,8 @@ class FPN(smp_FPN):
         self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
 
         self.hparams = hparams['model']
+        self.n_channels = n_channels
+        self.n_classes = n_classes
 
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
