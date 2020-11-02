@@ -24,7 +24,7 @@ seed_everything(42)
 
 
 class CVPipeline:
-    def __init__(self, hparams, gpu,model):
+    def __init__(self, hparams, gpu, model):
 
         # load the model
 
@@ -66,8 +66,8 @@ class CVPipeline:
                 if fold != self.hparams['start_fold']:
                     continue
             # TODO
-            train = Dataset_train(self.splits['train'].values[fold][:2], aug=True)
-            valid = Dataset_train(self.splits['val'].values[fold][:2], aug=False)
+            train = Dataset_train(self.splits['train'].values[fold], aug=True)
+            valid = Dataset_train(self.splits['val'].values[fold], aug=False)
 
             X, y, _, _ = train.__getitem__(0)
             self.model = self.model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu)
@@ -94,7 +94,7 @@ class CVPipeline:
                 + '.pt'
             )
 
-        return fold_score,start_training
+        return fold_score, start_training
 
     def save_debug_data(self, pred_val, validation_list):
 

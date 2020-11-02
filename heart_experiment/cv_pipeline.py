@@ -24,7 +24,7 @@ seed_everything(42)
 
 
 class CVPipeline:
-    def __init__(self, hparams, gpu,model):
+    def __init__(self, hparams, gpu, model):
 
         # load the model
 
@@ -97,7 +97,7 @@ class CVPipeline:
                 + '.pt'
             )
 
-        return fold_score,start_training
+        return fold_score, start_training
 
     def save_debug_data(self, pred_val, validation_list):
 

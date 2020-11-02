@@ -95,7 +95,7 @@ class Model:
             cooldown=0,
             eps=0,
         )
-        #self.scheduler = CosineAnnealingLR(self.optimizer, T_max=5, eta_min=1e-9, last_epoch=-1)
+        # self.scheduler = CosineAnnealingLR(self.optimizer, T_max=5, eta_min=1e-9, last_epoch=-1)
 
         self.seed_everything(42)
 
@@ -119,7 +119,8 @@ class Model:
 
         # tensorboard object
         writer = SummaryWriter(
-            f"runs/{self.hparams['model_name']}_{self.hparams['model']['alpha']}_{self.start_training}")
+            f"runs/{self.hparams['model_name']}_{self.hparams['model']['alpha']}_{self.start_training}"
+        )
 
         for epoch in range(self.hparams['n_epochs']):
 

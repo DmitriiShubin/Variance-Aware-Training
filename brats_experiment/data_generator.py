@@ -34,7 +34,7 @@ class Dataset_train(Dataset):
             for image in images:
                 self.images_list.append(DATA_PATH + patient + '/' + image)
 
-        #read dataset info
+        # read dataset info
         self.datasets = json.load(open('./split_table/adversarial_datasets.json'))
 
         self.preprocessing = Preprocessing(aug)
@@ -65,12 +65,10 @@ class Dataset_train(Dataset):
 
         X, y = self.preprocessing.run(X=X, y=y)
 
-
         # second head
         for i in self.datasets.keys():
             if self.images_list[id].split('/')[-1][:20] in self.datasets[i]:
                 dataset_number = i
-
 
         sampled_patient = np.random.uniform(size=1)[0]
         if sampled_patient >= 0.5:
@@ -79,7 +77,9 @@ class Dataset_train(Dataset):
             dataset_adv.remove(dataset_number)
             dataset_adv = np.random.choice(dataset_adv)
             images_subset = self.images_list.copy()
-            images_subset = [i for i in images_subset if (i.split('/')[-1][:20] in self.datasets[dataset_adv])]
+            images_subset = [
+                i for i in images_subset if (i.split('/')[-1][:20] in self.datasets[dataset_adv])
+            ]
             X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
@@ -89,13 +89,16 @@ class Dataset_train(Dataset):
         else:
             # the same patient
             images_subset = self.images_list.copy()
-            images_subset = [i for i in images_subset if (i.split('/')[-1][:20] in self.datasets[dataset_number]) and (self.images_list[id] != i)]
+            images_subset = [
+                i
+                for i in images_subset
+                if (i.split('/')[-1][:20] in self.datasets[dataset_number]) and (self.images_list[id] != i)
+            ]
             X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
             X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
             y_s = [1]
-
 
         # sampled_patient = np.random.uniform(size=1)[0]
         # if sampled_patient >= 0.5:
@@ -122,7 +125,6 @@ class Dataset_train(Dataset):
         #     X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
         #     X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
         #     y_s = [1]
-
 
         X_s, y_ = self.preprocessing.run(X=X_s, y=y_)
 
@@ -166,7 +168,7 @@ class Augmentations:
 
         self.augs = A.Compose(
             [
-                #A.HorizontalFlip(p=prob),
+                # A.HorizontalFlip(p=prob),
                 A.Rotate(limit=10, p=prob),
                 A.RandomSizedCrop(min_max_height=(200, 200), height=240, width=240, p=prob),
             ]

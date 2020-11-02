@@ -34,10 +34,10 @@ class FPN(smp_FPN):
 
         self.hparams = hparams['model']
 
-        #self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
+        # self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
         # adversarial deep net layers
-        #self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
+        # self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
 
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
@@ -77,9 +77,6 @@ class FPN(smp_FPN):
         x = torch.mean(x, dim=2)
         x = torch.squeeze(x)
         x = torch.sigmoid(self.adv_fc1(x))
-
-
-
 
         # x = torch.stack([x, x_s], dim=1)
         #

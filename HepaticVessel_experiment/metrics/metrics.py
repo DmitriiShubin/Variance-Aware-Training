@@ -1,6 +1,7 @@
 from sklearn.metrics import multilabel_confusion_matrix
 import numpy as np
 
+
 class Metric:
     def __init__(self):
 
@@ -9,10 +10,14 @@ class Metric:
     def calc_cm(self, labels, outputs):
 
         if self.confustion_matrix is None:
-            self.confustion_matrix = multilabel_confusion_matrix(labels, outputs, labels=[0, 1, 2]).astype(np.float32)
+            self.confustion_matrix = multilabel_confusion_matrix(labels, outputs, labels=[0, 1, 2]).astype(
+                np.float32
+            )
 
         else:
-            self.confustion_matrix += multilabel_confusion_matrix(labels, outputs, labels=[0, 1, 2]).astype(np.float32)
+            self.confustion_matrix += multilabel_confusion_matrix(labels, outputs, labels=[0, 1, 2]).astype(
+                np.float32
+            )
 
     def compute(self):
         f1 = 0

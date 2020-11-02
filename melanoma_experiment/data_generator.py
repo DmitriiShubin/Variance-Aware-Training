@@ -27,19 +27,25 @@ class Dataset_train(Dataset):
         self.images_list = []
 
         for patient in patients:
-            images = [
-                i
-                for i in os.listdir(DATA_PATH + patient)
-                if i.find('.jpg') != -1
-            ]
+            images = [i for i in os.listdir(DATA_PATH + patient) if i.find('.jpg') != -1]
             for image in images:
                 self.images_list.append(DATA_PATH + patient + '/' + image)
 
-        #read labels table
+        # read labels table
         self.df = pd.read_csv('../data/melanoma/train.csv')
-        self.df = self.df.drop(['patient_id','sex','age_approx','anatom_site_general_challenge','diagnosis','benign_malignant'],axis=1)
+        self.df = self.df.drop(
+            [
+                'patient_id',
+                'sex',
+                'age_approx',
+                'anatom_site_general_challenge',
+                'diagnosis',
+                'benign_malignant',
+            ],
+            axis=1,
+        )
         self.df.index = self.df['image_name']
-        self.df = self.df.drop(['image_name'],axis=1).to_dict('index')
+        self.df = self.df.drop(['image_name'], axis=1).to_dict('index')
         self.preprocessing = Preprocessing(aug)
 
     def __len__(self):
@@ -64,8 +70,6 @@ class Dataset_train(Dataset):
 
         X, y = self.preprocessing.run(X=X, y=y)
 
-
-
         sampled_patient = np.random.uniform(size=1)[0]
         if sampled_patient >= 0.5:
             # NOT the same patient
@@ -85,7 +89,6 @@ class Dataset_train(Dataset):
             X_s = cv2.imread(np.random.choice(np.array(images_subset)))
             y_s = [1]
 
-
         X_s, y_ = self.preprocessing.run(X=X_s, y=y_s)
 
         return X, y, X_s, y_s
@@ -100,11 +103,7 @@ class Preprocessing:
     def run(self, X, y, label_process=True):
 
         # apply scaling
-        X = X.astype(np.float32)/255
-
-
-
-
+        X = X.astype(np.float32) / 255
 
         # reshape to match pytorch
         X = X.transpose(2, 0, 1)
@@ -120,7 +119,7 @@ class Augmentations:
 
         self.augs = A.Compose(
             [
-                #A.HorizontalFlip(p=prob),
+                # A.HorizontalFlip(p=prob),
                 A.Rotate(limit=10, p=prob),
                 A.RandomSizedCrop(min_max_height=(200, 200), height=240, width=240, p=prob),
             ]

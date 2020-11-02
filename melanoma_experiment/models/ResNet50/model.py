@@ -42,16 +42,12 @@ class Model:
                 if len(gpu) > 0:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = ResNet50(hparams=self.hparams, n_classes=1).to(
-                        self.device
-                    )
+                    self.model = ResNet50(hparams=self.hparams, n_classes=1).to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Number of GPUs will be used: ", torch.cuda.device_count() - 5)
                     self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                    self.model = ResNet50(hparams=self.hparams, n_classes=1).to(
-                        self.device
-                    )
+                    self.model = ResNet50(hparams=self.hparams, n_classes=1).to(self.device)
                     self.model = DP(self.model, device_ids=list(range(torch.cuda.device_count() - 5)))
             else:
                 self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -94,7 +90,7 @@ class Model:
             cooldown=0,
             eps=0,
         )
-        #self.scheduler = CosineAnnealingLR(self.optimizer, T_max=5, eta_min=1e-9, last_epoch=-1)
+        # self.scheduler = CosineAnnealingLR(self.optimizer, T_max=5, eta_min=1e-9, last_epoch=-1)
 
         self.seed_everything(42)
 
@@ -118,7 +114,8 @@ class Model:
 
         # tensorboard object
         writer = SummaryWriter(
-            f"runs/{self.hparams['model_name']}_{self.hparams['model']['alpha']}_{self.start_training}")
+            f"runs/{self.hparams['model_name']}_{self.hparams['model']['alpha']}_{self.start_training}"
+        )
 
         for epoch in range(self.hparams['n_epochs']):
 
@@ -156,7 +153,7 @@ class Model:
                 y_batch = y_batch.numpy()
                 pred = pred.numpy()
 
-                pred[np.where(pred>=0.5)] = 1
+                pred[np.where(pred >= 0.5)] = 1
                 pred[np.where(pred < 0.5)] = 0
 
                 self.metric.calc_cm(labels=y_batch, outputs=pred)

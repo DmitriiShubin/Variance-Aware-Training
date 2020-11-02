@@ -1,13 +1,13 @@
 import torch
 import torch.nn as nn
-from torchvision.models import resnet18
+from torchvision.models import resnet50
 
 
 class ResNet50(nn.Module):
     def __init__(self, hparams, n_classes):
         super(ResNet50, self).__init__()
 
-        self.resnet = resnet18(
+        self.resnet = resnet50(
             pretrained=False,
             num_classes=1000,
         )
