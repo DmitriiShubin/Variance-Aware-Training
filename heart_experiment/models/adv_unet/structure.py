@@ -181,19 +181,14 @@ class UNet(nn.Module):
         x1, x2, x3, x4, x5 = self.encoder(x_s)
         x_s = self.decoder(x1, x2, x3, x4, x5)
 
-        x = torch.stack([x, x_s], dim=1)
-        x = torch.mean(x, dim=3)  # global average pooling only bottleneck of unet
+
+
+        x = torch.cat((x, x_s), dim=1)
+
+        x = torch.relu(self.adv_conv1(x))
+
         x = torch.mean(x, dim=2)
-        #x = torch.mean(x, dim=1)
-
-
-        # x = torch.cat((x, x_s), dim=1)
-        #
-        # x = torch.relu(self.adv_conv1(x))
-        #
-        # x = torch.mean(x, dim=2)
-        # x = torch.squeeze(x)
-        print(x.shape)
+        x = torch.squeeze(x)
         x = torch.sigmoid(self.adv_fc1(x))
         return x
 
