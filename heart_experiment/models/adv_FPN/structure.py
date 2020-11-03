@@ -72,11 +72,12 @@ class FPN(smp_FPN):
         x_s = self.conv2d(x_s)
         x_s = self.upsampling(x_s)
 
-        x = torch.stack([x, x_s], dim=1)
-        x = torch.mean(x, dim=3)  # global average pooling only bottleneck of unet
-        x = torch.mean(x, dim=3)
-        x = torch.mean(x, dim=1)
+        x = torch.cat((x, x_s), dim=1)
 
+        x = torch.relu(self.adv_conv1(x))
+
+        x = torch.mean(x, dim=2)
+        x = torch.squeeze(x)
         x = torch.sigmoid(self.adv_fc1(x))
         return x
 
