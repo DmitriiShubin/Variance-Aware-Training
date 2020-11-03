@@ -42,9 +42,9 @@ class FPN(smp_FPN):
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
         # adversarial deep net layers
-        self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 2, 1, kernel_size=1, padding=0)
-        self.adv_fc1 = nn.Linear(320, 1)
-        self.adv_fc2 = nn.Linear(self.hparams['n_filters_input'], 1)
+        #self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 2, 1, kernel_size=1, padding=0)
+        self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
+        #self.adv_fc2 = nn.Linear(self.hparams['n_filters_input'], 1)
 
     # def forward(self, x):
     #     x1, x2, x3, x4, x5 = self.encoder(x)
@@ -72,19 +72,12 @@ class FPN(smp_FPN):
         x_s = self.conv2d(x_s)
         x_s = self.upsampling(x_s)
 
-        x = torch.cat((x, x_s), dim=1)
-        x = torch.relu(self.adv_conv1(x))
-        x = torch.mean(x, dim=2)
-        x = torch.squeeze(x)
-        x = torch.sigmoid(self.adv_fc1(x))
+        x = torch.stack([x, x_s], dim=1)
+        x = torch.mean(x, dim=3)  # global average pooling only bottleneck of unet
+        x = torch.mean(x, dim=3)
+        x = torch.mean(x, dim=1)
 
-        # x = torch.stack([x, x_s], dim=1)
-        #
-        # x = torch.mean(x, dim=3)  # global average pooling only bottleneck of unet
-        # x = torch.mean(x, dim=3)
-        # x = torch.mean(x, dim=1)
-        #
-        # x = torch.sigmoid(self.adv_fc1(x))
+        x = torch.sigmoid(self.adv_fc1(x))
         return x
 
     def predictive_network(self, x):
