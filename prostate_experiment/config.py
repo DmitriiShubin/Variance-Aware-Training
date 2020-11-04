@@ -6,7 +6,7 @@ import os
 
 
 # names:
-DATA_PATH = '../data/Task09_Spleen/processed_data/'
+DATA_PATH = '../data/Task05_Prostate/processed_data/'
 
 SPLIT_TABLE_PATH = './split_table/'
 SPLIT_TABLE_NAME = 'split_table.json'
