@@ -114,7 +114,7 @@ class Model:
     def fit(self, train, valid):
 
         train_loader = DataLoader(
-            train, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=self.num_workers
+            train, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=self.num_workers
         )
         valid_loader = DataLoader(
             valid, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=self.num_workers

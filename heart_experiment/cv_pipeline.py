@@ -66,7 +66,7 @@ class CVPipeline:
                 if fold != self.hparams['start_fold']:
                     continue
             # TODO
-            train = Dataset_train(self.splits['train'].values[fold], aug=True)
+            train = Dataset_train(self.splits['train'].values[fold], aug=False)
             valid = Dataset_train(self.splits['val'].values[fold], aug=False)
 
             X, y, _, _ = train.__getitem__(0)
