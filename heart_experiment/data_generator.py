@@ -61,7 +61,7 @@ class Dataset_train(Dataset):
         X, y = self.preprocessing.run(X=X, y=y)
 
         # second head
-        sampled_patient = np.round(np.random.uniform(size=1)[0])
+        sampled_patient = np.round(np.random.uniform(size=1)[0],1)
         if sampled_patient >= 0.5:
             # NOT the same patient
             images_subset = self.images_list.copy()
