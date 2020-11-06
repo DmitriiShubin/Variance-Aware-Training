@@ -76,18 +76,18 @@ class Model:
         # define early stopping
         self.early_stopping = EarlyStopping(
             checkpoint_path=self.hparams['checkpoint_path']
-            + '/checkpoint'
-            + str(self.hparams['start_fold'])
-            + '.pt',
+                            + '/checkpoint'
+                            + str(self.hparams['start_fold'])
+                            + '.pt',
             patience=self.hparams['patience'],
             delta=self.hparams['min_delta'],
-            is_maximize=True,
+            is_maximize=False,
         )
 
         # lr scheduler
         self.scheduler = ReduceLROnPlateau(
             optimizer=self.optimizer,
-            mode='max',
+            mode='min',
             factor=0.2,
             patience=3,
             verbose=True,
@@ -223,8 +223,8 @@ class Model:
 
             metric_val = self.metric.compute()
 
-            self.scheduler.step(metric_val)
-            res = self.early_stopping(score=metric_val, model=self.model)
+            self.scheduler.step(avg_val_loss)
+            res = self.early_stopping(score=avg_val_loss, model=self.model)
 
             # print statistics
             if self.hparams['verbose_train']:
