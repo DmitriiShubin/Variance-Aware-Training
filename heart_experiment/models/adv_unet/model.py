@@ -14,7 +14,7 @@ import random
 # custom modules
 from metrics import Metric
 from utils.torchsummary import summary
-from loss_functions import Dice_loss
+from loss_functions import Dice_loss,Jaccard_loss
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
@@ -68,7 +68,7 @@ class Model:
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = Dice_loss()  # nn.BCELoss(weight=None) #nn.NLLLoss()
+        self.loss = Jaccard_loss()#Dice_loss()  # nn.BCELoss(weight=None) #nn.NLLLoss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
