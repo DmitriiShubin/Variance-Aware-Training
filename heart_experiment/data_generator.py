@@ -24,6 +24,8 @@ class Dataset_train(Dataset):
         self.patients = patients
         self.images_list = []
 
+        seed_everything(self, 42, eps=10)
+
         for patient in patients:
             images = [
                 i[:-4]
@@ -140,3 +142,13 @@ class Augmentations:
         mask = augmented['mask']
 
         return image, mask
+
+def seed_everything(self, seed, eps=10):
+    np.random.seed(seed)
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.determenistic = True
+    torch.backends.cudnn.benchmark = False
+    torch.set_printoptions(precision=eps)
