@@ -261,7 +261,7 @@ class Model:
                 print(f'global best max val_loss model score {self.early_stopping.best_score}')
                 break
             elif res == 1:
-                print(f'save global val_loss model score {metric_val}')
+                print(f'save global val_loss model score {avg_val_loss}')
 
         writer.close()
 
