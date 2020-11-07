@@ -28,5 +28,5 @@ class Jaccard_loss(nn.Module):
 
     def forward(self, y_true, y_pred):
         Intersection = torch.sum(y_true * y_pred, dim=0)
-        Union = torch.sum(y_true + y_pred, dim=0) - Intersection + self.smoothing
-        return -1 * torch.mean((Intersection)/(Union))
+        Union = torch.sum(y_true + y_pred, dim=0) - Intersection
+        return -1 * torch.mean((Intersection+ self.smoothing)/(Union+ self.smoothing))
