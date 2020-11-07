@@ -67,7 +67,7 @@ class Model:
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = Jaccard_loss()#Dice_loss()  # nn.BCELoss(weight=None) #nn.NLLLoss()
+        self.loss = nn.BCELoss(weight=None)#Jaccard_loss()#Dice_loss()  # nn.BCELoss(weight=None) #nn.NLLLoss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
