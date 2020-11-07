@@ -185,7 +185,8 @@ class UNet(nn.Module):
 
         x = torch.cat((x, x_s), dim=1)
 
-        x = torch.relu(self.adv_conv1(x))
+        #x = torch.relu(self.adv_conv1(x))
+        x = self.adv_conv1(x)
 
         x = torch.mean(x, dim=2)
         x = torch.squeeze(x)
