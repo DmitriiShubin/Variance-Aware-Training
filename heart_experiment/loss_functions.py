@@ -24,7 +24,7 @@ class Jaccard_loss(nn.Module):
     def __init__(self):
         super(Jaccard_loss, self).__init__()
 
-        self.smoothing = 1
+        self.smoothing = 100
 
     def forward(self, y_true, y_pred):
         # y_truef = torch.flatten(y_true)
