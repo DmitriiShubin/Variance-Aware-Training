@@ -35,18 +35,17 @@ class Metric:
         #     self.iou += (intersection) / (union + self.smooth)
 
     def compute(self):
-        # f1 = 0
-        # for i in range(self.confustion_matrix.shape[0]):
-        #     tn, fp, fn, tp = self.confustion_matrix[i, :, :].ravel()
-        #     f1 += tp / (tp + 0.5 * (fp + fn)) / self.confustion_matrix.shape[0]
-        #
-        # self.confustion_matrix = None
-        J = 0
+        f1 = 0
         tn, fp, fn, tp = self.confustion_matrix.ravel()
-        J += tp / (tp + fp + fn)
+        f1 += tp / (tp + 0.5*(fp + fn))
 
         self.confustion_matrix = None
-        return J
+        # J = 0
+        # tn, fp, fn, tp = self.confustion_matrix.ravel()
+        # J += tp / (tp + fp + fn)
+
+        #self.confustion_matrix = None
+        return f1
 
     def one_hot(self,x):
         return np.eye(self.num_classes, dtype=np.float32)[x.astype(np.int8)]
