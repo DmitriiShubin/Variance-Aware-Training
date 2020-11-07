@@ -12,13 +12,14 @@ class Metric:
 
     def calc_cm(self, labels, outputs):
 
+
         if self.confustion_matrix is None:
-            self.confustion_matrix = confusion_matrix(labels, outputs, labels=[0, 1]).astype(
+            self.confustion_matrix = confusion_matrix(labels, outputs).astype(
                 np.float32
             )
 
         else:
-            self.confustion_matrix += confusion_matrix(labels, outputs, labels=[0, 1]).astype(
+            self.confustion_matrix += confusion_matrix(labels, outputs).astype(
                 np.float32
             )
 
