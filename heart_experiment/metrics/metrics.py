@@ -14,12 +14,12 @@ class Metric:
 
 
         if self.confustion_matrix is None:
-            self.confustion_matrix = confusion_matrix(labels, outputs).astype(
+            self.confustion_matrix = confusion_matrix(labels, outputs,labels=[0,1]).astype(
                 np.float32
             )
 
         else:
-            self.confustion_matrix += confusion_matrix(labels, outputs).astype(
+            self.confustion_matrix += confusion_matrix(labels, outputs,labels=[0,1]).astype(
                 np.float32
             )
 
