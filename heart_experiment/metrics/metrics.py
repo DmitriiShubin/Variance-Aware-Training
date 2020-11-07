@@ -1,4 +1,4 @@
-from sklearn.metrics import multilabel_confusion_matrix
+from sklearn.metrics import multilabel_confusion_matrix,confusion_matrix
 import numpy as np
 
 
@@ -13,12 +13,12 @@ class Metric:
     def calc_cm(self, labels, outputs):
 
         if self.confustion_matrix is None:
-            self.confustion_matrix = multilabel_confusion_matrix(labels, outputs, labels=[0, 1]).astype(
+            self.confustion_matrix = confusion_matrix(labels, outputs, labels=[0, 1]).astype(
                 np.float32
             )
 
         else:
-            self.confustion_matrix += multilabel_confusion_matrix(labels, outputs, labels=[0, 1]).astype(
+            self.confustion_matrix += confusion_matrix(labels, outputs, labels=[0, 1]).astype(
                 np.float32
             )
 
@@ -41,9 +41,8 @@ class Metric:
         #
         # self.confustion_matrix = None
         J = 0
-        for i in range(self.confustion_matrix.shape[0]):
-            tn, fp, fn, tp = self.confustion_matrix[i, :, :].ravel()
-            J += tp / (tp + fp + fn) / self.confustion_matrix.shape[0]
+        tn, fp, fn, tp = self.confustion_matrix.ravel()
+        J += tp / (tp + fp + fn)
 
         self.confustion_matrix = None
         return J
