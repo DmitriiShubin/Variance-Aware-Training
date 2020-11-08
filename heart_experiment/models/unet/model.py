@@ -169,7 +169,7 @@ class Model:
 
                 y_batch = y_batch.numpy()
                 pred = pred.numpy()
-                y_batch = np.argmax(y_batch, axis=1)
+                #y_batch = np.argmax(y_batch, axis=1)
                 # pred[np.where(pred >=0.5)]=1
                 # pred[np.where(pred < 0.5)] = 0
 
