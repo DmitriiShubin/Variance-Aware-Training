@@ -11,8 +11,6 @@ class Dice_loss(nn.Module):
         self.smoothing = 1
 
     def forward(self, y_true, y_pred):
-        print(y_true.shape)
-        print(y_pred.shape)
         y_true = y_true[:,1]
         y_pred = y_pred[:, 1]
         # y_truef = torch.flatten(y_true)
