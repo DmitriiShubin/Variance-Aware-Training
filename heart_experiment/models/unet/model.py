@@ -202,7 +202,7 @@ class Model:
 
             metric_val = self.metric.compute()
 
-            self.scheduler.step(metric_val)
+            self.scheduler.step(avg_val_loss)
             res = self.early_stopping(score=metric_val, model=self.model)
 
             # print statistics
