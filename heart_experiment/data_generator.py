@@ -21,20 +21,23 @@ np.random.seed(42)
 class Dataset_train(Dataset):
     def __init__(self, patients, aug):
 
-        self.patients = patients
-        self.images_list = []
+        self.seed_everything(42, eps=10)
+        self.images_list = patients
 
-        seed_everything(self, 42, eps=10)
 
-        for patient in patients:
-            images = [
-                i[:-4]
-                for i in os.listdir(DATA_PATH + patient)
-                if i.find('.npy') != -1 and i.find('seg') == -1
-            ]
-            for image in images:
-                self.images_list.append(DATA_PATH + patient + '/' + image)
+        # try:
+        #     self.images_list = json.load(open('./split_table/'))
+        # for patient in patients:
+        #     images = [
+        #         i[:-4]
+        #         for i in sorted(os.listdir(DATA_PATH + patient))
+        #         if i.find('.npy') != -1 and i.find('seg') == -1
+        #     ]
+        #     images.sort()
+        #     for image in images:
+        #         self.images_list.append(DATA_PATH + patient + '/' + image)
 
+        #self.images_list.sort()
         self.preprocessing = Preprocessing(aug)
 
     def __len__(self):
@@ -51,6 +54,16 @@ class Dataset_train(Dataset):
 
         return X, y, X_s, y_s
 
+    def seed_everything(self,seed, eps=10):
+        np.random.seed(seed)
+        random.seed(seed)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.determenistic = True
+        torch.backends.cudnn.benchmark = False
+        torch.set_printoptions(precision=eps)
+
     def load_data(self, id):
 
         X = np.load(self.images_list[id] + '.npy').astype(np.float32)
@@ -61,6 +74,7 @@ class Dataset_train(Dataset):
         y_ = y.copy()
 
         X, y = self.preprocessing.run(X=X, y=y)
+
 
         # second head
         sampled_patient = np.round(np.random.uniform(size=1)[0],1)
@@ -143,12 +157,3 @@ class Augmentations:
 
         return image, mask
 
-def seed_everything(self, seed, eps=10):
-    np.random.seed(seed)
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.determenistic = True
-    torch.backends.cudnn.benchmark = False
-    torch.set_printoptions(precision=eps)

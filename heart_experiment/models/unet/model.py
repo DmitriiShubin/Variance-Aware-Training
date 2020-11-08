@@ -60,7 +60,7 @@ class Model:
                 print('Only one GPU is available')
 
         self.metric = Metric()
-        self.num_workers = 12
+        self.num_workers = 0
 
         ########################## compile the model ###############################
 
@@ -114,7 +114,7 @@ class Model:
     def fit(self, train, valid):
 
         train_loader = DataLoader(
-            train, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=self.num_workers
+            train, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=self.num_workers
         )
         valid_loader = DataLoader(
             valid, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=self.num_workers
@@ -141,6 +141,8 @@ class Model:
 
                 self.optimizer.zero_grad()
                 # get model predictions
+
+
 
                 pred = self.model(X_batch)
                 X_batch = X_batch.float().cpu().detach()

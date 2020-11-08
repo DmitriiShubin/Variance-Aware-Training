@@ -34,8 +34,6 @@ class Metric:
 
         return J
 
-    def one_hot(self,x):
-        return np.eye(self.num_classes, dtype=np.float32)[x.astype(np.int8)]
 
 @numba.jit(nopython=False, parallel=True,forceobj=True)
 def threshold(x):
