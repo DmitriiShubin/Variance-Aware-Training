@@ -169,7 +169,7 @@ class Model:
                 y_batch = np.argmax(y_batch, axis=1)
                 pred = np.argmax(pred, axis=1)
 
-
+ 
                 self.metric.calc_cm(labels=y_batch, outputs=pred)
 
             metric_train = self.metric.compute()
