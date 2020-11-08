@@ -24,9 +24,9 @@ class Metric:
         # self.intersection += np.sum(labels*outputs)
         # self.union += np.sum(labels+outputs) - np.sum(labels*outputs)
 
-        self.tp += (labels * outputs)
-        self.fp += ((1 - labels) * outputs)
-        self.fn += (labels * (1 - outputs))
+        self.tp += np.sum(labels * outputs,axis=0)
+        self.fp += np.sum((1 - labels) * outputs,axis=0)
+        self.fn += np.sum(labels * (1 - outputs),axis=0)
 
 
     def compute(self):
