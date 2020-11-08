@@ -13,7 +13,7 @@ class Metric:
 
     def calc_cm(self, labels, outputs):
 
-        # outputs = threshold(outputs)
+        outputs = threshold(outputs)
         #
         # self.intersection += np.sum(labels*outputs)
         # self.union += np.sum(labels+outputs) - np.sum(labels*outputs)
