@@ -17,12 +17,12 @@ class Metric:
 
         outputs = threshold(outputs)
 
-        self.intersection += np.logical_and(labels, outputs)
-        self.union += np.logical_or(labels, outputs)
+        self.intersection += np.sum(labels*outputs)
+        self.union += np.sum(labels)+ np.sum(outputs) -np.sum(labels*outputs)
 
 
     def compute(self):
-        J  = np.sum(self.intersection) / np.sum(self.union)
+        J  = (self.intersection + self.smooth) / (self.union + self.smooth)
         self.intersection = 0
         self.union = 0
         return J
