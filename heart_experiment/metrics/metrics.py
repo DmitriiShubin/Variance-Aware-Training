@@ -18,7 +18,7 @@ class Metric:
         outputs = threshold(outputs)
 
         self.intersection += np.sum(labels*outputs)
-        self.union += np.sum(labels+outputs) -np.sum(labels*outputs)
+        self.union += np.sum(labels+outputs) - np.sum(labels*outputs)
 
 
     def compute(self):
