@@ -30,7 +30,7 @@ class Metric:
 
 
     def compute(self):
-        J  = np.mean((self.tp) / (self.tp + self.fp + self.fn + self.smooth))
+        J  = (self.tp[1]) / (self.tp[1] + self.fp[1] + self.fn[1] + self.smooth)
         self.tp = 0
         self.fp = 0
         self.fn = 0
