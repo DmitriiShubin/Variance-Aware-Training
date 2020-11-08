@@ -80,15 +80,15 @@ class Model:
             + '.pt',
             patience=self.hparams['patience'],
             delta=self.hparams['min_delta'],
-            is_maximize=False,
+            is_maximize=True,
         )
 
         # lr scheduler
         self.scheduler = ReduceLROnPlateau(
             optimizer=self.optimizer,
-            mode='min',
+            mode='max',
             factor=0.2,
-            patience=3,
+            patience=5,
             verbose=True,
             threshold=self.hparams['min_delta'],
             threshold_mode='abs',
@@ -202,8 +202,8 @@ class Model:
 
             metric_val = self.metric.compute()
 
-            self.scheduler.step(avg_val_loss)
-            res = self.early_stopping(score=avg_val_loss, model=self.model)
+            self.scheduler.step(metric_val)
+            res = self.early_stopping(score=metric_val, model=self.model)
 
             # print statistics
             if self.hparams['verbose_train']:
@@ -236,7 +236,7 @@ class Model:
                 print(f'global best max val_loss model score {self.early_stopping.best_score}')
                 break
             elif res == 1:
-                print(f'save global val_loss model score {avg_val_loss}')
+                print(f'save global val_loss model score {metric_val}')
 
         writer.close()
 
