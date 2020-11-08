@@ -85,7 +85,7 @@ class CVPipeline:
             y_val = y_val.reshape(-1)
 
             self.metric.calc_cm(labels=y_val, outputs=pred_val_processed,train=False)
-            fold_score = self.metric.compute()  # y_val, pred_val_processed)
+            fold_score = self.metric.compute()
             print("Model's final scrore: ", fold_score)
             # save the model
             self.model.model_save(

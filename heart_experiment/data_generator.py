@@ -23,21 +23,6 @@ class Dataset_train(Dataset):
 
         self.seed_everything(42, eps=10)
         self.images_list = patients
-
-
-        # try:
-        #     self.images_list = json.load(open('./split_table/'))
-        # for patient in patients:
-        #     images = [
-        #         i[:-4]
-        #         for i in sorted(os.listdir(DATA_PATH + patient))
-        #         if i.find('.npy') != -1 and i.find('seg') == -1
-        #     ]
-        #     images.sort()
-        #     for image in images:
-        #         self.images_list.append(DATA_PATH + patient + '/' + image)
-
-        #self.images_list.sort()
         self.preprocessing = Preprocessing(aug)
 
     def __len__(self):
@@ -109,12 +94,6 @@ class Preprocessing:
         self.augmentations = Augmentations(0.0)
 
     def run(self, X, y, label_process=True):
-
-        # X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
-        # y = cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).astype(np.float32)
-
-        # if self.aug:
-        #     X, y = self.augmentations.apply_augs(X, y)
 
         # apply scaling
         for i in range(X.shape[2]):

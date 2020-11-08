@@ -185,8 +185,7 @@ class UNet(nn.Module):
 
         x = torch.cat((x, x_s), dim=1)
 
-        #x = torch.relu(self.adv_conv1(x))
-        x = self.adv_conv1(x)
+        x = torch.relu(self.adv_conv1(x))
 
         x = torch.mean(x, dim=2)
         x = torch.squeeze(x)
@@ -197,5 +196,5 @@ class UNet(nn.Module):
         x1, x2, x3, x4, x5 = self.encoder(x)
         x = self.decoder(x1, x2, x3, x4, x5)
         logits = self.outc(x)
-        logits = torch.sigmoid(logits)
+        logits = torch.softmax(logits, dim=1)
         return logits, x
