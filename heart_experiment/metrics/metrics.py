@@ -1,6 +1,6 @@
 from sklearn.metrics import multilabel_confusion_matrix,confusion_matrix
 import numpy as np
-
+import numba
 
 class Metric:
     def __init__(self):
@@ -12,6 +12,7 @@ class Metric:
 
     def calc_cm(self, labels, outputs):
 
+        outputs = threshold(outputs)
 
         if self.confustion_matrix is None:
             self.confustion_matrix = confusion_matrix(labels, outputs,labels=[0,1]).astype(
@@ -49,6 +50,12 @@ class Metric:
 
     def one_hot(self,x):
         return np.eye(self.num_classes, dtype=np.float32)[x.astype(np.int8)]
+
+@numba.jit(nopython=False, parallel=True,forceobj=True)
+def threshold(x):
+    x = np.round(x)
+    return x
+
 
 
 

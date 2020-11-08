@@ -144,7 +144,7 @@ class UNet(nn.Module):
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
         # adversarial deep net layers
-        self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
+        #self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
 
     def forward(self, x):
         x1, x2, x3, x4, x5 = self.encoder(x)

@@ -66,19 +66,19 @@ class CVPipeline:
                 if fold != self.hparams['start_fold']:
                     continue
             # TODO
-            train = Dataset_train(self.splits['train'].values[fold], aug=False)
-            valid = Dataset_train(self.splits['val'].values[fold], aug=False)
+            train = Dataset_train(self.splits['train'].values[fold][:2], aug=False)
+            valid = Dataset_train(self.splits['val'].values[fold][:2], aug=False)
 
             X, y, _, _ = train.__getitem__(0)
             self.model = self.model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu)
 
             # train model
-            start_training = self.model.fit(train=train, valid=valid)
+            #start_training = self.model.fit(train=train, valid=valid)
 
             # get model predictions
             y_val, pred_val = self.model.predict(valid)
 
-            pred_val_processed = np.argmax(pred_val, axis=1)
+            pred_val_processed = pred_val#np.argmax(pred_val, axis=1)
             y_val = np.argmax(y_val, axis=1)
 
             pred_val_processed = pred_val_processed.reshape(-1)
