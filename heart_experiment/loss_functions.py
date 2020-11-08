@@ -14,7 +14,7 @@ class Dice_loss(nn.Module):
         # y_truef = torch.flatten(y_true)
         # y_predf = torch.flatten(y_pred)
         And = torch.sum(y_true * y_pred, dim=0)
-        return -1 * torch.mean(
+        return 1 - torch.mean(
             (2 * And + self.smoothing)
             / (torch.sum(y_true, dim=0) + torch.sum(y_pred, dim=0) + self.smoothing)
         )
