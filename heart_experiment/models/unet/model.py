@@ -163,15 +163,12 @@ class Model:
 
                 train_loss.backward()
                 self.optimizer.step()
-
-                pred[torch.where(pred >=0.5)]=1
-                pred[torch.where(pred < 0.5)] = 0
+                
 
                 y_batch = y_batch.numpy()
                 pred = pred.numpy()
                 #y_batch = np.argmax(y_batch, axis=1)
-                # pred[np.where(pred >=0.5)]=1
-                # pred[np.where(pred < 0.5)] = 0
+                pred = np.round_(pred)
 
                 self.metric.calc_cm(labels=y_batch, outputs=pred)
 
