@@ -141,9 +141,10 @@ class Model:
 
                 self.optimizer.zero_grad()
                 # get model predictions
-
+                start = time()
                 pred = self.model(X_batch)
-
+                end = time()
+                print('Formard pass:',end-start)
                 X_batch = X_batch.float().cpu().detach()
 
                 # process loss_1
@@ -153,28 +154,31 @@ class Model:
                 y_batch = y_batch.permute(0, 2, 3, 1)
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
 
+                start = time()
                 train_loss = self.loss(pred, y_batch)
-
+                end = time()
+                print('loss calc:', end - start)
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
 
+                start = time()
                 train_loss.backward()
                 self.optimizer.step()
-                
-
+                end = time()
+                print('backprop:', end - start)
                 y_batch = y_batch.numpy()
                 pred = pred.numpy()
 
                 # y_batch = np.argmax(y_batch, axis=1)
                 # pred = np.argmax(pred, axis=1)
 
- 
-
+                start = time()
                 self.metric.calc_cm(labels=y_batch, outputs=pred)
-
+                end = time()
+                print('metric:', end - start)
             metric_train = self.metric.compute()
 
             # evaluate the model
