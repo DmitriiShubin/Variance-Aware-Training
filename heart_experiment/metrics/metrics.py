@@ -23,9 +23,6 @@ class Metric:
         labels = np.eye(2, dtype=np.float32)[labels.astype(np.int8)]
         outputs = np.eye(2, dtype=np.float32)[outputs.astype(np.int8)]
 
-        # self.intersection += np.sum(labels*outputs)
-        # self.union += np.sum(labels+outputs) - np.sum(labels*outputs)
-
         self.tp += np.sum(labels * outputs,axis=0)
         self.fp += np.sum((1 - labels) * outputs,axis=0)
         self.fn += np.sum(labels * (1 - outputs),axis=0)
