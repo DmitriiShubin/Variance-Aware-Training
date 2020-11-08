@@ -29,7 +29,7 @@ class Metric:
 
 
     def compute(self):
-        J  = (self.tp[1]) / (self.tp[1] + self.fp[1] + self.fn[1] + self.smooth)
+        J  = (self.tp[1]) / (self.tp[1] + 0.5*(self.fp[1] + self.fn[1] + self.smooth))
         self.tp = 0
         self.fp = 0
         self.fn = 0
