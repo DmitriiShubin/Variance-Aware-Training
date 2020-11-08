@@ -6,25 +6,29 @@ from time import time
 class Metric:
     def __init__(self):
 
-        self.confustion_matrix = None
-        self.num_classes = 1
         self.smooth = 1
-        self.iou = 0
-        self.intersection = 0
-        self.union = 0
+        self.tp = 0
+        self.fp = 0
+        self.fn = 0
 
     def calc_cm(self, labels, outputs):
 
-        outputs = threshold(outputs)
+        # outputs = threshold(outputs)
+        #
+        # self.intersection += np.sum(labels*outputs)
+        # self.union += np.sum(labels+outputs) - np.sum(labels*outputs)
 
-        self.intersection += np.sum(labels*outputs)
-        self.union += np.sum(labels+outputs) - np.sum(labels*outputs)
+        self.tp = (labels * outputs).sum().astype(np.float32)
+        self.fp = ((1 - labels) * outputs).sum().astype(np.float32)
+        self.fn = (labels * (1 - outputs)).sum().astype(np.float32)
 
 
     def compute(self):
-        J  = (self.intersection + self.smooth) / (self.union + self.smooth)
-        self.intersection = 0
-        self.union = 0
+        J  = (self.tp) / (self.tp + self.fp + self.fn)
+        self.tp = 0
+        self.fp = 0
+        self.fn = 0
+
         return J
 
     def one_hot(self,x):
