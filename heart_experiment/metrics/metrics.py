@@ -15,8 +15,6 @@ class Metric:
     def calc_cm(self, labels, outputs,train=True):
 
         if train:
-            labels = np.round(labels,1)
-            outputs = np.round(outputs,1)
             labels = np.argmax(labels, axis=1)
             outputs = np.argmax(outputs, axis=1)
 
