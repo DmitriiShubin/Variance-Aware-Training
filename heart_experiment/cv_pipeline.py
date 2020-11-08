@@ -78,13 +78,13 @@ class CVPipeline:
             # get model predictions
             y_val, pred_val = self.model.predict(valid)
 
-            pred_val_processed = pred_val
+            pred_val_processed = np.argmax(pred_val, axis=1)
             y_val = np.argmax(y_val, axis=1)
 
             pred_val_processed = pred_val_processed.reshape(-1)
             y_val = y_val.reshape(-1)
 
-            self.metric.calc_cm(labels=y_val, outputs=pred_val_processed)
+            self.metric.calc_cm(labels=y_val, outputs=pred_val_processed,train=False)
             fold_score = self.metric.compute()  # y_val, pred_val_processed)
             print("Model's final scrore: ", fold_score)
             # save the model

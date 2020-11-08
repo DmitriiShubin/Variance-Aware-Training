@@ -148,7 +148,7 @@ class UNet(nn.Module):
         x1, x2, x3, x4, x5 = self.encoder(x)
         x = self.decoder(x1, x2, x3, x4, x5)
         logits = self.outc(x)
-        logits = torch.sigmoid(logits)
+        logits = torch.softmax(logits,dim=1)
         return logits
 
     def encoder(self, x):

@@ -37,26 +37,26 @@ class Model:
 
         if inference:
             self.device = torch.device('cpu')
-            self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=1).to(self.device)
+            self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 0:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=1).to(
+                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(
                         self.device
                     )
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Number of GPUs will be used: ", torch.cuda.device_count() - 5)
                     self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=1).to(
+                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(
                         self.device
                     )
                     self.model = DP(self.model, device_ids=list(range(torch.cuda.device_count() - 5)))
             else:
                 self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=1).to(self.device)
+                self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(self.device)
                 print('Only one GPU is available')
 
         self.metric = Metric()
@@ -166,8 +166,7 @@ class Model:
                 y_batch = y_batch.numpy()
                 pred = pred.numpy()
 
-                # y_batch = np.argmax(y_batch, axis=1)
-                # pred = np.argmax(pred, axis=1)
+
 
                 self.metric.calc_cm(labels=y_batch, outputs=pred)
             metric_train = self.metric.compute()
@@ -197,6 +196,7 @@ class Model:
 
                     y_batch = y_batch.numpy()
                     pred = pred.numpy()
+
 
                     self.metric.calc_cm(labels=y_batch, outputs=pred)
 

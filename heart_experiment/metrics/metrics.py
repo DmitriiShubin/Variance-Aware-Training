@@ -12,10 +12,12 @@ class Metric:
         self.fp = 0
         self.fn = 0
 
-    def calc_cm(self, labels, outputs):
+    def calc_cm(self, labels, outputs,train=True):
 
-        outputs = threshold(outputs)
-        #
+        if train:
+            labels = np.argmax(labels, axis=1)
+            outputs = np.argmax(outputs, axis=1)
+
         # self.intersection += np.sum(labels*outputs)
         # self.union += np.sum(labels+outputs) - np.sum(labels*outputs)
 
