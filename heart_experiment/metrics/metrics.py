@@ -1,6 +1,7 @@
 from sklearn.metrics import multilabel_confusion_matrix,confusion_matrix
 import numpy as np
 import numba
+from time import time
 
 class Metric:
     def __init__(self):
@@ -12,8 +13,11 @@ class Metric:
 
     def calc_cm(self, labels, outputs):
 
+        start = time()
         outputs = threshold(outputs)
-
+        end = time()
+        print('Thresholding:',end-start)
+        start = time()
         if self.confustion_matrix is None:
             self.confustion_matrix = confusion_matrix(labels, outputs,labels=[0,1]).astype(
                 np.float32
@@ -23,7 +27,8 @@ class Metric:
             self.confustion_matrix += confusion_matrix(labels, outputs,labels=[0,1]).astype(
                 np.float32
             )
-
+        end = time()
+        print('CM:', end - start)
         #IoU:
         # if self.num_classes>1:
         #     outputs = self.one_hot(outputs)
