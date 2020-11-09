@@ -28,9 +28,9 @@ class Metric:
         fp = np.sum(outputs, axis=0) - tp
         fn = np.sum(labels, axis=0) - tp
 
-        self.tp += tp
-        self.fp += fp
-        self.fn += fn
+        self.tp = self.tp+ tp
+        self.fp = self.fp + fp
+        self.fn = self.fn +fn
 
 
 
