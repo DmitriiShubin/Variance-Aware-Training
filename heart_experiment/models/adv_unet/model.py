@@ -86,7 +86,7 @@ class Model:
         # lr scheduler
         self.scheduler = ReduceLROnPlateau(
             optimizer=self.optimizer,
-            mode='max',
+            mode='min',
             factor=0.2,
             patience=3,
             verbose=True,

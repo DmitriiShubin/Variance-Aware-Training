@@ -87,5 +87,5 @@ class FPN(smp_FPN):
         x = self.conv2d(x)
         x = self.upsampling(x)
         logits = self.outc(x)
-        logits = torch.softmax(logits, dim=1)
+        logits = torch.nn.functional.softmax(logits, dim=1)
         return logits, x
