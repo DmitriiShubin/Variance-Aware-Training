@@ -37,7 +37,7 @@ class Metric:
 
         #
         # self.intersection =  self.intersection + np.sum(labels * outputs,axis=0)
-        # self.union = self.union + np.sum(labels + outputs,axis=0) - np.sum(labels * outputs,axis=0)
+        # self.union = self.union + np.sum(labels) + np.sum(outputs,axis=0) - np.sum(labels * outputs,axis=0)
 
     def compute(self):
         # J  = (self.intersection[1]+ self.smoothing) / (self.union[1] + self.smoothing)

@@ -21,7 +21,7 @@ class Dice_loss(nn.Module):
 
         f1 = torch.mean(((1 + 2 ** 2) * tp + self.smoothing) \
             / ((1 + 2 ** 2) * tp + 2 ** 2 * fn + fp + self.smoothing))
-        return -1*torch.log(f1)
+        return -1*f1
         # And = torch.sum(y_true * y_pred,dim=0)
         # return 1 - torch.mean(
         #     (2 * And + self.smoothing)
@@ -36,10 +36,10 @@ class Jaccard_loss(nn.Module):
         self.smoothing = 1e-5
 
     def forward(self, y_pred, y_true):
-        # y_true = y_true[:,1]
-        # y_pred = y_pred[:, 1]
+        y_true = y_true[:,1]
+        y_pred = y_pred[:, 1]
         Intersection = torch.sum(y_true * y_pred, dim=0)
-        Union = torch.sum(y_true + y_pred, dim=0) - Intersection
+        Union = torch.sum(y_true) + torch.sum(y_pred, dim=0) - Intersection
         loss = torch.mean((Intersection+ self.smoothing)/(Union+ self.smoothing))
 
         # tp = torch.sum(y_true * y_pred, dim=0)
