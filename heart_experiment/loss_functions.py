@@ -39,7 +39,7 @@ class Jaccard_loss(nn.Module):
         y_true = y_true[:,1]
         y_pred = y_pred[:, 1]
         Intersection = torch.sum(y_true * y_pred, dim=0)
-        Union = torch.sum(y_true) + torch.sum(y_pred, dim=0)
+        Union = torch.sum(y_true + y_pred, dim=0) - Intersection
         loss = torch.mean((Intersection+ self.smoothing)/(Union+ self.smoothing))
 
         # tp = torch.sum(y_true * y_pred, dim=0)
