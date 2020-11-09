@@ -77,3 +77,5 @@ def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model):
 
 if __name__ == "__main__":
     main()
+
+

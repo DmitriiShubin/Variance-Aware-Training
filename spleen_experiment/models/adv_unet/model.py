@@ -12,11 +12,11 @@ from torch.utils.data import DataLoader
 
 # custom modules
 from metrics import Metric
-from utils.torchsummary import summary
-from loss_functions import Dice_loss
+from loss_functions import Dice_loss,Jaccard_loss
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
+import random
 
 # model
 from models.adv_unet.structure import UNet
@@ -60,14 +60,14 @@ class Model:
                 print('Only one GPU is available')
 
         self.metric = Metric()
-        self.num_workers = 32
+        self.num_workers = 0
 
         ########################## compile the model ###############################
 
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = Dice_loss()  # nn.BCELoss(weight=None) #nn.NLLLoss()
+        self.loss = Dice_loss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
@@ -101,10 +101,15 @@ class Model:
 
         self.scaler = torch.cuda.amp.GradScaler()
 
-    def seed_everything(self, seed):
+    def seed_everything(self, seed, eps=10):
         np.random.seed(seed)
+        random.seed(seed)
         os.environ['PYTHONHASHSEED'] = str(seed)
         torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.determenistic = True
+        torch.backends.cudnn.benchmark = False
+        torch.set_printoptions(precision=eps)
 
     def fit(self, train, valid):
 
@@ -170,8 +175,6 @@ class Model:
 
                 y_batch = y_batch.numpy()
                 pred = pred.numpy()
-                y_batch = np.argmax(y_batch, axis=1)
-                pred = np.argmax(pred, axis=1)
 
                 self.metric.calc_cm(labels=y_batch, outputs=pred)
 
@@ -210,14 +213,11 @@ class Model:
 
                     y_batch = y_batch.numpy()
                     pred = pred.numpy()
-                    y_batch = np.argmax(y_batch, axis=1)
-                    pred = np.argmax(pred, axis=1)
-
                     self.metric.calc_cm(labels=y_batch, outputs=pred)
 
             metric_val = self.metric.compute()
 
-            self.scheduler.step(metric_val)
+            self.scheduler.step(avg_val_loss)
             res = self.early_stopping(score=metric_val, model=self.model)
 
             # print statistics
@@ -276,15 +276,11 @@ class Model:
         test_val = torch.Tensor([])
         print('Generating predictions')
         with torch.no_grad():
-            for i, (X_batch, y_batch, X_s_batch, _) in enumerate(tqdm(test_loader)):
+            for i, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
-                X_s_batch = X_s_batch.float().to(self.device)
 
-                # TODO:
-                # pred = self.model([X_batch, X_s_batch])
-                pred, pred_s = self.model([X_batch, X_s_batch])
-                X_batch = X_batch.cpu().detach()
-                pred_s = pred_s.cpu().detach()
+                pred = self.model(X_batch)
+                X_batch = X_batch.float().cpu().detach()
 
                 test_preds = torch.cat([test_preds, pred.cpu().detach()], 0)
                 test_val = torch.cat([test_val, y_batch.cpu().detach()], 0)
@@ -293,8 +289,6 @@ class Model:
 
     def model_save(self, model_path):
         torch.save(self.model.state_dict(), model_path)
-        # self.model.module.state_dict(), PATH
-        # torch.save(self.model, model_path)
         return True
 
     def model_load(self, model_path):

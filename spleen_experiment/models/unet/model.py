@@ -16,7 +16,8 @@ from loss_functions import Dice_loss,Jaccard_loss
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
-
+import random
+#from segmentation_models_pytorch.utils.losses import JaccardLoss
 # model
 from models.unet.structure import UNet
 
@@ -66,7 +67,7 @@ class Model:
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = Jaccard_loss()  # nn.BCELoss(weight=None) #nn.NLLLoss()
+        self.loss = Dice_loss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
@@ -100,10 +101,15 @@ class Model:
 
         self.scaler = torch.cuda.amp.GradScaler()
 
-    def seed_everything(self, seed):
+    def seed_everything(self, seed, eps=10):
         np.random.seed(seed)
+        random.seed(seed)
         os.environ['PYTHONHASHSEED'] = str(seed)
         torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.determenistic = True
+        torch.backends.cudnn.benchmark = False
+        torch.set_printoptions(precision=eps)
 
     def fit(self, train, valid):
 
@@ -136,8 +142,9 @@ class Model:
                 self.optimizer.zero_grad()
                 # get model predictions
 
-                pred = self.model(X_batch)
 
+
+                pred = self.model(X_batch)
                 X_batch = X_batch.float().cpu().detach()
 
                 # process loss_1
@@ -147,23 +154,23 @@ class Model:
                 y_batch = y_batch.permute(0, 2, 3, 1)
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
 
-                train_loss = self.loss(pred, y_batch)
 
+                train_loss = self.loss(pred, y_batch)
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
 
+
                 train_loss.backward()
                 self.optimizer.step()
-
                 y_batch = y_batch.numpy()
                 pred = pred.numpy()
 
 
-                self.metric.calc_cm(labels=y_batch, outputs=pred)
 
+                self.metric.calc_cm(labels=y_batch, outputs=pred)
             metric_train = self.metric.compute()
 
             # evaluate the model
@@ -188,7 +195,7 @@ class Model:
 
                     y_batch = y_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
-
+ 
                     y_batch = y_batch.numpy()
                     pred = pred.numpy()
 
@@ -197,7 +204,7 @@ class Model:
 
             metric_val = self.metric.compute()
 
-            self.scheduler.step(metric_val)
+            self.scheduler.step(avg_val_loss)
             res = self.early_stopping(score=metric_val, model=self.model)
 
             # print statistics
