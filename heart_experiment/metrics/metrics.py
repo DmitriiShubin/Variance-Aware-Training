@@ -11,9 +11,9 @@ class Metric:
         self.intersection = np.array([0,0])
         self.union = np.array([0,0])
 
-        self.tp =0
-        self.fp =0
-        self.fn =0
+        self.tp = np.array([0,0])
+        self.fp = np.array([0,0])
+        self.fn = np.array([0,0])
 
     def calc_cm(self, labels, outputs,train=True):
 
@@ -45,9 +45,9 @@ class Metric:
         f1 = ((1 + 2 ** 2) * self.tp[1] + self.smoothing) \
                 / ((1 + 2 ** 2) * self.tp[1] + 2 ** 2 * self.fn[1] + self.fp[1] + self.smoothing)
 
-        self.tp = 0
-        self.fp = 0
-        self.fn = 0
+        self.tp = np.array([0, 0])
+        self.fp = np.array([0, 0])
+        self.fn = np.array([0, 0])
 
         return f1
 
