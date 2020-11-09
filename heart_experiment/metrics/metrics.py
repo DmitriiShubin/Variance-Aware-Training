@@ -11,6 +11,8 @@ class Metric:
         self.intersection = np.array([0,0])
         self.union = np.array([0,0])
 
+        self.threshold = 0.7
+
         self.tp = np.array([0,0])
         self.fp = np.array([0,0])
         self.fn = np.array([0,0])
@@ -20,8 +22,8 @@ class Metric:
         if train:
             # labels = np.argmax(labels, axis=1)
             # outputs = np.argmax(outputs, axis=1)
-            outputs[np.where(labels >= 0.5)] = 1
-            outputs[np.where(labels < 0.5)] = 0
+            outputs[np.where(labels >= self.threshold)] = 1
+            outputs[np.where(labels < self.threshold)] = 0
 
         # labels = np.eye(2, dtype=np.float32)[labels.astype(np.int8)]
         # outputs = np.eye(2, dtype=np.float32)[outputs.astype(np.int8)]
