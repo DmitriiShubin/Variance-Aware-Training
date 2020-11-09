@@ -11,7 +11,7 @@ class Metric:
         self.intersection = np.array([0,0])
         self.union = np.array([0,0])
 
-        self.threshold = 0.7
+        self.threshold = 0.3
 
         self.tp = np.array([0,0])
         self.fp = np.array([0,0])
