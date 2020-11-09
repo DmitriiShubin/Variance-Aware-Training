@@ -19,8 +19,8 @@ class Dice_loss(nn.Module):
         fp = torch.sum(y_pred, dim=0) - tp
         fn = torch.sum(y_true, dim=0) - tp
 
-        f1 = ((1 + 2 ** 2) * tp + self.smoothing) \
-            / ((1 + 2 ** 2) * tp + 2 ** 2 * fn + fp + self.smoothing)
+        f1 = torch.mean(((1 + 2 ** 2) * tp + self.smoothing) \
+            / ((1 + 2 ** 2) * tp + 2 ** 2 * fn + fp + self.smoothing))
         return -1*f1
         # And = torch.sum(y_true * y_pred,dim=0)
         # return 1 - torch.mean(
