@@ -195,7 +195,7 @@ class Model:
 
                     y_batch = y_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
-
+ 
                     y_batch = y_batch.numpy()
                     pred = pred.numpy()
 
