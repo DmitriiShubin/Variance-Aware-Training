@@ -11,6 +11,10 @@ class Metric:
         self.intersection = np.array([0,0])
         self.union = np.array([0,0])
 
+        self.tp =0
+        self.fp =0
+        self.fn =0
+
     def calc_cm(self, labels, outputs,train=True):
 
         if train:
@@ -20,14 +24,32 @@ class Metric:
         labels = np.eye(2, dtype=np.float32)[labels.astype(np.int8)]
         outputs = np.eye(2, dtype=np.float32)[outputs.astype(np.int8)]
 
-        self.intersection =  self.intersection + np.sum(labels * outputs,axis=0)
-        self.union = self.union + np.sum(labels + outputs,axis=0) - np.sum(labels * outputs,axis=0)
+        tp = np.sum(labels * outputs, axis=0)
+        fp = np.sum(outputs, axis=0) - tp
+        fn = np.sum(labels, axis=0) - tp
+
+        self.tp += tp
+        self.fp += fp
+        self.fn += fn
+
+
+
+        # self.intersection =  self.intersection + np.sum(labels * outputs,axis=0)
+        # self.union = self.union + np.sum(labels + outputs,axis=0) - np.sum(labels * outputs,axis=0)
 
     def compute(self):
-        J  = (self.intersection[1]+ self.smoothing) / (self.union[1] + self.smoothing)
-        self.intersection = 0
-        self.union = 0
-        return J
+        # J  = (self.intersection[1]+ self.smoothing) / (self.union[1] + self.smoothing)
+        # self.intersection = 0
+        # self.union = 0
+
+        f1 = ((1 + 2 ** 2) * self.tp[1] + self.smoothing) \
+                / ((1 + 2 ** 2) * self.tp[1] + 2 ** 2 * self.fn[1] + self.fp[1] + self.smoothing)
+
+        self.tp = 0
+        self.fp = 0
+        self.fn = 0
+
+        return f1
 
 
 @numba.jit(nopython=False, parallel=True,forceobj=True)
