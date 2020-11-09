@@ -7,7 +7,7 @@ class Metric:
     def __init__(self):
 
 
-        self.smooth = 1e-5
+        self.smoothing = 1e-5
         self.intersection = 0
         self.union = 0
 
@@ -25,7 +25,7 @@ class Metric:
 
 
     def compute(self):
-        J  = (self.intersection[1]+ self.smooth) / (self.union[1] + self.smooth)
+        J  = (self.intersection[1]+ self.smoothing) / (self.union[1] + self.smoothing)
         self.intersection = 0
         self.union = 0
 
