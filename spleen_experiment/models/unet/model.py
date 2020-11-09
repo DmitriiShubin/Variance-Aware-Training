@@ -191,7 +191,7 @@ class Model:
 
                     y_batch = y_batch.numpy()
                     pred = pred.numpy()
-                  
+
 
                     self.metric.calc_cm(labels=y_batch, outputs=pred)
 
