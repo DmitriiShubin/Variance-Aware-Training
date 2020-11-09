@@ -11,8 +11,8 @@ class Dice_loss(nn.Module):
         self.smoothing = 1
 
     def forward(self, y_true, y_pred):
-        y_true = y_true[:,1]
-        y_pred = y_pred[:, 1]
+        # y_true = y_true[:,1]
+        # y_pred = y_pred[:, 1]
         # y_truef = torch.flatten(y_true)
         # y_predf = torch.flatten(y_pred)
         And = torch.sum(y_true * y_pred, dim=0)
