@@ -21,7 +21,7 @@ class Dice_loss(nn.Module):
 
         f1 = torch.mean(((1 + 2 ** 2) * tp + self.smoothing) \
             / ((1 + 2 ** 2) * tp + 2 ** 2 * fn + fp + self.smoothing))
-        return -1*f1
+        return -1*torch.log(f1)
         # And = torch.sum(y_true * y_pred,dim=0)
         # return 1 - torch.mean(
         #     (2 * And + self.smoothing)
