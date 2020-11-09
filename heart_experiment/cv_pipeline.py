@@ -68,6 +68,7 @@ class CVPipeline:
             # TODO
             train = Dataset_train(self.splits['train'].values[fold], aug=True)
             valid = Dataset_train(self.splits['val'].values[fold], aug=False)
+            test = Dataset_train(self.splits['test'].values[fold], aug=False)
 
             X, y, _, _ = train.__getitem__(0)
             self.model = self.model(n_channels=X.shape[0], hparams=self.hparams, gpu=self.gpu)
@@ -76,15 +77,15 @@ class CVPipeline:
             start_training = self.model.fit(train=train, valid=valid)
 
             # get model predictions
-            y_val, pred_val = self.model.predict(valid)
+            y_test, pred_test = self.model.predict(test)
 
-            pred_val_processed = np.argmax(pred_val, axis=1)
-            y_val = np.argmax(y_val, axis=1)
+            pred_test_processed = np.argmax(pred_test, axis=1)
+            y_test = np.argmax(y_test, axis=1)
 
-            pred_val_processed = pred_val_processed.reshape(-1)
-            y_val = y_val.reshape(-1)
+            pred_test_processed = pred_test_processed.reshape(-1)
+            y_test = y_test.reshape(-1)
 
-            self.metric.calc_cm(labels=y_val, outputs=pred_val_processed,train=False)
+            self.metric.calc_cm(labels=y_test, outputs=pred_test_processed,train=False)
             fold_score = self.metric.compute()
             print("Model's final scrore: ", fold_score)
             # save the model

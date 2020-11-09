@@ -86,6 +86,20 @@ class Dataset_train(Dataset):
 
         return X, y, X_s, y_s
 
+class Dataset_test(Dataset_train):
+    def __init__(self,patients, aug):
+        super(Dataset_test, self).__init__(patients, aug)
+
+    def __getitem__(self, idx):
+
+        X, y, X_s, y_s = self.load_data(idx)
+
+        X = torch.tensor(X, dtype=torch.float)
+        X_s = torch.tensor(X_s, dtype=torch.float)
+
+        return X, X_s
+
+
 
 class Preprocessing:
     def __init__(self, aug):
