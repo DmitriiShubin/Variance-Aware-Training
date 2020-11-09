@@ -7,10 +7,9 @@ class Metric:
     def __init__(self):
 
 
-        self.smooth = 1
-        self.tp = 0
-        self.fp = 0
-        self.fn = 0
+        self.smooth = 1e-5
+        self.intersection = 0
+        self.union = 0
 
     def calc_cm(self, labels, outputs,train=True):
 
@@ -21,16 +20,14 @@ class Metric:
         labels = np.eye(2, dtype=np.float32)[labels.astype(np.int8)]
         outputs = np.eye(2, dtype=np.float32)[outputs.astype(np.int8)]
 
-        self.tp += np.sum(labels * outputs,axis=0)
-        self.fp += np.sum((1 - labels) * outputs,axis=0)
-        self.fn += np.sum(labels * (1 - outputs),axis=0)
+        self.intersection += np.sum(labels * outputs,axis=0)
+        self.union += np.sum(labels,axis=0) + np.sum(outputs,axis=0)
 
 
     def compute(self):
-        J  = (self.tp[1]) / (self.tp[1] + 1*(self.fp[1] + self.fn[1] + self.smooth))
-        self.tp = 0
-        self.fp = 0
-        self.fn = 0
+        J  = (self.intersection[1]+ self.smooth) / (self.union[1] + self.smooth)
+        self.intersection = 0
+        self.union = 0
 
         return J
 

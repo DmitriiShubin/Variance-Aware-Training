@@ -24,7 +24,7 @@ class Jaccard_loss(nn.Module):
     def __init__(self):
         super(Jaccard_loss, self).__init__()
 
-        self.smoothing = 1
+        self.smoothing = 1e-5
 
     def forward(self, y_pred, y_true):
         y_true = y_true[:,1]
@@ -36,6 +36,6 @@ class Jaccard_loss(nn.Module):
         tp = torch.sum(y_true * y_pred, dim=0)
         fp = torch.sum((1 - y_true) * y_pred, dim=0)
         fn = torch.sum(y_true * (1 - y_pred), dim=0)
-        loss = (tp) / (tp + 1 * (fp + fn + self.smoothing))
+        loss = (tp+ self.smooth) / (tp + 1 * (fp + fn + self.smoothing))
 
         return -1*loss
