@@ -18,11 +18,13 @@ class Metric:
     def calc_cm(self, labels, outputs,train=True):
 
         if train:
-            labels = np.argmax(labels, axis=1)
-            outputs = np.argmax(outputs, axis=1)
+            # labels = np.argmax(labels, axis=1)
+            # outputs = np.argmax(outputs, axis=1)
+            outputs[np.where(labels >= 0.5)] = 1
+            outputs[np.where(labels < 0.5)] = 0
 
-        labels = np.eye(2, dtype=np.float32)[labels.astype(np.int8)]
-        outputs = np.eye(2, dtype=np.float32)[outputs.astype(np.int8)]
+        # labels = np.eye(2, dtype=np.float32)[labels.astype(np.int8)]
+        # outputs = np.eye(2, dtype=np.float32)[outputs.astype(np.int8)]
 
         # tp = np.sum(labels * outputs, axis=0)
         # fp = np.sum(outputs, axis=0) - tp
@@ -35,7 +37,7 @@ class Metric:
 
 
         self.intersection =  self.intersection + np.sum(labels * outputs,axis=0)
-        self.union = self.union + np.sum(labels + outputs,axis=0) - np.sum(labels * outputs,axis=0)
+        self.union = self.union + np.sum(labels,axis=0)  + np.sum(outputs,axis=0)
 
     def compute(self):
         J  = (self.intersection[1]+ self.smoothing) / (self.union[1] + self.smoothing)
