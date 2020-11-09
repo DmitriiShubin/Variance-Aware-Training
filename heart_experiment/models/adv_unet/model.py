@@ -276,11 +276,15 @@ class Model:
         test_val = torch.Tensor([])
         print('Generating predictions')
         with torch.no_grad():
-            for i, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
+            for i, (X_batch, y_batch, X_s_batch, _) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
+                X_s_batch = X_s_batch.float().to(self.device)
 
-                pred = self.model(X_batch)
-                X_batch = X_batch.float().cpu().detach()
+                # TODO:
+                # pred = self.model([X_batch, X_s_batch])
+                pred, pred_s = self.model([X_batch, X_s_batch])
+                X_batch = X_batch.cpu().detach()
+                pred_s = pred_s.cpu().detach()
 
                 test_preds = torch.cat([test_preds, pred.cpu().detach()], 0)
                 test_val = torch.cat([test_val, y_batch.cpu().detach()], 0)
