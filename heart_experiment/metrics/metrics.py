@@ -20,13 +20,11 @@ class Metric:
     def calc_cm(self, labels, outputs,train=True):
 
         if train:
-            # labels = np.argmax(labels, axis=1)
-            # outputs = np.argmax(outputs, axis=1)
-            outputs[np.where(labels >= self.threshold)] = 1
-            outputs[np.where(labels < self.threshold)] = 0
+            labels = np.argmax(labels, axis=1)
+            outputs = np.argmax(outputs, axis=1)
 
-        # labels = np.eye(2, dtype=np.float32)[labels.astype(np.int8)]
-        # outputs = np.eye(2, dtype=np.float32)[outputs.astype(np.int8)]
+        labels = np.eye(2, dtype=np.float32)[labels.astype(np.int8)]
+        outputs = np.eye(2, dtype=np.float32)[outputs.astype(np.int8)]
 
         # tp = np.sum(labels * outputs, axis=0)
         # fp = np.sum(outputs, axis=0) - tp
