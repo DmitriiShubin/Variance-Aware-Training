@@ -8,8 +8,7 @@ class Metric:
 
 
         self.smoothing = 1e-5
-        self.intersection = 0
-        self.union = 0
+        self.J = 0
 
     def calc_cm(self, labels, outputs,train=True):
 
@@ -20,15 +19,16 @@ class Metric:
         labels = np.eye(2, dtype=np.float32)[labels.astype(np.int8)]
         outputs = np.eye(2, dtype=np.float32)[outputs.astype(np.int8)]
 
-        self.intersection += np.sum(labels * outputs,axis=0)
-        self.union += np.sum(labels,axis=0) + np.sum(outputs,axis=0)
-
+        intersection = np.sum(labels * outputs,axis=0)
+        union = np.sum(labels,axis=0) + np.sum(outputs,axis=0)
+        self.J += (intersection[1]+ self.smoothing) / (union[1] + self.smoothing)
 
     def compute(self):
-        J  = (self.intersection[1]+ self.smoothing) / (self.union[1] + self.smoothing)
-        self.intersection = 0
-        self.union = 0
-
+        # J  = (self.intersection[1]+ self.smoothing) / (self.union[1] + self.smoothing)
+        # self.intersection = 0
+        # self.union = 0
+        J = self.J
+        self.J = 0
         return J
 
 

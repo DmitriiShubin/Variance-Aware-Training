@@ -12,12 +12,12 @@ from torch.utils.data import DataLoader
 
 # custom modules
 from metrics import Metric
-#from loss_functions import Dice_loss,Jaccard_loss
+from loss_functions import Dice_loss,Jaccard_loss
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
 import random
-from segmentation_models_pytorch.utils.losses import JaccardLoss
+#from segmentation_models_pytorch.utils.losses import JaccardLoss
 # model
 from models.unet.structure import UNet
 
@@ -67,7 +67,7 @@ class Model:
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = JaccardLoss()#Jaccard_loss()
+        self.loss = Jaccard_loss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
