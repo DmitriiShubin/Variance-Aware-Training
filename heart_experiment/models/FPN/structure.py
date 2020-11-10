@@ -16,7 +16,7 @@ class FPN(smp_FPN):
     def __init__(self, hparams, n_channels, n_classes):
         super(FPN, self).__init__(
             encoder_name='resnet34',
-            encoder_depth=4,
+            encoder_depth=3,
             encoder_weights=None,
             decoder_pyramid_channels=hparams['model']['n_filters_input'],
             decoder_segmentation_channels=hparams['model']['n_filters_input'],
@@ -30,14 +30,14 @@ class FPN(smp_FPN):
             kernel_size=1,
             padding=0,
         )
-        self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
+        #self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
 
         self.hparams = hparams['model']
 
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
         # adversarial deep net layers
-        self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
+        #self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
 
     # def forward(self, x):
     #     x1, x2, x3, x4, x5 = self.encoder(x)
@@ -53,7 +53,7 @@ class FPN(smp_FPN):
         x = self.decoder(*features)
 
         x = self.conv2d(x)
-        x = self.upsampling(x)
+        #x = self.upsampling(x)
 
         x = self.outc(x)
 

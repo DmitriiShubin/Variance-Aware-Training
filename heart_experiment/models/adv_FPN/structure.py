@@ -16,7 +16,7 @@ class FPN(smp_FPN):
     def __init__(self, hparams, n_channels, n_classes):
         super(FPN, self).__init__(
             encoder_name='resnet34',
-            encoder_depth=4,
+            encoder_depth=3,
             encoder_weights=None,
             decoder_pyramid_channels=hparams['model']['n_filters_input'],
             decoder_segmentation_channels=hparams['model']['n_filters_input'],
@@ -30,7 +30,7 @@ class FPN(smp_FPN):
             kernel_size=1,
             padding=0,
         )
-        self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
+        #self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
 
         self.hparams = hparams['model']
 
@@ -42,8 +42,8 @@ class FPN(smp_FPN):
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
         # adversarial deep net layers
-        self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 16, 1, kernel_size=1, padding=0)
-        self.adv_fc1 = nn.Linear(20, 1)
+        self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 8, 1, kernel_size=1, padding=0)
+        self.adv_fc1 = nn.Linear(40, 1)
         #self.adv_fc2 = nn.Linear(self.hparams['n_filters_input'], 1)
 
     # def forward(self, x):
@@ -85,7 +85,7 @@ class FPN(smp_FPN):
         features = self.encoder(x)
         x = self.decoder(*features)
         x = self.conv2d(x)
-        x = self.upsampling(x)
+        #x = self.upsampling(x)
         logits = self.outc(x)
         logits = torch.nn.functional.softmax(logits, dim=1)
         return logits, features[-1]
