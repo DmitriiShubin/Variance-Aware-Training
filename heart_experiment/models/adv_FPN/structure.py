@@ -42,7 +42,7 @@ class FPN(smp_FPN):
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
         # adversarial deep net layers
-        self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 2, 1, kernel_size=1, padding=0)
+        self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 8, 1, kernel_size=1, padding=0)
         self.adv_fc1 = nn.Linear(20, 1)
         #self.adv_fc2 = nn.Linear(self.hparams['n_filters_input'], 1)
 
