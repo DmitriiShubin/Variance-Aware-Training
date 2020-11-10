@@ -11,7 +11,6 @@ from config import SPLIT_TABLE_PATH, SPLIT_TABLE_NAME, DEBUG_FOLDER
 
 from data_generator import Dataset_train
 from metrics import Metric
-from postprocessing import PostProcessing
 
 
 def seed_everything(seed):
