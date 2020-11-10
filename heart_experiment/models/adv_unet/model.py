@@ -67,7 +67,7 @@ class Model:
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = Dice_loss()
+        self.loss = Jaccard_loss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
@@ -168,8 +168,8 @@ class Model:
                 avg_loss += train_loss.item() / len(train_loader)
                 avg_loss_adv += adv_loss.item() / len(train_loader)
 
-                #train_loss = train_loss - self.alpha * adv_loss
-                train_loss = train_loss - adv_loss/((epoch + 1)*self.alpha)
+                train_loss = train_loss - self.alpha * adv_loss
+                #train_loss = train_loss - adv_loss/((epoch + 1)*self.alpha)
 
                 train_loss.backward()
                 self.optimizer.step()
