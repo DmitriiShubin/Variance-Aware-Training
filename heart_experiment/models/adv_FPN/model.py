@@ -2,7 +2,6 @@
 import numpy as np
 from tqdm import tqdm
 import os
-import random
 
 # pytorch
 import torch
@@ -13,11 +12,11 @@ from torch.utils.data import DataLoader
 
 # custom modules
 from metrics import Metric
-from utils.torchsummary import summary
-from loss_functions import Dice_loss
+from loss_functions import Dice_loss,Jaccard_loss
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
+import random
 
 # model
 from models.adv_FPN.structure import FPN
@@ -61,14 +60,14 @@ class Model:
                 print('Only one GPU is available')
 
         self.metric = Metric()
-        self.num_workers = 32
+        self.num_workers = 0
 
         ########################## compile the model ###############################
 
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = Dice_loss()  # nn.BCELoss(weight=None) #nn.NLLLoss()
+        self.loss = Jaccard_loss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
@@ -87,7 +86,7 @@ class Model:
         # lr scheduler
         self.scheduler = ReduceLROnPlateau(
             optimizer=self.optimizer,
-            mode='max',
+            mode='min',
             factor=0.2,
             patience=3,
             verbose=True,
@@ -102,7 +101,7 @@ class Model:
 
         self.scaler = torch.cuda.amp.GradScaler()
 
-    def seed_everything(self, seed,eps=10):
+    def seed_everything(self, seed, eps=10):
         np.random.seed(seed)
         random.seed(seed)
         os.environ['PYTHONHASHSEED'] = str(seed)
@@ -169,15 +168,14 @@ class Model:
                 avg_loss += train_loss.item() / len(train_loader)
                 avg_loss_adv += adv_loss.item() / len(train_loader)
 
-                train_loss = train_loss - self.alpha * adv_loss
+                train_loss = train_loss + self.alpha *(1-torch.log(adv_loss))
+
 
                 train_loss.backward()
                 self.optimizer.step()
 
                 y_batch = y_batch.numpy()
                 pred = pred.numpy()
-                y_batch = np.argmax(y_batch, axis=1)
-                pred = np.argmax(pred, axis=1)
 
                 self.metric.calc_cm(labels=y_batch, outputs=pred)
 
@@ -216,14 +214,11 @@ class Model:
 
                     y_batch = y_batch.numpy()
                     pred = pred.numpy()
-                    y_batch = np.argmax(y_batch, axis=1)
-                    pred = np.argmax(pred, axis=1)
-
                     self.metric.calc_cm(labels=y_batch, outputs=pred)
 
             metric_val = self.metric.compute()
 
-            self.scheduler.step(metric_val)
+            self.scheduler.step(avg_val_loss)
             res = self.early_stopping(score=metric_val, model=self.model)
 
             # print statistics
@@ -299,8 +294,6 @@ class Model:
 
     def model_save(self, model_path):
         torch.save(self.model.state_dict(), model_path)
-        # self.model.module.state_dict(), PATH
-        # torch.save(self.model, model_path)
         return True
 
     def model_load(self, model_path):

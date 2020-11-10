@@ -12,12 +12,12 @@ from torch.utils.data import DataLoader
 
 # custom modules
 from metrics import Metric
-from loss_functions import Dice_loss
+from loss_functions import Dice_loss,Jaccard_loss
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
 import random
-
+#from segmentation_models_pytorch.utils.losses import JaccardLoss
 # model
 from models.FPN.structure import FPN
 
@@ -60,14 +60,14 @@ class Model:
                 print('Only one GPU is available')
 
         self.metric = Metric()
-        self.num_workers = 32
+        self.num_workers = 0
 
         ########################## compile the model ###############################
 
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = Dice_loss()  # nn.BCELoss(weight=None) #nn.NLLLoss()
+        self.loss = Jaccard_loss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
@@ -86,7 +86,7 @@ class Model:
         # lr scheduler
         self.scheduler = ReduceLROnPlateau(
             optimizer=self.optimizer,
-            mode='max',
+            mode='min',
             factor=0.2,
             patience=3,
             verbose=True,
@@ -141,8 +141,10 @@ class Model:
 
                 self.optimizer.zero_grad()
                 # get model predictions
-                pred = self.model(X_batch)
 
+
+
+                pred = self.model(X_batch)
                 X_batch = X_batch.float().cpu().detach()
 
                 # process loss_1
@@ -152,24 +154,23 @@ class Model:
                 y_batch = y_batch.permute(0, 2, 3, 1)
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
 
-                train_loss = self.loss(pred, y_batch)
 
+                train_loss = self.loss(pred, y_batch)
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
 
+
                 train_loss.backward()
                 self.optimizer.step()
-
                 y_batch = y_batch.numpy()
                 pred = pred.numpy()
-                y_batch = np.argmax(y_batch, axis=1)
-                pred = np.argmax(pred, axis=1)
+
+
 
                 self.metric.calc_cm(labels=y_batch, outputs=pred)
-
             metric_train = self.metric.compute()
 
             # evaluate the model
@@ -181,7 +182,6 @@ class Model:
                     y_batch = y_batch.float().to(self.device)
                     X_batch = X_batch.float().to(self.device)
 
-                    # TODO:
                     pred = self.model(X_batch)
                     X_batch = X_batch.float().cpu().detach()
 
@@ -195,17 +195,16 @@ class Model:
 
                     y_batch = y_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
-
+ 
                     y_batch = y_batch.numpy()
                     pred = pred.numpy()
-                    y_batch = np.argmax(y_batch, axis=1)
-                    pred = np.argmax(pred, axis=1)
+
 
                     self.metric.calc_cm(labels=y_batch, outputs=pred)
 
             metric_val = self.metric.compute()
 
-            self.scheduler.step(metric_val)
+            self.scheduler.step(avg_val_loss)
             res = self.early_stopping(score=metric_val, model=self.model)
 
             # print statistics
