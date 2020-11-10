@@ -14,7 +14,7 @@ class OutConv(nn.Module):
 
 class LinkNet(smp_linknet):
     def __init__(self, hparams, n_channels, n_classes):
-        depth = 5
+        depth = 4
         super(LinkNet, self).__init__(
             encoder_name='resnet34',
             encoder_depth=depth,
