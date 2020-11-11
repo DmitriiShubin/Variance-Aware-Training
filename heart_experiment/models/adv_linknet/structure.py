@@ -187,6 +187,9 @@ class LinkNet(nn.Module):
         x = torch.mean(x, dim=2)
         x = torch.squeeze(x)
         x = torch.sigmoid(self.adv_fc1(x))
+
+
+
         return x
 
     def predictive_network(self, x):
