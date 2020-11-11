@@ -24,7 +24,7 @@ def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model):
     ), 'The following set of models is supported: unet, adv_unet, linknet, adv_linknet'
 
     if model == 'unet':
-        from models.linknet import Model, hparams
+        from models.unet import Model, hparams
     elif model == 'adv_unet':
         from models.adv_unet import Model, hparams
     elif model == 'linknet':
