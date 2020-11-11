@@ -149,7 +149,8 @@ class LinkNet(nn.Module):
         self.rever2 = RevGrad()
 
         # adversarial deep net layers
-        self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 32, 1, kernel_size=1, padding=0)
+        self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 32, self.hparams['n_filters_input'] * 32, kernel_size=1, padding=0)
+        self.adv_conv2 = nn.Conv2d(self.hparams['n_filters_input'] * 32, 1, kernel_size=1, padding=0)
         self.adv_fc1 = nn.Linear(20, 1)
         # self.adv_fc2 = nn.Linear(self.hparams['n_filters_input'], 1)
 
@@ -193,6 +194,7 @@ class LinkNet(nn.Module):
         x = torch.cat((x, x5), dim=1)
 
         x = torch.relu(self.adv_conv1(x))
+        x = torch.relu(self.adv_conv2(x))
 
         x = torch.mean(x, dim=2)
         x = torch.squeeze(x)
