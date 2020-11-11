@@ -168,7 +168,8 @@ class Model:
                 avg_loss += train_loss.item() / len(train_loader)
                 avg_loss_adv += adv_loss.item() / len(train_loader)
 
-                train_loss = train_loss + self.alpha *(1-torch.log(adv_loss))
+                if epoch > 15:
+                    train_loss = train_loss + self.alpha *(1-torch.log(adv_loss))
 
 
                 train_loss.backward()
