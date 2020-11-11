@@ -171,8 +171,8 @@ class Model:
                 #freze adv net
                 if epoch > 10:
                     train_loss = train_loss + self.alpha *(1-torch.log(adv_loss))
-                else:
-                    train_loss.backward()
+
+                train_loss.backward()
 
                 self.optimizer.step()
 
