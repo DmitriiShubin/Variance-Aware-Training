@@ -168,11 +168,15 @@ class Model:
                 avg_loss += train_loss.item() / len(train_loader)
                 avg_loss_adv += adv_loss.item() / len(train_loader)
 
-                if epoch > 15:
+                #freze adv net
+                if epoch > 10:
                     train_loss = train_loss + self.alpha *(1-torch.log(adv_loss))
 
+                if epoch > 5 and epoch <= 10:
+                    adv_loss.backward()
+                else:
+                    train_loss.backward()
 
-                train_loss.backward()
                 self.optimizer.step()
 
                 y_batch = y_batch.numpy()
