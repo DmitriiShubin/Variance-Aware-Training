@@ -173,8 +173,8 @@ class Model:
                 # lam = 1e-4
                 # threshold = 0.15
                 # threshold = torch.log(torch.tensor([1/(threshold*lam)]).to(self.device))
-
-                train_loss = train_loss + self.alpha *(adv_loss) #+ torch.log(1 / (lam * weights))
+                if epoch >= 10:
+                    train_loss = train_loss + self.alpha *(adv_loss) #+ torch.log(1 / (lam * weights))
 
 
                 #threshold = threshold.cpu().detach()
