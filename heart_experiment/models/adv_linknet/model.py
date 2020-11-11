@@ -172,6 +172,7 @@ class Model:
                 #if epoch < 10:
                 lam = 1
                 weights = torch.mean(weights)
+                print(weights)
                 train_loss = train_loss + self.alpha *(1-torch.log(adv_loss)) + lam*(1/weights)
                 weights = weights.cpu().detach()
 
