@@ -171,6 +171,7 @@ class Model:
                 #freze adv net
                 #if epoch < 10:
                 lam = 1
+                print(weights)
                 train_loss = train_loss + self.alpha *(1-torch.log(adv_loss)) + lam*(1/weights)
                 weights = weights.cpu().detach()
 
@@ -197,7 +198,7 @@ class Model:
                     X_s_batch = X_s_batch.float().to(self.device)
                     y_s_batch = y_s_batch.float().to(self.device)
 
-                    pred, pred_s = self.model([X_batch, X_s_batch])
+                    pred, pred_s,_ = self.model([X_batch, X_s_batch])
 
                     X_batch = X_batch.cpu().detach()
                     X_s_batch = X_s_batch.cpu().detach()
