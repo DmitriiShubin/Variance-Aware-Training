@@ -172,7 +172,7 @@ class Model:
                 #if epoch < 10:
                 lam = 0.01
                 weights = torch.mean(weights)
-                print(weights)
+
                 train_loss = train_loss + self.alpha *(1-torch.log(adv_loss)) + 1/(lam*weights)
                 weights = weights.cpu().detach()
 
@@ -186,6 +186,8 @@ class Model:
                 self.metric.calc_cm(labels=y_batch, outputs=pred)
 
             metric_train = self.metric.compute()
+
+            print(weights)
 
             # evaluate the model
             print('Model evaluation...')
