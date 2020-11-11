@@ -175,7 +175,7 @@ class Model:
                 # threshold = torch.log(torch.tensor([1/(threshold*lam)]).to(self.device))
                 weights = torch.mean(weights)
 
-                train_loss = train_loss + self.alpha *(1-torch.log(adv_loss)) #+ torch.log(1 / (lam * weights))
+                train_loss = train_loss + self.alpha *(torch.log(adv_loss)) #+ torch.log(1 / (lam * weights))
 
                 weights = weights.cpu().detach()
                 #threshold = threshold.cpu().detach()
