@@ -143,38 +143,62 @@ class Model:
 
                 self.optimizer.zero_grad()
                 # get model predictions
-                pred, pred_s = self.model([X_batch, X_s_batch])
 
-                X_batch = X_batch.cpu().detach()
-                X_s_batch = X_s_batch.cpu().detach()
-
-                # process loss_1
-                pred = pred.permute(0, 2, 3, 1)
-                pred = pred.reshape(-1, pred.shape[-1])
-                y_batch = y_batch.permute(0, 2, 3, 1)
-                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
-                train_loss = self.loss(pred, y_batch)
-                y_batch = y_batch.cpu().detach()
-                pred = pred.cpu().detach()
-
-                # process loss_2
-                pred_s = pred_s.reshape(-1)
-                y_s_batch = y_s_batch.reshape(-1)
-                adv_loss = self.loss_s(pred_s, y_s_batch)
-                y_s_batch = y_s_batch.cpu().detach()
-                pred_s = pred_s.cpu().detach()
-
-                # calc loss
-                avg_loss += train_loss.item() / len(train_loader)
-                avg_loss_adv += adv_loss.item() / len(train_loader)
 
                 #freze adv net
                 #if epoch < 10:
                 # lam = 1e-4
                 # threshold = 0.15
                 # threshold = torch.log(torch.tensor([1/(threshold*lam)]).to(self.device))
-                if epoch >= 10:
+                if epoch >= 5:
+
+                    pred, pred_s = self.model([X_batch, X_s_batch])
+
+                    X_batch = X_batch.cpu().detach()
+                    X_s_batch = X_s_batch.cpu().detach()
+
+                    # process loss_1
+                    pred = pred.permute(0, 2, 3, 1)
+                    pred = pred.reshape(-1, pred.shape[-1])
+                    y_batch = y_batch.permute(0, 2, 3, 1)
+                    y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                    train_loss = self.loss(pred, y_batch)
+                    y_batch = y_batch.cpu().detach()
+                    pred = pred.cpu().detach()
+
+                    # process loss_2
+                    pred_s = pred_s.reshape(-1)
+                    y_s_batch = y_s_batch.reshape(-1)
+                    adv_loss = self.loss_s(pred_s, y_s_batch)
+                    y_s_batch = y_s_batch.cpu().detach()
+                    pred_s = pred_s.cpu().detach()
+
+                    # calc loss
+                    avg_loss += train_loss.item() / len(train_loader)
+                    avg_loss_adv += adv_loss.item() / len(train_loader)
+
                     train_loss = train_loss + self.alpha *(adv_loss) #+ torch.log(1 / (lam * weights))
+                else:
+
+                    pred = self.model([X_batch, X_s_batch],adv_head=False)
+
+                    X_batch = X_batch.cpu().detach()
+                    X_s_batch = X_s_batch.cpu().detach()
+
+                    # process loss_1
+                    pred = pred.permute(0, 2, 3, 1)
+                    pred = pred.reshape(-1, pred.shape[-1])
+                    y_batch = y_batch.permute(0, 2, 3, 1)
+                    y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                    train_loss = self.loss(pred, y_batch)
+                    y_batch = y_batch.cpu().detach()
+                    pred = pred.cpu().detach()
+
+                    # process loss_2
+                    y_s_batch = y_s_batch.cpu().detach()
+                    # calc loss
+                    avg_loss += train_loss.item() / len(train_loader)
+                    avg_loss_adv += 1 / len(train_loader)
 
 
                 #threshold = threshold.cpu().detach()

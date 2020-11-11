@@ -164,16 +164,19 @@ class UNet(nn.Module):
         self.adv_fc4 = nn.Linear(20, 1)
         # self.adv_fc2 = nn.Linear(self.hparams['n_filters_input'], 1)
 
-    def forward(self, x):
+    def forward(self, x,adv_head=True):
         x, x_s = x  # unpack training and adversarial images
 
         # main head (predictive)
         out, decoder_x = self.predictive_network(x)
 
-        # additional head (adversarial)
-        out_s = self.adversarial_network(decoder_x, x_s)
+        if adv_head:
+            # additional head (adversarial)
+            out_s = self.adversarial_network(decoder_x, x_s)
 
-        return out, out_s
+            return out, out_s
+        else:
+            return out
 
     def encoder(self, x):
         x1 = self.inc(x)
