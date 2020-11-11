@@ -171,7 +171,7 @@ class Model:
                 #freze adv net
                 #if epoch < 10:
                 lam = 1e-4
-                threshold = 0.4
+                threshold = 0.15
                 threshold = torch.log(torch.tensor([1/(threshold*lam)]).to(self.device))
                 weights = torch.mean(weights)
 
