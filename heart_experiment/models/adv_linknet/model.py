@@ -178,7 +178,7 @@ class Model:
                 train_loss = train_loss + self.alpha *(1-torch.log(adv_loss)) #+ torch.log(1 / (lam * weights))
 
                 weights = weights.cpu().detach()
-                threshold = threshold.cpu().detach()
+                #threshold = threshold.cpu().detach()
 
                 train_loss.backward()
 
