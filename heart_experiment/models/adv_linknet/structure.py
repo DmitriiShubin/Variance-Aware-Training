@@ -157,7 +157,9 @@ class LinkNet(nn.Module):
         # additional head (adversarial)
         out_s = self.adversarial_network(decoder_x, x_s)
 
-        return out, out_s
+        weights = torch.min(torch.abs(self.adv_conv1.weight)) + torch.min(torch.abs(self.adv_fc1.weight))
+
+        return out, out_s,weights
 
     def encoder(self, x):
 

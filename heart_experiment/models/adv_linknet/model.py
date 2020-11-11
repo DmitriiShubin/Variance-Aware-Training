@@ -143,7 +143,7 @@ class Model:
 
                 self.optimizer.zero_grad()
                 # get model predictions
-                pred, pred_s = self.model([X_batch, X_s_batch])
+                pred, pred_s,weights = self.model([X_batch, X_s_batch])
 
                 X_batch = X_batch.cpu().detach()
                 X_s_batch = X_s_batch.cpu().detach()
@@ -171,8 +171,8 @@ class Model:
                 #freze adv net
                 #if epoch < 10:
                 lam = 1
-                weights = torch.sum(torch.abs(self.model.adv_conv1.weight)) + torch.sum(torch.abs(self.model.adv_fc1.weight))
                 train_loss = train_loss + self.alpha *(1-torch.log(adv_loss)) - lam*weights
+                weights = weights.cpu().detach()
 
                 train_loss.backward()
 
