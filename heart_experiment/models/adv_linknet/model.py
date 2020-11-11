@@ -170,10 +170,10 @@ class Model:
 
                 #freze adv net
                 #if epoch < 10:
-                lam = 0.01
+                lam = 1e-4
                 weights = torch.mean(weights)
 
-                train_loss = train_loss + self.alpha *(1-torch.log(adv_loss)) + 1/(lam*weights)
+                train_loss = train_loss + self.alpha *(1-torch.log(adv_loss)) + torch.log(1/(lam*weights))
                 weights = weights.cpu().detach()
 
                 train_loss.backward()
@@ -291,7 +291,7 @@ class Model:
 
                 # TODO:
                 # pred = self.model([X_batch, X_s_batch])
-                pred, pred_s = self.model([X_batch, X_s_batch])
+                pred, pred_s,_ = self.model([X_batch, X_s_batch])
                 X_batch = X_batch.cpu().detach()
                 pred_s = pred_s.cpu().detach()
 
