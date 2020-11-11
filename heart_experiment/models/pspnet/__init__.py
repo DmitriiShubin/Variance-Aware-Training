@@ -1,2 +1,2 @@
-from models.FPN.model import Model
-from models.FPN.model_config import hparams
+from models.pspnet.model import Model
+from models.pspnet.model_config import hparams

@@ -19,7 +19,7 @@ from time import time
 import random
 #from segmentation_models_pytorch.utils.losses import JaccardLoss
 # model
-from models.FPN.structure import FPN
+from models.pspnet.structure import PSPNet
 
 
 class Model:

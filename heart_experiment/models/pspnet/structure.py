@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from segmentation_models_pytorch import FPN as smp_FPN
+from segmentation_models_pytorch import PSPNet as smp_PSPNet
 
 
 class OutConv(nn.Module):
@@ -12,51 +12,33 @@ class OutConv(nn.Module):
         return self.conv(x)
 
 
-class FPN(smp_FPN):
+class PSPNet(smp_PSPNet):
     def __init__(self, hparams, n_channels, n_classes):
-        super(FPN, self).__init__(
-            encoder_name='resnet34',
-            encoder_depth=3,
+        depth = 4
+        super(PSPNet, self).__init__(
+            encoder_name='resnet18',
+            encoder_depth=depth,
             encoder_weights=None,
-            decoder_pyramid_channels=hparams['model']['n_filters_input'],
-            decoder_segmentation_channels=hparams['model']['n_filters_input'],
-            decoder_dropout=hparams['model']['dropout'],
             in_channels=n_channels,
+            psp_use_batchnorm=True, #optional?
+            psp_dropout=0.0,
+            classes=n_classes,
+            upsampling=16
         )
 
-        self.conv2d = nn.Conv2d(
-            hparams['model']['n_filters_input'],
-            hparams['model']['n_filters_input'],
-            kernel_size=1,
-            padding=0,
-        )
-        #self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
 
         self.hparams = hparams['model']
 
-        self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
-        # adversarial deep net layers
-        #self.adv_fc1 = nn.Linear(self.hparams['n_filters_input'], 1)
-
-    # def forward(self, x):
-    #     x1, x2, x3, x4, x5 = self.encoder(x)
-    #     x = self.decoder(x1, x2, x3, x4, x5)
-    #     logits = self.outc(x)
-    #     logits = torch.softmax(logits, dim=1)
-    #     return logits
 
     def forward(self, x):
-        """Sequentially pass `x` trough model`s encoder, decoder and heads"""
+        return self.predictive_network(x)
 
+    def predictive_network(self, x):
         features = self.encoder(x)
         x = self.decoder(*features)
+        x = self.segmentation_head(x)
 
-        x = self.conv2d(x)
-        #x = self.upsampling(x)
+        logits = torch.nn.functional.softmax(x, dim=1)
+        return logits
 
-        x = self.outc(x)
-
-        x = torch.softmax(x, dim=1)
-
-        return x
