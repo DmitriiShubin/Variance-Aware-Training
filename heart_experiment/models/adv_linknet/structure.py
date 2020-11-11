@@ -157,7 +157,7 @@ class LinkNet(nn.Module):
         # additional head (adversarial)
         out_s = self.adversarial_network(decoder_x, x_s)
 
-        weights = torch.min(torch.abs(self.adv_conv1.weight)) + torch.min(torch.abs(self.adv_fc1.weight))
+        weights = torch.mean(self.adv_conv1.weight**2) + torch.mean(self.adv_fc1.weight**2)
 
         return out, out_s,weights
 

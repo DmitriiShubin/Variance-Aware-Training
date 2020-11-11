@@ -171,7 +171,7 @@ class Model:
                 #freze adv net
                 #if epoch < 10:
                 lam = 1
-                print(weights)
+                weights = torch.mean(weights)
                 train_loss = train_loss + self.alpha *(1-torch.log(adv_loss)) + lam*(1/weights)
                 weights = weights.cpu().detach()
 
