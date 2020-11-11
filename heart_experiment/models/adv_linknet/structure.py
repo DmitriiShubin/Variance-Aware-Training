@@ -145,13 +145,24 @@ class LinkNet(nn.Module):
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
         #gradient reversal layer
-        self.rever1 = RevGrad()
-        self.rever2 = RevGrad()
+        self.rever1_1 = RevGrad()
+        self.rever1_2 = RevGrad()
+        self.rever1_3 = RevGrad()
+        self.rever1_4 = RevGrad()
+        self.rever1_5 = RevGrad()
+        self.rever2_1 = RevGrad()
+        self.rever2_2 = RevGrad()
+        self.rever2_3 = RevGrad()
+        self.rever2_4 = RevGrad()
+        self.rever2_5 = RevGrad()
 
         # adversarial deep net layers
         self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 32, self.hparams['n_filters_input'] * 32, kernel_size=1, padding=0)
         self.adv_conv2 = nn.Conv2d(self.hparams['n_filters_input'] * 32, 1, kernel_size=1, padding=0)
-        self.adv_fc1 = nn.Linear(20, 1)
+        self.adv_fc1 = nn.Linear(1984, 300)
+        self.adv_fc2 = nn.Linear(300, 300)
+        self.adv_fc3 = nn.Linear(300, 20)
+        self.adv_fc4 = nn.Linear(20, 1)
         # self.adv_fc2 = nn.Linear(self.hparams['n_filters_input'], 1)
 
     def forward(self, x):
@@ -188,17 +199,37 @@ class LinkNet(nn.Module):
         x1, x2, x3, x4, x5 = self.encoder(x_s)
         # x_s = self.decoder(x1, x2, x3, x4, x5)
 
-        x5 = self.rever1(x5)
-        x = self.rever1(x)
+        x1_s = self.rever1_1(x1).mean(dim=2).mean(dim=2)
+        x2_s = self.rever1_2(x2).mean(dim=2).mean(dim=2)
+        x3_s = self.rever1_3(x3).mean(dim=2).mean(dim=2)
+        x4_s = self.rever1_4(x4).mean(dim=2).mean(dim=2)
+        x5_s = self.rever1_5(x5).mean(dim=2).mean(dim=2)
 
-        x = torch.cat((x, x5), dim=1)
+        x1_p = self.rever2_1(x[0]).mean(dim=2).mean(dim=2)
+        x2_p = self.rever2_2(x[1]).mean(dim=2).mean(dim=2)
+        x3_p = self.rever2_3(x[2]).mean(dim=2).mean(dim=2)
+        x4_p = self.rever2_4(x[3]).mean(dim=2).mean(dim=2)
+        x5_p = self.rever2_5(x[4]).mean(dim=2).mean(dim=2)
 
-        x = torch.relu(self.adv_conv1(x))
-        x = torch.relu(self.adv_conv2(x))
+        x = torch.cat([x1_s,x2_s,x3_s,x4_s,x5_s,x1_p,x2_p,x3_p,x4_p,x5_p], dim=1)
 
-        x = torch.mean(x, dim=2)
-        x = torch.squeeze(x)
-        x = torch.sigmoid(self.adv_fc1(x))
+        x = torch.relu(self.adv_fc1(x))
+        x = torch.relu(self.adv_fc2(x))
+        x = torch.relu(self.adv_fc3(x))
+        x = torch.sigmoid(self.adv_fc4(x))
+
+
+        # x5 = self.rever1(x5)
+        # x = self.rever1(x)
+        #
+        # x = torch.cat((x, x5), dim=1)
+        #
+        # x = torch.relu(self.adv_conv1(x))
+        # x = torch.relu(self.adv_conv2(x))
+        #
+        # x = torch.mean(x, dim=2)
+        # x = torch.squeeze(x)
+        # x = torch.sigmoid(self.adv_fc1(x))
 
 
 
@@ -209,4 +240,4 @@ class LinkNet(nn.Module):
         x = self.decoder(x1, x2, x3, x4, x5)
         logits = self.outc(x)
         logits = torch.nn.functional.softmax(logits, dim=1)
-        return logits, x5
+        return logits, [x1, x2, x3, x4, x5]
