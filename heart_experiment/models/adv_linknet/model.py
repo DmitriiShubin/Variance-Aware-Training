@@ -174,7 +174,8 @@ class Model:
 
                 if epoch > 5 and epoch <= 10:
                     adv_loss.backward()
-                else:
+
+                if epoch <=5:
                     train_loss.backward()
 
                 self.optimizer.step()
