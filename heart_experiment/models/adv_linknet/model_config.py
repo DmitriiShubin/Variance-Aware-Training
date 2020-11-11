@@ -3,21 +3,21 @@ import os
 hparams = {}
 # training params
 hparams['n_epochs'] = 2
-hparams['lr'] = 0.001
+hparams['lr'] = 1e-3
 hparams['batch_size'] = 2
 hparams['verbose_train'] = True
 
 # early stopping settings
-hparams['min_delta'] = 0.001  # thresold of improvement
-hparams['patience'] = 20  # wait for n epoches for emprovement
+hparams['min_delta'] = 0.0001  # thresold of improvement
+hparams['patience'] = 10  # wait for n epoches for emprovement
 hparams['n_fold'] = 5  # number of folds for cross-validation
 hparams['verbose'] = True  # print score or not
-hparams['start_fold'] = 0
-hparams['model_name'] = 'Adv FPN'
+hparams['start_fold'] = 1
+hparams['model_name'] = 'Unet'
 
 # directories
 hparams['model_path'] = './data/model_weights'
-hparams['model_path'] += '/adv_FPN_model'
+hparams['model_path'] += '/unet_model'
 hparams['checkpoint_path'] = hparams['model_path'] + '/checkpoint'
 
 for path in [hparams['model_path'], hparams['checkpoint_path']]:
