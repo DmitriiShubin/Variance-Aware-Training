@@ -189,7 +189,7 @@ class Model:
 
                 self.metric.calc_cm(labels=y_batch, outputs=pred)
 
-            metric_train = self.metric.compute()
+            metric_train_dice,metric_train_jaccard = self.metric.compute()
 
             print(weights)
 
@@ -228,10 +228,10 @@ class Model:
                     pred = pred.numpy()
                     self.metric.calc_cm(labels=y_batch, outputs=pred)
 
-            metric_val = self.metric.compute()
+            metric_val_dice,metric_val_jaccard = self.metric.compute()
 
             self.scheduler.step(avg_val_loss)
-            res = self.early_stopping(score=metric_val, model=self.model)
+            res = self.early_stopping(score=metric_val_dice, model=self.model)
 
             # print statistics
             if self.hparams['verbose_train']:
@@ -246,10 +246,14 @@ class Model:
                     avg_val_loss,
                     '| Val_loss adv: ',
                     avg_val_loss_adv,
-                    '| Metric_train: ',
-                    metric_train,
-                    '| Metric_val: ',
-                    metric_val,
+                    '| Metric_train_dice: ',
+                    metric_train_dice,
+                    '| Metric_train_jaccard: ',
+                    metric_train_jaccard,
+                    '| Metric_val_Dice: ',
+                    metric_val_dice,
+                    '| Metric_val_Jaccard: ',
+                    metric_val_jaccard,
                     '| Current LR: ',
                     self.__get_lr(self.optimizer),
                 )
@@ -261,14 +265,17 @@ class Model:
                 epoch,
             )
 
-            writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            writer.add_scalars('Metric', {'Metric_train_dice': metric_train_dice,
+                                          'Metric_train_jaccard': metric_train_jaccard,
+                                          'Metric_val_dice': metric_val_dice,
+                                          'Metric_val_jaccard': metric_val_jaccard}, epoch)
 
             if res == 2:
                 print("Early Stopping")
                 print(f'global best max val_loss model score {self.early_stopping.best_score}')
                 break
             elif res == 1:
-                print(f'save global val_loss model score {metric_val}')
+                print(f'save global val_loss model score {metric_val_dice}')
 
         writer.close()
 
