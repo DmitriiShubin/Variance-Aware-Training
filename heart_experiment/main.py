@@ -14,27 +14,23 @@ from cv_pipeline import CVPipeline
 @click.option('--n_epochs', default=None, help='number of epoches to run')
 @click.option('--gpu', default='0,1,2', help='list of GPUs will be used for training')
 @click.option(
-    '--model', default='adv_pspnet', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn'
+    '--model', default='adv_linknet', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn'
 )
 def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model):
 
     # check model type input
     assert (
-        model == 'unet' or model == 'adv_unet' or model == 'fpn' or model == 'adv_fpn' or model == 'adv_pspnet' or model == 'pspnet'
-    ), 'The following set of models is supported: unet, adv_unet, fpn, adv_fpn, adv_pspnet, pspnet'
+        model == 'unet' or model == 'adv_unet' or model == 'linknet' or model == 'adv_linknet'
+    ), 'The following set of models is supported: unet, adv_unet, linknet, adv_linknet'
 
     if model == 'unet':
-        from models.unet import Model, hparams
+        from models.linknet import Model, hparams
     elif model == 'adv_unet':
         from models.adv_unet import Model, hparams
-    elif model == 'fpn':
-        from models.FPN import Model, hparams
-    elif model == 'adv_fpn':
-        from models.adv_FPN import Model, hparams
-    elif model == 'adv_pspnet':
-        from models.adv_pspnet import Model, hparams
-    elif model == 'pspnet':
-        from models.pspnet import Model, hparams
+    elif model == 'linknet':
+        from models.linknet import Model, hparams
+    elif model == 'adv_linknet':
+        from models.adv_linknet import Model, hparams
 
     # update hparams
     gpu = [int(i) for i in gpu.split(",")]

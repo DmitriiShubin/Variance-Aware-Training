@@ -143,14 +143,21 @@ class LinkNet(nn.Module):
         )
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
-
+        # adversarial deep net layers
+        self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 32, 1, kernel_size=1, padding=0)
+        self.adv_fc1 = nn.Linear(20, 1)
+        # self.adv_fc2 = nn.Linear(self.hparams['n_filters_input'], 1)
 
     def forward(self, x):
-        x1, x2, x3, x4, x5 = self.encoder(x)
-        x = self.decoder(x1, x2, x3, x4, x5)
-        logits = self.outc(x)
-        logits = torch.nn.functional.softmax(logits,dim=1)
-        return logits
+        x, x_s = x  # unpack training and adversarial images
+
+        # main head (predictive)
+        out, decoder_x = self.predictive_network(x)
+
+        # additional head (adversarial)
+        out_s = self.adversarial_network(decoder_x, x_s)
+
+        return out, out_s
 
     def encoder(self, x):
 
@@ -168,3 +175,23 @@ class LinkNet(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         return x
+
+    def adversarial_network(self, x, x_s):
+        x1, x2, x3, x4, x5 = self.encoder(x_s)
+        # x_s = self.decoder(x1, x2, x3, x4, x5)
+
+        x = torch.cat((x, x5), dim=1)
+
+        x = torch.relu(self.adv_conv1(x))
+
+        x = torch.mean(x, dim=2)
+        x = torch.squeeze(x)
+        x = torch.sigmoid(self.adv_fc1(x))
+        return x
+
+    def predictive_network(self, x):
+        x1, x2, x3, x4, x5 = self.encoder(x)
+        x = self.decoder(x1, x2, x3, x4, x5)
+        logits = self.outc(x)
+        logits = torch.nn.functional.softmax(logits, dim=1)
+        return logits, x5

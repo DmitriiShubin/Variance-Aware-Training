@@ -19,7 +19,7 @@ from time import time
 import random
 #from segmentation_models_pytorch.utils.losses import JaccardLoss
 # model
-from models.FPN.structure import FPN
+from models.linknet.structure import LinkNet
 
 
 class Model:
@@ -37,26 +37,26 @@ class Model:
 
         if inference:
             self.device = torch.device('cpu')
-            self.model = FPN(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(self.device)
+            self.model = LinkNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 0:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = FPN(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(
+                    self.model = LinkNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(
                         self.device
                     )
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Number of GPUs will be used: ", torch.cuda.device_count() - 5)
                     self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                    self.model = FPN(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(
+                    self.model = LinkNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(
                         self.device
                     )
                     self.model = DP(self.model, device_ids=list(range(torch.cuda.device_count() - 5)))
             else:
                 self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                self.model = FPN(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(self.device)
+                self.model = LinkNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(self.device)
                 print('Only one GPU is available')
 
         self.metric = Metric()
@@ -67,7 +67,7 @@ class Model:
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = Jaccard_loss()
+        self.loss = Dice_loss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
