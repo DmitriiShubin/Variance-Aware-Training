@@ -21,18 +21,8 @@ np.random.seed(42)
 class Dataset_train(Dataset):
     def __init__(self, patients, aug):
 
-        self.patients = patients
-        self.images_list = []
-
-        for patient in patients:
-            images = [
-                i[:-4]
-                for i in os.listdir(DATA_PATH + patient)
-                if i.find('.npy') != -1 and i.find('seg') == -1
-            ]
-            for image in images:
-                self.images_list.append(DATA_PATH + patient + '/' + image)
-
+        self.seed_everything(42, eps=10)
+        self.images_list = patients
         self.preprocessing = Preprocessing(aug)
 
     def __len__(self):
@@ -49,6 +39,16 @@ class Dataset_train(Dataset):
 
         return X, y, X_s, y_s
 
+    def seed_everything(self,seed, eps=10):
+        np.random.seed(seed)
+        random.seed(seed)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.determenistic = True
+        torch.backends.cudnn.benchmark = False
+        torch.set_printoptions(precision=eps)
+
     def load_data(self, id):
 
         X = np.load(self.images_list[id] + '.npy').astype(np.float32)
@@ -60,8 +60,9 @@ class Dataset_train(Dataset):
 
         X, y = self.preprocessing.run(X=X, y=y)
 
+
         # second head
-        sampled_patient = np.random.uniform(size=1)[0]
+        sampled_patient = np.round(np.random.uniform(size=1)[0],1)
         if sampled_patient >= 0.5:
             # NOT the same patient
             images_subset = self.images_list.copy()
@@ -85,6 +86,20 @@ class Dataset_train(Dataset):
 
         return X, y, X_s, y_s
 
+class Dataset_test(Dataset_train):
+    def __init__(self,patients, aug):
+        super(Dataset_test, self).__init__(patients, aug)
+
+    def __getitem__(self, idx):
+
+        X, y, X_s, y_s = self.load_data(idx)
+
+        X = torch.tensor(X, dtype=torch.float)
+        X_s = torch.tensor(X_s, dtype=torch.float)
+
+        return X, X_s
+
+
 
 class Preprocessing:
     def __init__(self, aug):
@@ -94,12 +109,6 @@ class Preprocessing:
 
     def run(self, X, y, label_process=True):
 
-        # X = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY).astype(np.float32)
-        # y = cv2.cvtColor(y, cv2.COLOR_BGR2GRAY).astype(np.float32)
-
-        # if self.aug:
-        #     X, y = self.augmentations.apply_augs(X, y)
-
         # apply scaling
         for i in range(X.shape[2]):
             if np.std(X[:, :, i]) > 0:
@@ -107,7 +116,7 @@ class Preprocessing:
             else:
                 X[:, :, i] = X[:, :, i] - np.mean(X[:, :, i])
 
-        y = np.eye(3, dtype=np.float32)[y.astype(np.int8)]
+        y = np.eye(2, dtype=np.float32)[y.astype(np.int8)]
         y = y.reshape(y.shape[0], y.shape[1], y.shape[-1])
 
         # reshape to match pytorch
@@ -140,3 +149,4 @@ class Augmentations:
         mask = augmented['mask']
 
         return image, mask
+
