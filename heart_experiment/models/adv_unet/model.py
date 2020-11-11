@@ -143,7 +143,7 @@ class Model:
 
                 self.optimizer.zero_grad()
                 # get model predictions
-                pred, pred_s = self.model([X_batch, X_s_batch])
+                pred, pred_s, = self.model([X_batch, X_s_batch])
 
                 X_batch = X_batch.cpu().detach()
                 X_s_batch = X_s_batch.cpu().detach()
