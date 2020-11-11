@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from time import time
 import numpy as np
+from utils.pytorch_revgrad import RevGrad
 
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
@@ -143,6 +144,10 @@ class LinkNet(nn.Module):
         )
         self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
+        #gradient reversal layer
+        self.rever1 = RevGrad()
+        self.rever2 = RevGrad()
+
         # adversarial deep net layers
         self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 32, 1, kernel_size=1, padding=0)
         self.adv_fc1 = nn.Linear(20, 1)
@@ -181,6 +186,9 @@ class LinkNet(nn.Module):
     def adversarial_network(self, x, x_s):
         x1, x2, x3, x4, x5 = self.encoder(x_s)
         # x_s = self.decoder(x1, x2, x3, x4, x5)
+
+        x5 = self.rever1(x5)
+        x = self.rever1(x)
 
         x = torch.cat((x, x5), dim=1)
 
