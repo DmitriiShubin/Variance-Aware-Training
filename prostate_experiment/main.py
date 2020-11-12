@@ -14,7 +14,7 @@ from cv_pipeline import CVPipeline
 @click.option('--n_epochs', default=None, help='number of epoches to run')
 @click.option('--gpu', default='0,1,2', help='list of GPUs will be used for training')
 @click.option(
-    '--model', default='adv_unet', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn'
+    '--model', default='linknet', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn'
 )
 def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model):
 
