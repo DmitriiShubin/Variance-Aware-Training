@@ -5,43 +5,55 @@ import numpy as np
 from segmentation_models_pytorch import FPN as smp_FPN
 
 
+
+class OutConv(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(OutConv, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+
+    def forward(self, x):
+        return self.conv(x)
+
+
 class FPN(smp_FPN):
-    def __init__(self, hparams, n_channels, n_classes, bilinear=True):
+    def __init__(self, hparams, n_channels, n_classes):
         super(FPN, self).__init__(
-            # encoder_depth=5,
+            encoder_name='resnet34',
+            encoder_depth=4,
             encoder_weights=None,
-            # decoder_dropout=0.0,
-            # decoder_pyramid_channels=256,
-            # decoder_segmentation_channels=128,
-            # in_channels=n_channels,
-            # classes=n_classes
+            decoder_segmentation_channels=hparams['model']['n_filters_input'],
+            decoder_dropout=hparams['model']['dropout'],
+            in_channels=1,
+            classes=1
         )
 
+        self.conv2d = nn.Conv2d(
+            hparams['model']['n_filters_input'],
+            hparams['model']['n_filters_input'],
+            kernel_size=1,
+            padding=0,
+        )
+        self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
 
-        #self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
+        self.hparams = hparams['model']
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+
+        self.outc = OutConv(self.hparams['n_filters_input'], n_classes)
 
 
 
     def forward(self, x):
-        x1, x2, x3, x4, x5 = self.encoder(x)
-        x = self.decoder(x1, x2, x3, x4, x5)
-        logits = self.outc(x)
-        logits = torch.nn.functional.softmax(logits,dim=1)
-        return logits
+        """Sequentially pass `x` trough model`s encoder, decoder and heads"""
 
-    def encoder(self, x):
+        features = self.encoder(x)
+        x = self.decoder(*features)
 
-        x1 = self.inc(x)
-        x2 = self.down1(x1)
-        x3 = self.down2(x2)
-        x4 = self.down3(x3)
-        x5 = self.down4(x4)
+        x = self.conv2d(x)
+        x = self.upsampling(x)
 
-        return x1, x2, x3, x4, x5
+        x = self.outc(x)
 
-    def decoder(self, x1, x2, x3, x4, x5):
-        x = self.up1(x5, x4)
-        x = self.up2(x, x3)
-        x = self.up3(x, x2)
-        x = self.up4(x, x1)
+        x = torch.softmax(x, dim=1)
+
         return x
