@@ -7,30 +7,22 @@ import torch
 class AdversarialScheduler:
     def __init__(
         self,
-        delta=0.05,
+        score_plat,
         is_maximize=True
     ):
 
-        self.delta = delta
+        self.score_plat = score_plat
         self.is_maximize=is_maximize
         self.status=False
-        self.previous_score = None
 
     def __call__(self, score):
 
         if self.is_maximize:
-            if self.previous_score is None:
-                self.previous_score = score
-            else:
-                if  self.delta < score -self.previous_score:
-                    self.status=True
-
-        if self.is_maximize:
-            if self.previous_score is None:
-                self.previous_score = score
-            else:
-                if self.delta < self.previous_score - score:
-                    self.status=True
+            if score >= self.score_plat:
+                self.status = True
+        else:
+            if score <= self.score_plat:
+                self.status = True
 
     def get_status(self):
         return self.status
