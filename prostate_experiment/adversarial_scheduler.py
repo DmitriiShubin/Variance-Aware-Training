@@ -7,7 +7,7 @@ import torch
 class AdversarialScheduler:
     def __init__(
         self,
-        delta=0.05,
+        delta=0.1,
         is_maximize=True
     ):
 
