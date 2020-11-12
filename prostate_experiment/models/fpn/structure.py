@@ -50,7 +50,7 @@ class FPN(smp_FPN):
         x = self.decoder(*features)
 
         x = self.conv2d(x)
-        x = self.upsampling(x)
+        #x = self.upsampling(x)
 
         x = self.outc(x)
 
