@@ -86,9 +86,9 @@ class Model:
         # lr scheduler
         self.scheduler = ReduceLROnPlateau(
             optimizer=self.optimizer,
-            mode='max',
+            mode='min',
             factor=0.2,
-            patience=3,
+            patience=5,
             verbose=True,
             threshold=self.hparams['min_delta'],
             threshold_mode='abs',
@@ -143,34 +143,68 @@ class Model:
 
                 self.optimizer.zero_grad()
                 # get model predictions
-                pred, pred_s = self.model([X_batch, X_s_batch])
 
-                X_batch = X_batch.cpu().detach()
-                X_s_batch = X_s_batch.cpu().detach()
 
-                # process loss_1
-                pred = pred.permute(0, 2, 3, 1)
-                pred = pred.reshape(-1, pred.shape[-1])
-                y_batch = y_batch.permute(0, 2, 3, 1)
-                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
-                train_loss = self.loss(pred, y_batch)
-                y_batch = y_batch.cpu().detach()
-                pred = pred.cpu().detach()
+                #freze adv net
+                #if epoch < 10:
+                # lam = 1e-4
+                # threshold = 0.15
+                # threshold = torch.log(torch.tensor([1/(threshold*lam)]).to(self.device))
+                if epoch >= 15:
 
-                # process loss_2
-                pred_s = pred_s.reshape(-1)
-                y_s_batch = y_s_batch.reshape(-1)
-                adv_loss = self.loss_s(pred_s, y_s_batch)
-                y_s_batch = y_s_batch.cpu().detach()
-                pred_s = pred_s.cpu().detach()
+                    pred, pred_s = self.model([X_batch, X_s_batch])
 
-                # calc loss
-                avg_loss += train_loss.item() / len(train_loader)
-                avg_loss_adv += adv_loss.item() / len(train_loader)
+                    X_batch = X_batch.cpu().detach()
+                    X_s_batch = X_s_batch.cpu().detach()
 
-                train_loss = train_loss - self.alpha * adv_loss
+                    # process loss_1
+                    pred = pred.permute(0, 2, 3, 1)
+                    pred = pred.reshape(-1, pred.shape[-1])
+                    y_batch = y_batch.permute(0, 2, 3, 1)
+                    y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                    train_loss = self.loss(pred, y_batch)
+                    y_batch = y_batch.cpu().detach()
+                    pred = pred.cpu().detach()
+
+                    # process loss_2
+                    pred_s = pred_s.reshape(-1)
+                    y_s_batch = y_s_batch.reshape(-1)
+                    adv_loss = self.loss_s(pred_s, y_s_batch)
+                    y_s_batch = y_s_batch.cpu().detach()
+                    pred_s = pred_s.cpu().detach()
+
+                    # calc loss
+                    avg_loss += train_loss.item() / len(train_loader)
+                    avg_loss_adv += adv_loss.item() / len(train_loader)
+
+                    train_loss = train_loss + self.alpha *(adv_loss) #+ torch.log(1 / (lam * weights))
+                else:
+
+                    pred = self.model([X_batch, X_s_batch],adv_head=False)
+
+                    X_batch = X_batch.cpu().detach()
+                    X_s_batch = X_s_batch.cpu().detach()
+
+                    # process loss_1
+                    pred = pred.permute(0, 2, 3, 1)
+                    pred = pred.reshape(-1, pred.shape[-1])
+                    y_batch = y_batch.permute(0, 2, 3, 1)
+                    y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                    train_loss = self.loss(pred, y_batch)
+                    y_batch = y_batch.cpu().detach()
+                    pred = pred.cpu().detach()
+
+                    # process loss_2
+                    y_s_batch = y_s_batch.cpu().detach()
+                    # calc loss
+                    avg_loss += train_loss.item() / len(train_loader)
+                    avg_loss_adv += 1 / len(train_loader)
+
+
+                #threshold = threshold.cpu().detach()
 
                 train_loss.backward()
+
                 self.optimizer.step()
 
                 y_batch = y_batch.numpy()
@@ -178,7 +212,9 @@ class Model:
 
                 self.metric.calc_cm(labels=y_batch, outputs=pred)
 
-            metric_train = self.metric.compute()
+            metric_train_dice,metric_train_jaccard = self.metric.compute()
+
+
 
             # evaluate the model
             print('Model evaluation...')
@@ -215,10 +251,10 @@ class Model:
                     pred = pred.numpy()
                     self.metric.calc_cm(labels=y_batch, outputs=pred)
 
-            metric_val = self.metric.compute()
+            metric_val_dice,metric_val_jaccard = self.metric.compute()
 
             self.scheduler.step(avg_val_loss)
-            res = self.early_stopping(score=metric_val, model=self.model)
+            res = self.early_stopping(score=metric_val_dice, model=self.model)
 
             # print statistics
             if self.hparams['verbose_train']:
@@ -233,10 +269,14 @@ class Model:
                     avg_val_loss,
                     '| Val_loss adv: ',
                     avg_val_loss_adv,
-                    '| Metric_train: ',
-                    metric_train,
-                    '| Metric_val: ',
-                    metric_val,
+                    '| Metric_train_dice: ',
+                    metric_train_dice,
+                    '| Metric_train_jaccard: ',
+                    metric_train_jaccard,
+                    '| Metric_val_Dice: ',
+                    metric_val_dice,
+                    '| Metric_val_Jaccard: ',
+                    metric_val_jaccard,
                     '| Current LR: ',
                     self.__get_lr(self.optimizer),
                 )
@@ -248,14 +288,17 @@ class Model:
                 epoch,
             )
 
-            writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            writer.add_scalars('Metric', {'Metric_train_dice': metric_train_dice,
+                                          'Metric_train_jaccard': metric_train_jaccard,
+                                          'Metric_val_dice': metric_val_dice,
+                                          'Metric_val_jaccard': metric_val_jaccard}, epoch)
 
             if res == 2:
                 print("Early Stopping")
                 print(f'global best max val_loss model score {self.early_stopping.best_score}')
                 break
             elif res == 1:
-                print(f'save global val_loss model score {metric_val}')
+                print(f'save global val_loss model score {metric_val_dice}')
 
         writer.close()
 
@@ -276,11 +319,15 @@ class Model:
         test_val = torch.Tensor([])
         print('Generating predictions')
         with torch.no_grad():
-            for i, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
+            for i, (X_batch, y_batch, X_s_batch, _) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
+                X_s_batch = X_s_batch.float().to(self.device)
 
-                pred = self.model(X_batch)
-                X_batch = X_batch.float().cpu().detach()
+                # TODO:
+                # pred = self.model([X_batch, X_s_batch])
+                pred, pred_s = self.model([X_batch, X_s_batch])
+                X_batch = X_batch.cpu().detach()
+                pred_s = pred_s.cpu().detach()
 
                 test_preds = torch.cat([test_preds, pred.cpu().detach()], 0)
                 test_val = torch.cat([test_val, y_batch.cpu().detach()], 0)

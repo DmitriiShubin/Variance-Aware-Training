@@ -60,7 +60,6 @@ class Dataset_train(Dataset):
 
         X, y = self.preprocessing.run(X=X, y=y)
 
-
         # second head
         sampled_patient = np.round(np.random.uniform(size=1)[0],1)
         if sampled_patient >= 0.5:
@@ -86,6 +85,20 @@ class Dataset_train(Dataset):
 
         return X, y, X_s, y_s
 
+class Dataset_test(Dataset_train):
+    def __init__(self,patients, aug):
+        super(Dataset_test, self).__init__(patients, aug)
+
+    def __getitem__(self, idx):
+
+        X, y, X_s, y_s = self.load_data(idx)
+
+        X = torch.tensor(X, dtype=torch.float)
+        X_s = torch.tensor(X_s, dtype=torch.float)
+
+        return X, X_s
+
+
 
 class Preprocessing:
     def __init__(self, aug):
@@ -102,6 +115,7 @@ class Preprocessing:
             else:
                 X[:, :, i] = X[:, :, i] - np.mean(X[:, :, i])
 
+        y[np.where(y ==2)] = 1
         y = np.eye(2, dtype=np.float32)[y.astype(np.int8)]
         y = y.reshape(y.shape[0], y.shape[1], y.shape[-1])
 

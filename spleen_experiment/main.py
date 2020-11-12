@@ -20,17 +20,17 @@ def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model):
 
     # check model type input
     assert (
-        model == 'unet' or model == 'adv_unet' or model == 'fpn' or model == 'adv_fpn'
-    ), 'The following set of models is supported: unet, adv_unet, fpn, adv_fpn'
+        model == 'unet' or model == 'adv_unet' or model == 'linknet' or model == 'adv_linknet'
+    ), 'The following set of models is supported: unet, adv_unet, linknet, adv_linknet'
 
     if model == 'unet':
         from models.unet import Model, hparams
     elif model == 'adv_unet':
         from models.adv_unet import Model, hparams
-    elif model == 'fpn':
-        from models.FPN import Model, hparams
-    elif model == 'adv_fpn':
-        from models.adv_FPN import Model, hparams
+    elif model == 'linknet':
+        from models.linknet import Model, hparams
+    elif model == 'adv_linknet':
+        from models.adv_linknet import Model, hparams
 
     # update hparams
     gpu = [int(i) for i in gpu.split(",")]

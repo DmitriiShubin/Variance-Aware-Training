@@ -36,22 +36,28 @@ class Metric:
 
 
         #
-        # self.intersection =  self.intersection + np.sum(labels * outputs,axis=0)
-        # self.union = self.union + np.sum(labels,axis=0)  + np.sum(outputs,axis=0)
+        self.intersection =  self.intersection + np.sum(labels * outputs,axis=0)
+        self.union = self.union + np.sum(labels,axis=0) + np.sum(outputs,axis=0) - np.sum(labels * outputs,axis=0)
 
     def compute(self):
-        # J  = (self.intersection[1]+ self.smoothing) / (self.union[1] + self.smoothing)
-        # self.intersection = np.array([0,0])
-        # self.union = np.array([0,0])
+        J  = ((self.intersection[1]+ self.smoothing) / (self.union[1] + self.smoothing))#*0.5 +\
+             #((self.intersection[2] + self.smoothing) / (self.union[2] + self.smoothing))*0.5
 
-        f1 = ((1 + 2 ** 2) * self.tp[1] + self.smoothing) \
-                / ((1 + 2 ** 2) * self.tp[1] + 2 ** 2 * self.fn[1] + self.fp[1] + self.smoothing)
+        self.intersection = np.array([0,0])
+        self.union = np.array([0,0])
 
-        self.tp = np.array([0, 0])
-        self.fp = np.array([0, 0])
-        self.fn = np.array([0, 0])
+        f1 = (((1 + 2 ** 2) * self.tp[1] + self.smoothing) \
+                / ((1 + 2 ** 2) * self.tp[1] + 2 ** 2 * self.fn[1] + self.fp[1] + self.smoothing))*0.5
+        # f1 += (((1 + 2 ** 2) * self.tp[2] + self.smoothing) \
+        #         / ((1 + 2 ** 2) * self.tp[2] + 2 ** 2 * self.fn[2] + self.fp[2] + self.smoothing))*0.5
+        # f1 = np.mean(((1 + 2 ** 2) * self.tp+ self.smoothing) \
+        #             / ((1 + 2 ** 2) * self.tp + 2 ** 2 * self.fn + self.fp + self.smoothing))
 
-        return f1
+        self.tp = np.array([0,0])
+        self.fp = np.array([0,0])
+        self.fn = np.array([0,0])
+
+        return f1,J
 
 
 @numba.jit(nopython=False, parallel=True,forceobj=True)
