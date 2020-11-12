@@ -46,10 +46,12 @@ class Metric:
         self.intersection = np.array([0,0,0])
         self.union = np.array([0,0,0])
 
-        f1 = (((1 + 2 ** 2) * self.tp[1] + self.smoothing) \
-                / ((1 + 2 ** 2) * self.tp[1] + 2 ** 2 * self.fn[1] + self.fp[1] + self.smoothing))*0.5
-        f1 += (((1 + 2 ** 2) * self.tp[2] + self.smoothing) \
-                / ((1 + 2 ** 2) * self.tp[2] + 2 ** 2 * self.fn[2] + self.fp[2] + self.smoothing))*0.5
+        # f1 = (((1 + 2 ** 2) * self.tp[1] + self.smoothing) \
+        #         / ((1 + 2 ** 2) * self.tp[1] + 2 ** 2 * self.fn[1] + self.fp[1] + self.smoothing))*0.5
+        # f1 += (((1 + 2 ** 2) * self.tp[2] + self.smoothing) \
+        #         / ((1 + 2 ** 2) * self.tp[2] + 2 ** 2 * self.fn[2] + self.fp[2] + self.smoothing))*0.5
+        f1 = np.mean(((1 + 2 ** 2) * self.tp+ self.smoothing) \
+                    / ((1 + 2 ** 2) * self.tp + 2 ** 2 * self.fn + self.fp + self.smoothing))
 
         self.tp = np.array([0,0,0])
         self.fp = np.array([0,0,0])
