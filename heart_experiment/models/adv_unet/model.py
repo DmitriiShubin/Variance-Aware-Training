@@ -98,7 +98,7 @@ class Model:
         )
         # self.scheduler = CosineAnnealingLR(self.optimizer, T_max=5, eta_min=1e-9, last_epoch=-1)
 
-        self.adv_sheduler = AdversarialScheduler(score_plat=0.0)
+        self.adv_sheduler = AdversarialScheduler(score_plat=0.88)
         self.seed_everything(42)
 
         self.scaler = torch.cuda.amp.GradScaler()
