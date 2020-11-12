@@ -19,7 +19,7 @@ class FPN(smp_FPN):
     def __init__(self, hparams, n_channels, n_classes):
         super(FPN, self).__init__(
             encoder_name='resnet18',
-            encoder_depth=4,
+            encoder_depth=3,
             encoder_weights=None,
             decoder_segmentation_channels=hparams['model']['n_filters_input'],
             decoder_dropout=hparams['model']['dropout'],
