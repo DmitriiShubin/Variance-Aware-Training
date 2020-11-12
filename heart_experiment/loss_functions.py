@@ -8,13 +8,13 @@ class Dice_loss(nn.Module):
     def __init__(self):
         super(Dice_loss, self).__init__()
 
-        self.smoothing = 1e3
+        self.smoothing = 1e-5
 
     def forward(self, y_pred, y_true):
         # y_truef = torch.flatten(y_true)
         # y_predf = torch.flatten(y_pred)
-        # y_true = y_true[:, 1]
-        # y_pred = y_pred[:, 1]
+        # y_true = y_true[:, 1:]
+        # y_pred = y_pred[:, 1:]
         tp = torch.sum(y_true * y_pred, dim=0)
         fp = torch.sum(y_pred, dim=0) - tp
         fn = torch.sum(y_true, dim=0) - tp

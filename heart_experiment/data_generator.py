@@ -60,7 +60,6 @@ class Dataset_train(Dataset):
 
         X, y = self.preprocessing.run(X=X, y=y)
 
-
         # second head
         sampled_patient = np.round(np.random.uniform(size=1)[0],1)
         if sampled_patient >= 0.5:
@@ -116,6 +115,7 @@ class Preprocessing:
             else:
                 X[:, :, i] = X[:, :, i] - np.mean(X[:, :, i])
 
+        y[np.where(y ==2)] = 1
         y = np.eye(2, dtype=np.float32)[y.astype(np.int8)]
         y = y.reshape(y.shape[0], y.shape[1], y.shape[-1])
 
