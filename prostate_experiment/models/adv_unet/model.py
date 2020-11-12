@@ -150,7 +150,7 @@ class Model:
                 # lam = 1e-4
                 # threshold = 0.15
                 # threshold = torch.log(torch.tensor([1/(threshold*lam)]).to(self.device))
-                if epoch >= 15:
+                if epoch >= 25:
 
                     pred, pred_s = self.model([X_batch, X_s_batch])
 
@@ -177,7 +177,7 @@ class Model:
                     avg_loss += train_loss.item() / len(train_loader)
                     avg_loss_adv += adv_loss.item() / len(train_loader)
 
-                    train_loss = train_loss + self.alpha *(torch.log(adv_loss)) #+ torch.log(1 / (lam * weights))
+                    train_loss = train_loss + self.alpha *(adv_loss) #+ torch.log(1 / (lam * weights))
                 else:
 
                     pred = self.model([X_batch, X_s_batch],adv_head=False)
