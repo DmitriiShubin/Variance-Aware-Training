@@ -8,7 +8,7 @@ class Dice_loss(nn.Module):
     def __init__(self):
         super(Dice_loss, self).__init__()
 
-        self.smoothing = 1e-5
+        self.smoothing = 1e3
 
     def forward(self, y_pred, y_true):
         # y_truef = torch.flatten(y_true)
