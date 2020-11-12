@@ -150,7 +150,7 @@ class Model:
                 # lam = 1e-4
                 # threshold = 0.15
                 # threshold = torch.log(torch.tensor([1/(threshold*lam)]).to(self.device))
-                if epoch >= 30:
+                if epoch >= 35:
 
                     pred, pred_s = self.model([X_batch, X_s_batch])
 
