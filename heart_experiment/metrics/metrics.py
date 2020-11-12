@@ -20,6 +20,8 @@ class Metric:
     def calc_cm(self, labels, outputs,train=True):
 
         if train:
+            labels = np.round(labels,2)
+            outputs = np.round(outputs, 2)
             labels = np.argmax(labels, axis=1)
             outputs = np.argmax(outputs, axis=1)
 
