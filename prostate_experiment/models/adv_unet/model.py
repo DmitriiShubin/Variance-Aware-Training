@@ -17,6 +17,7 @@ from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
 import random
+from adversarial_scheduler import AdversarialScheduler
 
 # model
 from models.adv_unet.structure import UNet
@@ -97,6 +98,7 @@ class Model:
         )
         # self.scheduler = CosineAnnealingLR(self.optimizer, T_max=5, eta_min=1e-9, last_epoch=-1)
 
+        self.adv_sheduler = AdversarialScheduler()
         self.seed_everything(42)
 
         self.scaler = torch.cuda.amp.GradScaler()
@@ -150,7 +152,7 @@ class Model:
                 # lam = 1e-4
                 # threshold = 0.15
                 # threshold = torch.log(torch.tensor([1/(threshold*lam)]).to(self.device))
-                if epoch >= 25:
+                if self.adv_sheduler.get_status():
 
                     pred, pred_s = self.model([X_batch, X_s_batch])
 
@@ -299,6 +301,7 @@ class Model:
                 break
             elif res == 1:
                 print(f'save global val_loss model score {metric_val_dice}')
+                self.adv_sheduler(self.early_stopping.best_score)
 
         writer.close()
 
