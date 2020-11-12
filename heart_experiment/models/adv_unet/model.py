@@ -17,6 +17,7 @@ from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
 import random
+from adversarial_scheduler import AdversarialScheduler
 
 # model
 from models.adv_unet.structure import UNet
@@ -37,26 +38,26 @@ class Model:
 
         if inference:
             self.device = torch.device('cpu')
-            self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(self.device)
+            self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=3).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 0:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(
+                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=3).to(
                         self.device
                     )
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Number of GPUs will be used: ", torch.cuda.device_count() - 5)
                     self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(
+                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=3).to(
                         self.device
                     )
                     self.model = DP(self.model, device_ids=list(range(torch.cuda.device_count() - 5)))
             else:
                 self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(self.device)
+                self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=3).to(self.device)
                 print('Only one GPU is available')
 
         self.metric = Metric()
@@ -97,6 +98,7 @@ class Model:
         )
         # self.scheduler = CosineAnnealingLR(self.optimizer, T_max=5, eta_min=1e-9, last_epoch=-1)
 
+        self.adv_sheduler = AdversarialScheduler(score_plat=0.74)
         self.seed_everything(42)
 
         self.scaler = torch.cuda.amp.GradScaler()
@@ -150,7 +152,7 @@ class Model:
                 # lam = 1e-4
                 # threshold = 0.15
                 # threshold = torch.log(torch.tensor([1/(threshold*lam)]).to(self.device))
-                if epoch >= 15:
+                if self.adv_sheduler.get_status():
 
                     pred, pred_s = self.model([X_batch, X_s_batch])
 
@@ -299,6 +301,7 @@ class Model:
                 break
             elif res == 1:
                 print(f'save global val_loss model score {metric_val_dice}')
+                self.adv_sheduler(self.early_stopping.best_score)
 
         writer.close()
 
