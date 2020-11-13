@@ -159,7 +159,7 @@ class LinkNet(nn.Module):
         # adversarial deep net layers
         self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 32, self.hparams['n_filters_input'] * 32, kernel_size=1, padding=0)
         self.adv_conv2 = nn.Conv2d(self.hparams['n_filters_input'] * 32, 1, kernel_size=1, padding=0)
-        self.adv_fc1 = nn.Linear(1984, 300)
+        self.adv_fc1 = nn.Linear(992, 300)
         self.adv_fc2 = nn.Linear(300, 300)
         self.adv_fc3 = nn.Linear(300, 20)
         self.adv_fc4 = nn.Linear(20, 1)
@@ -171,8 +171,10 @@ class LinkNet(nn.Module):
         # main head (predictive)
         out, decoder_x = self.predictive_network(x)
 
+
         if adv_head:
             # additional head (adversarial)
+
             out_s = self.adversarial_network(decoder_x, x_s)
 
             return out, out_s
