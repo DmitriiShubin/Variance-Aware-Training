@@ -13,10 +13,11 @@ from cv_pipeline import CVPipeline
 @click.option('--lr', default=None, help='learning rate')
 @click.option('--n_epochs', default=None, help='number of epoches to run')
 @click.option('--gpu', default='0,1,2', help='list of GPUs will be used for training')
+@click.option('--adv_threshold', default=None, help='')
 @click.option(
     '--model', default='fpn', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn'
 )
-def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model):
+def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model,adv_threshold):
 
     # check model type input
     assert (
@@ -34,8 +35,13 @@ def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model):
     elif model == 'fpn':
         from models.fpn import Model, hparams
 
+
+
     # update hparams
     gpu = [int(i) for i in gpu.split(",")]
+
+    if adv_threshold is not None:
+        hparams['model']['adv_threshold'] = float(adv_threshold)
 
     if start_fold is not None:
         hparams['start_fold'] = int(start_fold)

@@ -31,5 +31,5 @@ structure_hparams['alpha'] = 0.5
 # number of filers for the models
 structure_hparams['kernel_size'] = 3  # must be odd
 structure_hparams['n_filters_input'] = 32
-
+structure_hparams['adv_threshold'] = 0.74
 hparams['model'] = structure_hparams
