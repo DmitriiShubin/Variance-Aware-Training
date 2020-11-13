@@ -13,7 +13,7 @@ hparams['patience'] = 10  # wait for n epoches for emprovement
 hparams['n_fold'] = 5  # number of folds for cross-validation
 hparams['verbose'] = True  # print score or not
 hparams['start_fold'] = 1
-hparams['model_name'] = 'Unet'
+hparams['model_name'] = 'LinkNet'
 
 # directories
 hparams['model_path'] = './data/model_weights'
@@ -28,7 +28,7 @@ structure_hparams = dict()
 # global dropout rate
 structure_hparams['dropout'] = 0.0
 structure_hparams['alpha'] = 0.1
-# number of filers for the models
+structure_hparams['adv_threshold'] = 0.74
 structure_hparams['kernel_size'] = 3  # must be odd
 structure_hparams['n_filters_input'] = 32
 

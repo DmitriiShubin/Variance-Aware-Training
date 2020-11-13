@@ -15,7 +15,7 @@ from cv_pipeline import CVPipeline
 @click.option('--gpu', default='0,1,2', help='list of GPUs will be used for training')
 @click.option('--adv_threshold', default=None, help='')
 @click.option(
-    '--model', default='adv_unet', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn'
+    '--model', default='linknet', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn'
 )
 def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model,adv_threshold):
 
@@ -32,10 +32,10 @@ def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model,adv_threshold):
         from models.linknet import Model, hparams
     elif model == 'adv_linknet':
         from models.adv_linknet import Model, hparams
-    elif model == 'fpn':
-        from models.fpn import Model, hparams
-    elif model == 'adv_fpn':
-        from models.fpn import Model, hparams
+    # elif model == 'fpn':
+    #     from models.fpn import Model, hparams
+    # elif model == 'adv_fpn':
+    #     from models.adv_fpn import Model, hparams
 
 
 
