@@ -115,7 +115,6 @@ class Preprocessing:
             else:
                 X[:, :, i] = X[:, :, i] - np.mean(X[:, :, i])
 
-
         y = np.eye(2, dtype=np.float32)[y.astype(np.int8)]
         y = y.reshape(y.shape[0], y.shape[1], y.shape[-1])
 

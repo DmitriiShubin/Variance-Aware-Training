@@ -38,7 +38,7 @@ class Model:
 
         if inference:
             self.device = torch.device('cpu')
-            self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=3).to(self.device)
+            self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 0:
@@ -98,7 +98,7 @@ class Model:
         )
         # self.scheduler = CosineAnnealingLR(self.optimizer, T_max=5, eta_min=1e-9, last_epoch=-1)
 
-        self.adv_sheduler = AdversarialScheduler(score_plat=0.88)
+        self.adv_sheduler = AdversarialScheduler(score_plat=hparams['model']['adv_threshold'])
         self.seed_everything(42)
 
         self.scaler = torch.cuda.amp.GradScaler()
