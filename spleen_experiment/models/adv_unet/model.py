@@ -98,8 +98,7 @@ class Model:
         )
         # self.scheduler = CosineAnnealingLR(self.optimizer, T_max=5, eta_min=1e-9, last_epoch=-1)
 
-        self.adv_scheduler = AdversarialScheduler()
-
+        self.adv_sheduler = AdversarialScheduler(score_plat=hparams['model']['adv_threshold'])
         self.seed_everything(42)
 
         self.scaler = torch.cuda.amp.GradScaler()
@@ -153,7 +152,7 @@ class Model:
                 # lam = 1e-4
                 # threshold = 0.15
                 # threshold = torch.log(torch.tensor([1/(threshold*lam)]).to(self.device))
-                if self.adv_scheduler.get_status():
+                if self.adv_sheduler.get_status():
 
                     pred, pred_s = self.model([X_batch, X_s_batch])
 
@@ -296,15 +295,13 @@ class Model:
                                           'Metric_val_dice': metric_val_dice,
                                           'Metric_val_jaccard': metric_val_jaccard}, epoch)
 
-
-
             if res == 2:
                 print("Early Stopping")
                 print(f'global best max val_loss model score {self.early_stopping.best_score}')
                 break
             elif res == 1:
                 print(f'save global val_loss model score {metric_val_dice}')
-                self.adv_scheduler(self.early_stopping.best_score)
+                self.adv_sheduler(self.early_stopping.best_score)
 
         writer.close()
 

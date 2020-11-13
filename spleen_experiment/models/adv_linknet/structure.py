@@ -159,27 +159,29 @@ class LinkNet(nn.Module):
         # adversarial deep net layers
         self.adv_conv1 = nn.Conv2d(self.hparams['n_filters_input'] * 32, self.hparams['n_filters_input'] * 32, kernel_size=1, padding=0)
         self.adv_conv2 = nn.Conv2d(self.hparams['n_filters_input'] * 32, 1, kernel_size=1, padding=0)
-        self.adv_fc1 = nn.Linear(1984, 300)
+        self.adv_fc1 = nn.Linear(992, 300)
         self.adv_fc2 = nn.Linear(300, 300)
         self.adv_fc3 = nn.Linear(300, 20)
         self.adv_fc4 = nn.Linear(20, 1)
         # self.adv_fc2 = nn.Linear(self.hparams['n_filters_input'], 1)
 
-    def forward(self, x):
+    def forward(self, x, adv_head=True):
         x, x_s = x  # unpack training and adversarial images
 
         # main head (predictive)
         out, decoder_x = self.predictive_network(x)
 
-        # additional head (adversarial)
-        out_s = self.adversarial_network(decoder_x, x_s)
 
-        weights = torch.mean(self.adv_conv1.weight**2) + torch.mean(self.adv_fc1.weight**2)
+        if adv_head:
+            # additional head (adversarial)
 
-        return out, out_s,weights
+            out_s = self.adversarial_network(decoder_x, x_s)
+
+            return out, out_s
+        else:
+            return out
 
     def encoder(self, x):
-
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
@@ -211,27 +213,12 @@ class LinkNet(nn.Module):
         x4_p = self.rever2_4(x[3]).mean(dim=2).mean(dim=2)
         x5_p = self.rever2_5(x[4]).mean(dim=2).mean(dim=2)
 
-        x = torch.cat([x1_s,x2_s,x3_s,x4_s,x5_s,x1_p,x2_p,x3_p,x4_p,x5_p], dim=1)
+        x = torch.cat([x1_s, x2_s, x3_s, x4_s, x5_s, x1_p, x2_p, x3_p, x4_p, x5_p], dim=1)
 
         x = torch.relu(self.adv_fc1(x))
         x = torch.relu(self.adv_fc2(x))
         x = torch.relu(self.adv_fc3(x))
         x = torch.sigmoid(self.adv_fc4(x))
-
-
-        # x5 = self.rever1(x5)
-        # x = self.rever1(x)
-        #
-        # x = torch.cat((x, x5), dim=1)
-        #
-        # x = torch.relu(self.adv_conv1(x))
-        # x = torch.relu(self.adv_conv2(x))
-        #
-        # x = torch.mean(x, dim=2)
-        # x = torch.squeeze(x)
-        # x = torch.sigmoid(self.adv_fc1(x))
-
-
 
         return x
 
