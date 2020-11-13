@@ -15,7 +15,7 @@ from cv_pipeline import CVPipeline
 @click.option('--gpu', default='0,1,2', help='list of GPUs will be used for training')
 @click.option('--adv_threshold', default=None, help='')
 @click.option(
-    '--model', default='fpn', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn'
+    '--model', default='unet', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn'
 )
 def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model,adv_threshold):
 
@@ -78,7 +78,8 @@ def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model,adv_threshold):
     logger.info(f"Lr = {hparams['lr']}")
     logger.info(f"N epochs = {hparams['n_epochs']}")
     logger.info(f'GPU = {gpu}')
-    logger.info(f"Alpha = {hparams['model']['alpha']}")
+    logger.info(f"Alpha = {alpha}")
+    logger.info(f"Threshold = {adv_threshold}")
     logger.info(f"Model name: = {hparams['model_name']}")
     logger.info('=============================================')
 
