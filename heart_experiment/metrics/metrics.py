@@ -40,7 +40,8 @@ class Metric:
         self.union = self.union + np.sum(labels,axis=0) + np.sum(outputs,axis=0) - np.sum(labels * outputs,axis=0)
 
     def compute(self):
-        J  = ((self.intersection[1]+ self.smoothing) / (self.union[1] + self.smoothing))*0.5
+        J  = (self.intersection[1]+ self.smoothing) / (self.union[1] + self.smoothing)
+             #((self.intersection[2] + self.smoothing) / (self.union[2] + self.smoothing))*0.5
 
         self.intersection = np.array([0,0])
         self.union = np.array([0,0])
