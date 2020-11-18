@@ -12,11 +12,12 @@ from torch.utils.data import DataLoader
 
 # custom modules
 from metrics import Metric
-from loss_functions import Dice_loss
+from loss_functions import Dice_loss,Jaccard_loss
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
-
+import random
+#from segmentation_models_pytorch.utils.losses import JaccardLoss
 # model
 from models.unet.structure import UNet
 
@@ -36,37 +37,37 @@ class Model:
 
         if inference:
             self.device = torch.device('cpu')
-            self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(self.device)
+            self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 0:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(
+                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(
                         self.device
                     )
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Number of GPUs will be used: ", torch.cuda.device_count() - 5)
                     self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(
+                    self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(
                         self.device
                     )
                     self.model = DP(self.model, device_ids=list(range(torch.cuda.device_count() - 5)))
             else:
                 self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=4).to(self.device)
+                self.model = UNet(hparams=self.hparams, n_channels=n_channels, n_classes=2).to(self.device)
                 print('Only one GPU is available')
 
         self.metric = Metric()
-        self.num_workers = 16
+        self.num_workers = 0
 
         ########################## compile the model ###############################
 
         # define optimizer
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.hparams['lr'])
 
-        self.loss = Dice_loss()  # nn.BCELoss(weight=None) #nn.NLLLoss()
+        self.loss = Dice_loss()
 
         self.loss_s = nn.BCELoss(weight=None)
         self.alpha = self.hparams['model']['alpha']
@@ -85,9 +86,9 @@ class Model:
         # lr scheduler
         self.scheduler = ReduceLROnPlateau(
             optimizer=self.optimizer,
-            mode='max',
+            mode='min',
             factor=0.2,
-            patience=3,
+            patience=5,
             verbose=True,
             threshold=self.hparams['min_delta'],
             threshold_mode='abs',
@@ -100,10 +101,15 @@ class Model:
 
         self.scaler = torch.cuda.amp.GradScaler()
 
-    def seed_everything(self, seed):
+    def seed_everything(self, seed, eps=10):
         np.random.seed(seed)
+        random.seed(seed)
         os.environ['PYTHONHASHSEED'] = str(seed)
         torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.determenistic = True
+        torch.backends.cudnn.benchmark = False
+        torch.set_printoptions(precision=eps)
 
     def fit(self, train, valid):
 
@@ -136,8 +142,9 @@ class Model:
                 self.optimizer.zero_grad()
                 # get model predictions
 
-                pred = self.model(X_batch)
 
+
+                pred = self.model(X_batch)
                 X_batch = X_batch.float().cpu().detach()
 
                 # process loss_1
@@ -147,25 +154,24 @@ class Model:
                 y_batch = y_batch.permute(0, 2, 3, 1)
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
 
-                train_loss = self.loss(pred, y_batch)
 
+                train_loss = self.loss(pred, y_batch)
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
 
+
                 train_loss.backward()
                 self.optimizer.step()
-
                 y_batch = y_batch.numpy()
                 pred = pred.numpy()
-                y_batch = np.argmax(y_batch, axis=1)
-                pred = np.argmax(pred, axis=1)
+
+
 
                 self.metric.calc_cm(labels=y_batch, outputs=pred)
-
-            metric_train = self.metric.compute()
+            metric_train_dice,metric_train_jaccard = self.metric.compute()
 
             # evaluate the model
             print('Model evaluation...')
@@ -189,18 +195,17 @@ class Model:
 
                     y_batch = y_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
-
+ 
                     y_batch = y_batch.numpy()
                     pred = pred.numpy()
-                    y_batch = np.argmax(y_batch, axis=1)
-                    pred = np.argmax(pred, axis=1)
+
 
                     self.metric.calc_cm(labels=y_batch, outputs=pred)
 
-            metric_val = self.metric.compute()
+            metric_val_dice,metric_val_jaccard = self.metric.compute()
 
-            self.scheduler.step(metric_val)
-            res = self.early_stopping(score=metric_val, model=self.model)
+            self.scheduler.step(avg_val_loss)
+            res = self.early_stopping(score=metric_val_dice, model=self.model)
 
             # print statistics
             if self.hparams['verbose_train']:
@@ -211,10 +216,14 @@ class Model:
                     avg_loss,
                     '| Val_loss main: ',
                     avg_val_loss,
-                    '| Metric_train: ',
-                    metric_train,
-                    '| Metric_val: ',
-                    metric_val,
+                    '| Metric_train_dice: ',
+                    metric_train_dice,
+                    '| Metric_train_jaccard: ',
+                    metric_train_jaccard,
+                    '| Metric_val_dice: ',
+                    metric_val_dice,
+                    '| Metric_val_jaccard: ',
+                    metric_val_jaccard,
                     '| Current LR: ',
                     self.__get_lr(self.optimizer),
                 )
@@ -226,14 +235,17 @@ class Model:
                 epoch,
             )
 
-            writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            writer.add_scalars('Metric', {'Metric_train_dice': metric_train_dice,
+                                          'Metric_train_jaccard': metric_train_jaccard,
+                                          'Metric_val_dice': metric_val_dice,
+                                          'Metric_val_jaccard': metric_val_jaccard}, epoch)
 
             if res == 2:
                 print("Early Stopping")
                 print(f'global best max val_loss model score {self.early_stopping.best_score}')
                 break
             elif res == 1:
-                print(f'save global val_loss model score {metric_val}')
+                print(f'save global val_loss model score {metric_val_dice}')
 
         writer.close()
 

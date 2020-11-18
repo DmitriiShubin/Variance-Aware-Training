@@ -9,7 +9,6 @@ import cv2
 import albumentations as A
 from config import DATA_PATH
 from time import time
-import itertools
 
 # pytorch
 import torch
@@ -22,21 +21,8 @@ np.random.seed(42)
 class Dataset_train(Dataset):
     def __init__(self, patients, aug):
 
-        self.patients = patients
-        self.images_list = []
-
-        for patient in patients:
-            images = [
-                i[:-10]
-                for i in os.listdir(DATA_PATH + patient)
-                if i.find('.npy') != -1 and i.find('flair') != -1
-            ]
-            for image in images:
-                self.images_list.append(DATA_PATH + patient + '/' + image)
-
-        # read dataset info
-        self.datasets = json.load(open('./split_table/adversarial_datasets.json'))
-
+        self.seed_everything(42, eps=10)
+        self.images_list = patients
         self.preprocessing = Preprocessing(aug)
 
     def __len__(self):
@@ -53,82 +39,76 @@ class Dataset_train(Dataset):
 
         return X, y, X_s, y_s
 
+    def seed_everything(self,seed, eps=10):
+        np.random.seed(seed)
+        random.seed(seed)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.determenistic = True
+        torch.backends.cudnn.benchmark = False
+        torch.set_printoptions(precision=eps)
+
     def load_data(self, id):
 
-        X = np.load(self.images_list[id] + '_flair.npy')
-        X = np.append(X, np.load(self.images_list[id] + '_t1.npy'), axis=2)
-        X = np.append(X, np.load(self.images_list[id] + '_t1ce.npy'), axis=2)
-        X = np.append(X, np.load(self.images_list[id] + '_t2.npy'), axis=2)
+        X = np.load(self.images_list[id] + '_t2.npy').astype(np.float32)
+        X = np.concatenate((X,np.load(self.images_list[id] + '_flair.npy').astype(np.float32)),axis=2)
+        X = np.concatenate((X, np.load(self.images_list[id] + '_t1ce.npy').astype(np.float32)), axis=2)
+        X = np.concatenate((X, np.load(self.images_list[id] + '_t1.npy').astype(np.float32)), axis=2)
 
-        y = np.load(self.images_list[id] + '_seg.npy').astype(np.float32)
+        y = np.load(self.images_list[id] + '_seg.npy').astype(
+            np.float32
+        )
         y_ = y.copy()
 
         X, y = self.preprocessing.run(X=X, y=y)
 
         # second head
-        for i in self.datasets.keys():
-            if self.images_list[id].split('/')[-1][:20] in self.datasets[i]:
-                dataset_number = i
-
-        sampled_patient = np.random.uniform(size=1)[0]
+        sampled_patient = np.round(np.random.uniform(size=1)[0],1)
         if sampled_patient >= 0.5:
             # NOT the same patient
-            dataset_adv = list(self.datasets.keys())
-            dataset_adv.remove(dataset_number)
-            dataset_adv = np.random.choice(dataset_adv)
             images_subset = self.images_list.copy()
-            images_subset = [
-                i for i in images_subset if (i.split('/')[-1][:20] in self.datasets[dataset_adv])
-            ]
-            X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
-            y_s = [0]
+            patient_id = self.images_list[id].split('/')[-2]
+            images_subset = [i for i in images_subset if i.find(patient_id) == -1]
 
+            image = np.random.choice(np.array(images_subset))
+            X_s = np.load(image + '_t2.npy').astype(np.float32)
+            X_s = np.concatenate((X_s, np.load(image + '_flair.npy').astype(np.float32)), axis=2)
+            X_s = np.concatenate((X_s, np.load(image + '_t1ce.npy').astype(np.float32)), axis=2)
+            X_s = np.concatenate((X_s, np.load(image + '_t1.npy').astype(np.float32)), axis=2)
+
+            y_s = [0]
         else:
             # the same patient
             images_subset = self.images_list.copy()
-            images_subset = [
-                i
-                for i in images_subset
-                if (i.split('/')[-1][:20] in self.datasets[dataset_number]) and (self.images_list[id] != i)
-            ]
-            X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
-            X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
-            y_s = [1]
+            patient_id = self.images_list[id].split('/')[-2]
+            images_subset = [i for i in images_subset if i.find(patient_id) != -1]
+            images_subset.remove(self.images_list[id])
 
-        # sampled_patient = np.random.uniform(size=1)[0]
-        # if sampled_patient >= 0.5:
-        #     # NOT the same patient
-        #     images_subset = self.images_list.copy()
-        #     patient_id = self.images_list[id].split('/')[-2]
-        #     images_subset = [i for i in images_subset if i.find(patient_id) == -1]
-        #
-        #     X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
-        #     X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
-        #     X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
-        #     X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
-        #
-        #     y_s = [0]
-        # else:
-        #     # the same patient
-        #     images_subset = self.images_list.copy()
-        #     patient_id = self.images_list[id].split('/')[-2]
-        #     images_subset = [i for i in images_subset if i.find(patient_id) != -1]
-        #     images_subset.remove(self.images_list[id])
-        #
-        #     X_s = np.load(np.random.choice(np.array(images_subset)) + '_flair.npy')
-        #     X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1.npy'), axis=2)
-        #     X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t1ce.npy'), axis=2)
-        #     X_s = np.append(X_s, np.load(np.random.choice(np.array(images_subset)) + '_t2.npy'), axis=2)
-        #     y_s = [1]
+            image = np.random.choice(np.array(images_subset))
+            X_s = np.load(image + '_t2.npy').astype(np.float32)
+            X_s = np.concatenate((X_s, np.load(image + '_flair.npy').astype(np.float32)), axis=2)
+            X_s = np.concatenate((X_s, np.load(image + '_t1ce.npy').astype(np.float32)), axis=2)
+            X_s = np.concatenate((X_s, np.load(image+ '_t1.npy').astype(np.float32)), axis=2)
+            y_s = [1]
 
         X_s, y_ = self.preprocessing.run(X=X_s, y=y_)
 
         return X, y, X_s, y_s
+
+class Dataset_test(Dataset_train):
+    def __init__(self,patients, aug):
+        super(Dataset_test, self).__init__(patients, aug)
+
+    def __getitem__(self, idx):
+
+        X, y, X_s, y_s = self.load_data(idx)
+
+        X = torch.tensor(X, dtype=torch.float)
+        X_s = torch.tensor(X_s, dtype=torch.float)
+
+        return X, X_s
+
 
 
 class Preprocessing:
@@ -140,17 +120,15 @@ class Preprocessing:
     def run(self, X, y, label_process=True):
 
         # apply scaling
-        for i in range(4):
+        for i in range(X.shape[2]):
             if np.std(X[:, :, i]) > 0:
                 X[:, :, i] = (X[:, :, i] - np.mean(X[:, :, i])) / np.std(X[:, :, i])
             else:
                 X[:, :, i] = X[:, :, i] - np.mean(X[:, :, i])
 
-        y[np.where(y == 4)] = 3
 
-        a = np.where(y == 1)
-
-        y = np.eye(4, dtype=np.float32)[y.astype(np.int8)]
+        a = np.unique(y)
+        y = np.eye(3, dtype=np.float32)[y.astype(np.int8)]
         y = y.reshape(y.shape[0], y.shape[1], y.shape[-1])
 
         # reshape to match pytorch
@@ -168,9 +146,9 @@ class Augmentations:
 
         self.augs = A.Compose(
             [
-                # A.HorizontalFlip(p=prob),
+                A.HorizontalFlip(p=prob),
                 A.Rotate(limit=10, p=prob),
-                A.RandomSizedCrop(min_max_height=(200, 200), height=240, width=240, p=prob),
+                A.RandomSizedCrop(min_max_height=(240, 240), height=240, width=240, p=prob),
             ]
         )
 
@@ -183,3 +161,4 @@ class Augmentations:
         mask = augmented['mask']
 
         return image, mask
+

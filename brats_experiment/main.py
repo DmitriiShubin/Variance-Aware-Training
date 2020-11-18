@@ -13,25 +13,37 @@ from cv_pipeline import CVPipeline
 @click.option('--lr', default=None, help='learning rate')
 @click.option('--n_epochs', default=None, help='number of epoches to run')
 @click.option('--gpu', default='0,1,2', help='list of GPUs will be used for training')
-@click.option('--model', default='fpn', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn')
-def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model):
+@click.option('--adv_threshold', default=None, help='')
+@click.option(
+    '--model', default='adv_linknet', help='Model type, one of following: unet, adv_unet, fpn, adv_fpn'
+)
+def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model,adv_threshold):
 
     # check model type input
     assert (
-        model == 'unet' or model == 'adv_unet' or model == 'fpn' or model == 'adv_fpn'
-    ), 'The following set of models is supported: unet, adv_unet, fpn, adv_fpn'
+        model == 'unet' or model == 'adv_unet' or model == 'linknet' or model == 'adv_linknet' or model == 'fpn' or model == 'adv_fpn'
+    ), 'The following set of models is supported: unet, adv_unet, linknet, adv_linknet'
 
     if model == 'unet':
         from models.unet import Model, hparams
     elif model == 'adv_unet':
         from models.adv_unet import Model, hparams
-    elif model == 'fpn':
-        from models.FPN import Model, hparams
-    elif model == 'adv_fpn':
-        from models.adv_FPN import Model, hparams
+    elif model == 'linknet':
+        from models.linknet import Model, hparams
+    elif model == 'adv_linknet':
+        from models.adv_linknet import Model, hparams
+    # elif model == 'fpn':
+    #     from models.fpn import Model, hparams
+    # elif model == 'adv_fpn':
+    #     from models.adv_fpn import Model, hparams
+
+
 
     # update hparams
     gpu = [int(i) for i in gpu.split(",")]
+
+    if adv_threshold is not None:
+        hparams['model']['adv_threshold'] = float(adv_threshold)
 
     if start_fold is not None:
         hparams['start_fold'] = int(start_fold)
@@ -68,10 +80,13 @@ def main(start_fold, alpha, batch_size, lr, n_epochs, gpu, model):
     logger.info(f"Lr = {hparams['lr']}")
     logger.info(f"N epochs = {hparams['n_epochs']}")
     logger.info(f'GPU = {gpu}')
-    logger.info(f"Alpha = {hparams['model']['alpha']}")
+    logger.info(f"Alpha = {alpha}")
+    logger.info(f"Threshold = {adv_threshold}")
     logger.info(f"Model name: = {hparams['model_name']}")
     logger.info('=============================================')
 
 
 if __name__ == "__main__":
     main()
+
+
