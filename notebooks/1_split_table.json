@@ -1,0 +1,1 @@
+{"train": ["prostate_18"], "val": ["prostate_32", "prostate_10"], "pretrain": ["prostate_18", "prostate_06", "prostate_44", "prostate_29", "prostate_04", "prostate_25", "prostate_37", "prostate_47", "prostate_34", "prostate_41", "prostate_28", "prostate_01", "prostate_43", "prostate_20", "prostate_32", "prostate_10"]}

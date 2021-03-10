@@ -1,0 +1,43 @@
+#version: "2.3"
+#services:
+#  jupyter:
+#    image: "jet_training_uada_base"
+#    ports:
+#      - "1293:8888"
+#    volumes:
+#      - .:/UADA/
+##    gpus:
+##      - 'all'
+#    command: tail -F /dev/null
+##    devices:
+##      - /dev/nvidia0
+##      - /dev/nvidia1
+#
+#    #  redis:
+##    image: "jet_training_uada_base"
+#
+#
+#    #run docker compose
+#    sudo docker run -id --name temp -p 1293:8888 -v $(pwd):/UADA/ --gpus all jet_training_uada_base tail -f /dev/null
+
+# base docker-compose configuration
+version: '2.3'
+networks:
+  jet_training_uada:
+    external: true
+services:
+  jet_training_uada:
+    build:
+      context: .
+    entrypoint: ["/docker-entrypoint.sh"]
+    shm_size: "32gb"
+    hostname: "jupyter"
+    ports:
+      - "8443:8888" # Jupyter
+      - "4546:22" # SSH
+    volumes:
+      - .:/UADA/
+
+
+
+

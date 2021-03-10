@@ -178,4 +178,5 @@ ENV/
 /data/training/
 /output/
 **/data
+**/old_exp
 **/.vscode
