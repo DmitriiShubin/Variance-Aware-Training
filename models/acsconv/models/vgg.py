@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 import math
+
 try:
     from torch.hub import load_state_dict_from_url
 except ImportError:
@@ -31,61 +32,80 @@ model_urls = {
 
 
 class VGG16_bn(nn.Module):
-
     def __init__(self, pretrained=False, num_classes=1000, init_weights=True):
         super(VGG16_bn, self).__init__()
 
-        self.layer0 = nn.Sequential(OrderedDict([
-            ('conv0', ACSConv(3, 64, kernel_size=3, padding=1)),
-            ('bn0', nn.BatchNorm3d(64)),
-            ('relu0', nn.ReLU(inplace=True)),
-            ('conv1', ACSConv(64, 64, kernel_size=3, padding=1)),
-            ('bn1', nn.BatchNorm3d(64)),
-            ('relu1', nn.ReLU(inplace=True))
-        ]))
-        self.layer1 = nn.Sequential(OrderedDict([
-            ('conv0', ACSConv(64, 128, kernel_size=3, padding=1)),
-            ('bn0', nn.BatchNorm3d(128)),
-            ('relu0', nn.ReLU(inplace=True)),
-            ('conv1', ACSConv(128, 128, kernel_size=3, padding=1)),
-            ('bn1', nn.BatchNorm3d(128)),
-            ('relu1', nn.ReLU(inplace=True))
-        ]))
-        self.layer2 = nn.Sequential(OrderedDict([
-            ('maxpool0', nn.MaxPool3d(kernel_size=2, stride=2)),
-            ('conv0', ACSConv(128, 256, kernel_size=3, padding=1)),
-            ('bn0', nn.BatchNorm3d(256)),
-            ('relu0', nn.ReLU(inplace=True)),
-            ('conv1', ACSConv(256, 256, kernel_size=3, padding=1)),
-            ('bn1', nn.BatchNorm3d(256)),
-            ('relu1', nn.ReLU(inplace=True)),
-            ('conv2', ACSConv(256, 256, kernel_size=3, padding=1)),
-            ('bn2', nn.BatchNorm3d(256)),
-            ('relu2', nn.ReLU(inplace=True)),
-        ]))
-        self.layer3 = nn.Sequential(OrderedDict([
-            ('conv0', ACSConv(256, 512, kernel_size=3, padding=1)),
-            ('bn0', nn.BatchNorm3d(512)),
-            ('relu0', nn.ReLU(inplace=True)),
-            ('conv1', ACSConv(512, 512, kernel_size=3, padding=1)),
-            ('bn1', nn.BatchNorm3d(512)),
-            ('relu1', nn.ReLU(inplace=True)),
-            ('conv2', ACSConv(512, 512, kernel_size=3, padding=1)),
-            ('bn2', nn.BatchNorm3d(512)),
-            ('relu2', nn.ReLU(inplace=True)),
-        ]))
-        self.layer4 = nn.Sequential(OrderedDict([
-            ('maxpool0', nn.MaxPool3d(kernel_size=2, stride=2)),
-            ('conv0', ACSConv(512, 512, kernel_size=3, padding=1)),
-            ('bn0', nn.BatchNorm3d(512)),
-            ('relu0', nn.ReLU(inplace=True)),
-            ('conv1', ACSConv(512, 512, kernel_size=3, padding=1)),
-            ('bn1', nn.BatchNorm3d(512)),
-            ('relu1', nn.ReLU(inplace=True)),
-            ('conv2', ACSConv(512, 512, kernel_size=3, padding=1)),
-            ('bn2', nn.BatchNorm3d(512)),
-            ('relu2', nn.ReLU(inplace=True)),
-        ]))
+        self.layer0 = nn.Sequential(
+            OrderedDict(
+                [
+                    ('conv0', ACSConv(3, 64, kernel_size=3, padding=1)),
+                    ('bn0', nn.BatchNorm3d(64)),
+                    ('relu0', nn.ReLU(inplace=True)),
+                    ('conv1', ACSConv(64, 64, kernel_size=3, padding=1)),
+                    ('bn1', nn.BatchNorm3d(64)),
+                    ('relu1', nn.ReLU(inplace=True)),
+                ]
+            )
+        )
+        self.layer1 = nn.Sequential(
+            OrderedDict(
+                [
+                    ('conv0', ACSConv(64, 128, kernel_size=3, padding=1)),
+                    ('bn0', nn.BatchNorm3d(128)),
+                    ('relu0', nn.ReLU(inplace=True)),
+                    ('conv1', ACSConv(128, 128, kernel_size=3, padding=1)),
+                    ('bn1', nn.BatchNorm3d(128)),
+                    ('relu1', nn.ReLU(inplace=True)),
+                ]
+            )
+        )
+        self.layer2 = nn.Sequential(
+            OrderedDict(
+                [
+                    ('maxpool0', nn.MaxPool3d(kernel_size=2, stride=2)),
+                    ('conv0', ACSConv(128, 256, kernel_size=3, padding=1)),
+                    ('bn0', nn.BatchNorm3d(256)),
+                    ('relu0', nn.ReLU(inplace=True)),
+                    ('conv1', ACSConv(256, 256, kernel_size=3, padding=1)),
+                    ('bn1', nn.BatchNorm3d(256)),
+                    ('relu1', nn.ReLU(inplace=True)),
+                    ('conv2', ACSConv(256, 256, kernel_size=3, padding=1)),
+                    ('bn2', nn.BatchNorm3d(256)),
+                    ('relu2', nn.ReLU(inplace=True)),
+                ]
+            )
+        )
+        self.layer3 = nn.Sequential(
+            OrderedDict(
+                [
+                    ('conv0', ACSConv(256, 512, kernel_size=3, padding=1)),
+                    ('bn0', nn.BatchNorm3d(512)),
+                    ('relu0', nn.ReLU(inplace=True)),
+                    ('conv1', ACSConv(512, 512, kernel_size=3, padding=1)),
+                    ('bn1', nn.BatchNorm3d(512)),
+                    ('relu1', nn.ReLU(inplace=True)),
+                    ('conv2', ACSConv(512, 512, kernel_size=3, padding=1)),
+                    ('bn2', nn.BatchNorm3d(512)),
+                    ('relu2', nn.ReLU(inplace=True)),
+                ]
+            )
+        )
+        self.layer4 = nn.Sequential(
+            OrderedDict(
+                [
+                    ('maxpool0', nn.MaxPool3d(kernel_size=2, stride=2)),
+                    ('conv0', ACSConv(512, 512, kernel_size=3, padding=1)),
+                    ('bn0', nn.BatchNorm3d(512)),
+                    ('relu0', nn.ReLU(inplace=True)),
+                    ('conv1', ACSConv(512, 512, kernel_size=3, padding=1)),
+                    ('bn1', nn.BatchNorm3d(512)),
+                    ('relu1', nn.ReLU(inplace=True)),
+                    ('conv2', ACSConv(512, 512, kernel_size=3, padding=1)),
+                    ('bn2', nn.BatchNorm3d(512)),
+                    ('relu2', nn.ReLU(inplace=True)),
+                ]
+            )
+        )
 
         self._initialize_weights()
         if pretrained:
@@ -101,6 +121,7 @@ class VGG16_bn(nn.Module):
             print('vgg loaded imagenet pretrained weights')
         else:
             print('vgg without imagenet pretrained weights')
+
     def forward(self, x):
         x = self.layer0(x)
         x2 = x.clone()
@@ -116,7 +137,7 @@ class VGG16_bn(nn.Module):
         for m in self.modules():
             if isinstance(m, ACSConv):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
+                m.weight.data.normal_(0, math.sqrt(2.0 / n))
                 if m.bias is not None:
                     m.bias.data.zero_()
             elif isinstance(m, nn.BatchNorm3d):
@@ -130,6 +151,7 @@ class VGG16_bn(nn.Module):
 def vgg16(*args, **kwargs):
     return VGG16_bn(*args, **kwargs)
 
+
 class FCNHead(nn.Sequential):
     def __init__(self, in_channels, channels):
         inter_channels = in_channels // 4
@@ -137,27 +159,30 @@ class FCNHead(nn.Sequential):
             ACSConv(in_channels, inter_channels, 3, padding=1, bias=False),
             nn.BatchNorm3d(inter_channels),
             nn.ReLU(),
-            ACSConv(inter_channels, channels, 1)
+            ACSConv(inter_channels, channels, 1),
         ]
 
         super(FCNHead, self).__init__(*layers)
+
 
 class FCNVGG(nn.Module):
     def __init__(self, pretrained, num_classes, backbone='VGG16_bn'):
         super().__init__()
         self.backbone = globals()[backbone](pretrained=pretrained)
-        self.conv1 = ACSConv(512+256, 256, kernel_size=1, stride=1,
-                            padding=0, bias=False)
-        self.conv2 = ACSConv(256+64, 64, kernel_size=1, stride=1,
-                            padding=0, bias=False)
+        self.conv1 = ACSConv(512 + 256, 256, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv2 = ACSConv(256 + 64, 64, kernel_size=1, stride=1, padding=0, bias=False)
         self.classifier = FCNHead(in_channels=64, channels=num_classes)
-    
+
     def forward(self, x):
         features, features1, features2 = self.backbone(x)
         # print(features.shape, features1.shape, features2.shape)
-        features_cat1 = torch.cat([features1, F.interpolate(features, scale_factor=2, mode='trilinear')], dim=1)
+        features_cat1 = torch.cat(
+            [features1, F.interpolate(features, scale_factor=2, mode='trilinear')], dim=1
+        )
         features_cat1 = self.conv1(features_cat1)
-        features_cat2 = torch.cat([features2, F.interpolate(features_cat1, scale_factor=2, mode='trilinear')], dim=1)
+        features_cat2 = torch.cat(
+            [features2, F.interpolate(features_cat1, scale_factor=2, mode='trilinear')], dim=1
+        )
         features_cat2 = self.conv2(features_cat2)
         features = features_cat2
 
@@ -170,7 +195,7 @@ class ClsVGG(nn.Module):
         super().__init__()
         self.backbone = globals()[backbone](pretrained=pretrained)
         self.fc = nn.Linear(512, num_classes, bias=True)
-    
+
     def forward(self, x):
         features = self.backbone(x)[0]
         features = F.adaptive_avg_pool3d(features, output_size=1).view(features.shape[0], -1)

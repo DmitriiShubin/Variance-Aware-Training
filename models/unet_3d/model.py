@@ -16,10 +16,10 @@ from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from utils.post_processing import Post_Processing
 from time import time
-from utils.loss_functions import f1_loss,Dice_loss
+from utils.loss_functions import f1_loss, Dice_loss
 
 # model
-from models.unet.structure import UNet
+from models.unet_3d.structure import UNet
 
 
 class Model:
@@ -68,10 +68,8 @@ class Model:
             num_workers=self.hparams['num_workers'],
         )
 
-
         # tensorboard
         writer = SummaryWriter(f"runs/{self.hparams['model_name']}_{self.start_training}")
-
 
         print('Start training the model')
         for epoch in range(self.hparams['n_epochs']):

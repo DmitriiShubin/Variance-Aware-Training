@@ -18,7 +18,6 @@ class Metric:
         labels = np.eye(self.n_classes)[labels.astype(np.int32)]
         outputs = np.eye(self.n_classes)[outputs.astype(np.int32)]
 
-
         tp = np.sum(labels * outputs, axis=0)
         fp = np.sum(outputs, axis=0) - tp
         fn = np.sum(labels, axis=0) - tp
@@ -30,10 +29,13 @@ class Metric:
     def compute(self):
 
         # dice macro
-        f1 = []
-        for i in range(self.n_classes):
-            if i != self.exclude_class:
-                f1.append(self.tp[i] / (self.tp[i] + 0.5 * (self.fp[i] + self.fn[i]) + 1e-3))
+        # f1 = []
+        # for i in range(self.n_classes):
+        #     if i != self.exclude_class:
+        #         f1.append(self.tp[i] / (self.tp[i] + 0.5 * (self.fp[i] + self.fn[i]) + 1e-3))
+        f1 = ((1 + 2 ** 2) * self.tp[1:] + 1e-3) / (
+            (1 + 2 ** 2) * self.tp[1:] + 2 ** 2 * self.fn[1:] + self.fp[1:] + 1e-3
+        )
 
         self.tp = np.array([0] * (self.n_classes))
         self.fp = np.array([0] * (self.n_classes))

@@ -18,9 +18,11 @@ class f1_loss(nn.Module):
 
         f1 = torch.mean(
             # ((1 + 2 ** 2) * tp + self.smoothing) / ((1 + 2 ** 2) * tp + 2 ** 2 * fn + fp + self.smoothing)
-            tp / (tp + 0.5 * (fp + fn) + self.smoothing)
+            tp
+            / (tp + 0.5 * (fp + fn) + self.smoothing)
         )
         return -1 * f1
+
 
 class Dice_loss(nn.Module):
     def __init__(self):
@@ -31,19 +33,16 @@ class Dice_loss(nn.Module):
     def forward(self, y_pred, y_true):
         # y_truef = torch.flatten(y_true)
         # y_predf = torch.flatten(y_pred)
-        y_true = y_true[:, 1:]
-        y_pred = y_pred[:, 1:]
-        # tp = torch.sum(y_true * y_pred, dim=0)
-        # fp = torch.sum(y_pred, dim=0) - tp
-        # fn = torch.sum(y_true, dim=0) - tp
+        # y_true = y_true[:, 1:]
+        # y_pred = y_pred[:, 1:]
+        tp = torch.sum(y_true * y_pred, dim=0)
+        fp = torch.sum(y_pred, dim=0) - tp
+        fn = torch.sum(y_true, dim=0) - tp
 
-        # f1 = torch.mean(
-        #     ((1 + 2 ** 2) * tp + self.smoothing) / ((1 + 2 ** 2) * tp + 2 ** 2 * fn + fp + self.smoothing)
-        # )
-
-        f1 = 2*torch.sum(y_pred*y_true,dim=0)/(torch.sum(y_pred**2,dim=0) + torch.sum(y_true**2,dim=0) + self.smoothing)
-
-        return -1 * torch.mean(f1)
+        f1 = torch.mean(
+            ((1 + 2 ** 2) * tp + self.smoothing) / ((1 + 2 ** 2) * tp + 2 ** 2 * fn + fp + self.smoothing)
+        )
+        return -1 * f1
 
 
 class FocalLoss(nn.Module):

@@ -4,7 +4,7 @@ from experiments.baseline.run_experiment import run
 def main():
 
     # baseline upper-boundaries
-    run(hparams='./experiments/baseline/config_prostate_UB.yml')
+    run()
 
     # baseline (without pre-trianing)
 

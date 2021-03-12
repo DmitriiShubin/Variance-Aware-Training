@@ -6,6 +6,7 @@ import torch
 import torch
 from torch.utils.data import Dataset
 import albumentations
+
 # custom modules
 np.random.seed(42)
 
@@ -36,14 +37,14 @@ class Dataset_train(Dataset):
 
         y = self.one_hot_voxel(y)
 
-        X,y = self.preprocessing.run(X=X,y=y)
+        X, y = self.preprocessing.run(X=X, y=y)
 
         return X, y
 
     def one_hot_voxel(self, y):
         y = np.transpose(y.astype(np.int32), (1, 2, 3, 0))
         y = np.eye(self.n_classes)[y[:, :, :, -1]]
-        y = np.transpose(y.astype(np.int32), (3,0,1,2))
+        y = np.transpose(y.astype(np.int32), (3, 0, 1, 2))
         return y
 
 
@@ -53,17 +54,16 @@ class Preprocessing:
         self.aug = aug
         self.augmentations = Augmentations()
 
-    def run(self, X,y):
+    def run(self, X, y):
 
         X = self.std_scaling(X)
 
         # if self.aug:
         #     X,y = self.augmentations.run(X,y)
 
-        return X,y
+        return X, y
 
-
-    def minmax_scaling(self,X):
+    def minmax_scaling(self, X):
         min = np.min(X)
         max = np.max(X)
         if max > min + 1e-3:
@@ -72,33 +72,37 @@ class Preprocessing:
             X = X - np.mean(X)
         return X
 
-    def std_scaling(self,X):
+    def std_scaling(self, X):
         std = np.std(X)
         mean = np.mean(X)
-        if std >0:
-            return (X-mean)/std
+        if std > 0:
+            return (X - mean) / std
         else:
             return X - mean
 
-    def padding(self,X,y):
-        max_shape = 256#np.max(X.shape)
+    def padding(self, X, y):
+        max_shape = 256  # np.max(X.shape)
 
-        X = np.concatenate([X,np.zeros((X.shape[0],X.shape[1],X.shape[2],X.shape[3]//2))],axis=-1)
-        X = np.concatenate([ np.zeros((X.shape[0], X.shape[1], X.shape[2], max_shape-X.shape[3])),X],axis=-1)
+        X = np.concatenate([X, np.zeros((X.shape[0], X.shape[1], X.shape[2], X.shape[3] // 2))], axis=-1)
+        X = np.concatenate(
+            [np.zeros((X.shape[0], X.shape[1], X.shape[2], max_shape - X.shape[3])), X], axis=-1
+        )
 
         y = np.concatenate([y, np.zeros((y.shape[0], y.shape[1], y.shape[2], y.shape[3] // 2))], axis=-1)
-        y = np.concatenate([np.zeros((y.shape[0], y.shape[1], y.shape[2], max_shape - y.shape[3])), y], axis=-1)
+        y = np.concatenate(
+            [np.zeros((y.shape[0], y.shape[1], y.shape[2], max_shape - y.shape[3])), y], axis=-1
+        )
 
-        return X,y
+        return X, y
 
-    def crop(self,X,y,cropsize=128):
-        X_pos = np.random.choice(X.shape[1]-cropsize)
+    def crop(self, X, y, cropsize=128):
+        X_pos = np.random.choice(X.shape[1] - cropsize)
         Y_pos = np.random.choice(X.shape[2] - cropsize)
         Z_pos = np.random.choice(X.shape[3] - cropsize)
 
-        X = X[:,X_pos:X_pos+cropsize,Y_pos:Y_pos+cropsize,Z_pos:Z_pos+cropsize]
-        y = y[:,X_pos:X_pos+cropsize,Y_pos:Y_pos+cropsize,Z_pos:Z_pos+cropsize]
-        return X,y
+        X = X[:, X_pos : X_pos + cropsize, Y_pos : Y_pos + cropsize, Z_pos : Z_pos + cropsize]
+        y = y[:, X_pos : X_pos + cropsize, Y_pos : Y_pos + cropsize, Z_pos : Z_pos + cropsize]
+        return X, y
 
 
 class Augmentations:
@@ -106,15 +110,15 @@ class Augmentations:
         self.prob_major = prob
         # TODO: add albumentations
 
-    def run(self, X,y):
+    def run(self, X, y):
 
         X = self.random_intentity(X)
 
-        return X,y
+        return X, y
 
-    def rotate_batch_3d(self,x,y):
+    def rotate_batch_3d(self, x, y):
 
-        x = np.concatenate([x,y],axis=0)
+        x = np.concatenate([x, y], axis=0)
 
         batch_size = x.shape[0]
         y = np.zeros((batch_size, 10))
@@ -145,11 +149,11 @@ class Augmentations:
             y[index, rot] = 1
         return np.stack(rotated_batch)
 
-    def random_intentity(self,X,intensity=0.2):
+    def random_intentity(self, X, intensity=0.2):
 
         prob = np.random.uniform()
 
         if prob >= self.prob_major:
-            X *= X*((0.5-np.random.uniform())*intensity)
+            X *= X * ((0.5 - np.random.uniform()) * intensity)
 
         return X

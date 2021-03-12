@@ -2,6 +2,7 @@ import torch.nn as nn
 from .base_converter import BaseConverter
 from ..operators import SoftACSConv
 
+
 class SoftACSConverter(BaseConverter):
     """
     Decorator class for converting 2d convolution modules
@@ -21,16 +22,16 @@ class SoftACSConverter(BaseConverter):
         >>> x = torch.rand(batch_size, in_channels, D, H, W)
         >>> out = m(x)
     """
+
     converter_attributes = ['model', 'mean']
     target_conv = SoftACSConv
 
     def __init__(self, model, mean=False):
         preserve_state_dict = model.state_dict()
-        self.mean = mean 
+        self.mean = mean
         model = self.convert_module(model)
-        model.load_state_dict(preserve_state_dict,strict=False) # 
+        model.load_state_dict(preserve_state_dict, strict=False)  #
         self.model = model
-
 
     def convert_conv_kwargs(self, kwargs):
         kwargs['bias'] = True if kwargs['bias'] is not None else False

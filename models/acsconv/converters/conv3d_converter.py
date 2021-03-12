@@ -3,6 +3,7 @@ import torch.nn as nn
 from .base_converter import BaseConverter
 from ..utils import _triple_same
 
+
 class Conv3dConverter(BaseConverter):
     """
     Decorator class for converting 2d convolution modules
@@ -22,6 +23,7 @@ class Conv3dConverter(BaseConverter):
         >>> x = torch.rand(batch_size, in_channels, D, H, W)
         >>> out = m(x)
     """
+
     converter_attributes = ['model']
     target_conv = nn.Conv3d
 
@@ -32,16 +34,18 @@ class Conv3dConverter(BaseConverter):
         self.model = self.convert_module(self.model)
         if i3d_repeat_axis is not None:
             self.load_state_dict(preserve_state_dict, strict=True, i3d_repeat_axis=i3d_repeat_axis)
-        
+
     def convert_conv_kwargs(self, kwargs):
         kwargs['bias'] = True if kwargs['bias'] is not None else False
-        for k in ['kernel_size','stride','padding','dilation']:
+        for k in ['kernel_size', 'stride', 'padding', 'dilation']:
             kwargs[k] = _triple_same(kwargs[k])
         return kwargs
 
     def load_state_dict(self, state_dict, strict=True, i3d_repeat_axis=None):
         if i3d_repeat_axis is not None:
-            return load_state_dict_from_2d_to_i3d(self.model, state_dict, strict, repeat_axis=i3d_repeat_axis)
+            return load_state_dict_from_2d_to_i3d(
+                self.model, state_dict, strict, repeat_axis=i3d_repeat_axis
+            )
         else:
             return self.model.load_state_dict(state_dict, strict)
 
@@ -49,7 +53,9 @@ class Conv3dConverter(BaseConverter):
 def load_state_dict_from_2d_to_i3d(model_3d, state_dict_2d, strict=True, repeat_axis=-1):
     present_dict = model_3d.state_dict()
     for key in list(state_dict_2d.keys()):
-        if state_dict_2d[key].dim()==4:
+        if state_dict_2d[key].dim() == 4:
             repeat_times = present_dict[key].shape[repeat_axis]
-            state_dict_2d[key] = torch.stack([state_dict_2d[key]]*repeat_times, dim=repeat_axis) / repeat_times
+            state_dict_2d[key] = (
+                torch.stack([state_dict_2d[key]] * repeat_times, dim=repeat_axis) / repeat_times
+            )
     return model_3d.load_state_dict(state_dict_2d, strict=strict)

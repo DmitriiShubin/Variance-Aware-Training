@@ -30,8 +30,7 @@ def densenet121(pretrained=False, **kwargs):
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = DenseNet(num_init_features=64, growth_rate=32, block_config=(6, 12, 24, 16),
-                     **kwargs)
+    model = DenseNet(num_init_features=64, growth_rate=32, block_config=(6, 12, 24, 16), **kwargs)
     if pretrained:
         state_dict = model_zoo.load_url(model_urls['densenet121'])
         model_state_dict = model.state_dict()
@@ -54,12 +53,15 @@ class _DenseLayer(nn.Sequential):
         super(_DenseLayer, self).__init__()
         self.add_module('norm1', nn.BatchNorm3d(num_input_features)),
         self.add_module('relu1', nn.ReLU(inplace=True)),
-        self.add_module('conv1', ACSConv(num_input_features, bn_size *
-                        growth_rate, kernel_size=1, stride=1, bias=False)),
+        self.add_module(
+            'conv1', ACSConv(num_input_features, bn_size * growth_rate, kernel_size=1, stride=1, bias=False)
+        ),
         self.add_module('norm2', nn.BatchNorm3d(bn_size * growth_rate)),
         self.add_module('relu2', nn.ReLU(inplace=True)),
-        self.add_module('conv2', ACSConv(bn_size * growth_rate, growth_rate,
-                        kernel_size=3, stride=1, padding=1, bias=False)),
+        self.add_module(
+            'conv2',
+            ACSConv(bn_size * growth_rate, growth_rate, kernel_size=3, stride=1, padding=1, bias=False),
+        ),
         self.drop_rate = drop_rate
 
     def forward(self, x):
@@ -82,8 +84,9 @@ class _Transition(nn.Sequential):
         super(_Transition, self).__init__()
         self.add_module('norm', nn.BatchNorm3d(num_input_features))
         self.add_module('relu', nn.ReLU(inplace=True))
-        self.add_module('conv', ACSConv(num_input_features, num_output_features,
-                                          kernel_size=1, stride=1, bias=False))
+        self.add_module(
+            'conv', ACSConv(num_input_features, num_output_features, kernel_size=1, stride=1, bias=False)
+        )
         if downsample:
             self.add_module('pool', nn.AvgPool3d(kernel_size=2, stride=2))
 
@@ -102,38 +105,63 @@ class DenseNet(nn.Module):
         num_classes (int) - number of classification classes
     """
 
-    def __init__(self, growth_rate=32, block_config=(6, 12, 24, 16),
-                 num_init_features=64, bn_size=4, drop_rate=0, num_classes=1000):
+    def __init__(
+        self,
+        growth_rate=32,
+        block_config=(6, 12, 24, 16),
+        num_init_features=64,
+        bn_size=4,
+        drop_rate=0,
+        num_classes=1000,
+    ):
 
         super(DenseNet, self).__init__()
 
         # First convolution
-        self.features = nn.Sequential(OrderedDict([
-            ('conv0', ACSConv(3, num_init_features, kernel_size=7, stride=1,
-                                padding=3, bias=False)),
-            ('norm0', nn.BatchNorm3d(num_init_features)),
-            ('relu0', nn.ReLU(inplace=True)),
-        ]))
+        self.features = nn.Sequential(
+            OrderedDict(
+                [
+                    ('conv0', ACSConv(3, num_init_features, kernel_size=7, stride=1, padding=3, bias=False)),
+                    ('norm0', nn.BatchNorm3d(num_init_features)),
+                    ('relu0', nn.ReLU(inplace=True)),
+                ]
+            )
+        )
 
         num_features = num_init_features
         for i, num_layers in enumerate(block_config):
-            setattr(self, 'layer{}'.format(i+1), nn.Sequential(OrderedDict([
-                ('denseblock%d' % (i + 1), _DenseBlock(
-                num_layers=num_layers,
-                num_input_features=num_features,
-                bn_size=bn_size,
-                growth_rate=growth_rate,
-                drop_rate=drop_rate)),
-            ])))
+            setattr(
+                self,
+                'layer{}'.format(i + 1),
+                nn.Sequential(
+                    OrderedDict(
+                        [
+                            (
+                                'denseblock%d' % (i + 1),
+                                _DenseBlock(
+                                    num_layers=num_layers,
+                                    num_input_features=num_features,
+                                    bn_size=bn_size,
+                                    growth_rate=growth_rate,
+                                    drop_rate=drop_rate,
+                                ),
+                            ),
+                        ]
+                    )
+                ),
+            )
             num_features = num_features + num_layers * growth_rate
             if i != len(block_config) - 1:
-                if i in [0,1,2]:
+                if i in [0, 1, 2]:
                     downsample = True
                 else:
                     downsample = False
-                trans = _Transition(num_input_features=num_features,
-                                    num_output_features=num_features // 2, downsample=downsample)
-                getattr(self, 'layer{}'.format(i+1)).add_module('transition%d' % (i + 1), trans)
+                trans = _Transition(
+                    num_input_features=num_features,
+                    num_output_features=num_features // 2,
+                    downsample=downsample,
+                )
+                getattr(self, 'layer{}'.format(i + 1)).add_module('transition%d' % (i + 1), trans)
                 num_features = num_features // 2
 
         for m in self.modules():
@@ -157,6 +185,7 @@ class DenseNet(nn.Module):
 
         return x, x1, x2
 
+
 class FCNHead(nn.Sequential):
     def __init__(self, in_channels, channels):
         inter_channels = in_channels // 4
@@ -164,39 +193,43 @@ class FCNHead(nn.Sequential):
             ACSConv(in_channels, inter_channels, 3, padding=1, bias=False),
             nn.BatchNorm3d(inter_channels),
             nn.ReLU(),
-            ACSConv(inter_channels, channels, 1)
+            ACSConv(inter_channels, channels, 1),
         ]
 
         super(FCNHead, self).__init__(*layers)
+
 
 class FCNDenseNet(nn.Module):
     def __init__(self, pretrained, num_classes, backbone='densenet121'):
         super().__init__()
         self.backbone = globals()[backbone](pretrained=pretrained)
-        self.conv1 = ACSConv(1024+256, 256, kernel_size=1, stride=1,
-                            padding=0, bias=False)
-        self.conv2 = ACSConv(256+64, 64, kernel_size=1, stride=1,
-                            padding=0, bias=False)
+        self.conv1 = ACSConv(1024 + 256, 256, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv2 = ACSConv(256 + 64, 64, kernel_size=1, stride=1, padding=0, bias=False)
         self.classifier = FCNHead(in_channels=64, channels=num_classes)
-    
+
     def forward(self, x):
         features, features1, features2 = self.backbone(x)
         # print(features.shape, features1.shape, features2.shape)
-        features_cat1 = torch.cat([features1, F.interpolate(features, scale_factor=2, mode='trilinear')], dim=1)
+        features_cat1 = torch.cat(
+            [features1, F.interpolate(features, scale_factor=2, mode='trilinear')], dim=1
+        )
         features_cat1 = self.conv1(features_cat1)
-        features_cat2 = torch.cat([features2, F.interpolate(features_cat1, scale_factor=4, mode='trilinear')], dim=1)
+        features_cat2 = torch.cat(
+            [features2, F.interpolate(features_cat1, scale_factor=4, mode='trilinear')], dim=1
+        )
         features_cat2 = self.conv2(features_cat2)
         features = features_cat2
 
         out = self.classifier(features)
         return out
 
+
 class ClsDenseNet(nn.Module):
     def __init__(self, pretrained, num_classes, backbone='densenet121'):
         super().__init__()
         self.backbone = globals()[backbone](pretrained=pretrained)
         self.fc = nn.Linear(1024, num_classes, bias=True)
-    
+
     def forward(self, x):
         features = self.backbone(x)[0]
         features = F.adaptive_avg_pool3d(features, output_size=1).view(features.shape[0], -1)

@@ -6,7 +6,7 @@ from models.unet_3d import Model as Model_3d
 from models.unet_2d import Model as Model_2d
 import yaml
 import os
-from experiments.baseline.data_generator_2d import Dataset_train as Dataset_train_2d
+from experiments.triplet_loss_pretrain.data_generator_2d import Dataset_train as Dataset_train_2d
 
 # @click.command()
 # @click.option('--batch_size', default=None, help='batch size')
@@ -21,7 +21,7 @@ def run(
     n_epochs=None,
     gpu='2,3',
     dropout=None,
-    experiment='./experiments/baseline/config_brats_1_2d.yml',
+    experiment='./experiments/contrastive_learning_pretrain/config.yml',
 ):
 
     # load hyperparameters

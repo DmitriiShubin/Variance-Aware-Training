@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from torch import nn
 from ..operators import ACSConv
 
+
 class _EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels, dropout=False):
         super(_EncoderBlock, self).__init__()
