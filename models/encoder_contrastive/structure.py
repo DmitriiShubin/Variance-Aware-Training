@@ -137,9 +137,9 @@ class mySequential(nn.Sequential):
         return input
 
 
-class Encoder_triplet(nn.Module):
+class Encoder_contrastive(nn.Module):
     def __init__(self, hparams, bilinear=True):
-        super(Encoder_triplet, self).__init__()
+        super(Encoder_contrastive, self).__init__()
 
         self.hparams = hparams
         self.n_channels = self.hparams['in_channels']

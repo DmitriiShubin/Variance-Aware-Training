@@ -37,20 +37,32 @@ class Dataset_train(Dataset):
         for i in range(n_pairs):
             pairs = {}
 
-            # select anchor
-            anchor = self.volumes_list[np.random.choice(self.volumes_list.shape[0])]
-            anchor_label = labels[np.where(np.array(self.volumes_list) == anchor)]
-            pairs['anchor'] = anchor
+            prob = np.random.uniform()
 
-            # select positive
-            records_pos_subset = self.volumes_list[np.where(labels == anchor_label)]
-            # records_pos_subset = records_pos_subset[records_pos_subset != anchor]
-            pairs['positive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
+            if prob >= 0.5:
+                # generate positive pair
+                anchor = self.volumes_list[np.random.choice(self.volumes_list.shape[0])]
+                anchor_label = labels[np.where(np.array(self.volumes_list) == anchor)]
+                pairs['anchor'] = anchor
 
-            # select negative
-            records_neg_subset = self.volumes_list[np.where(labels != anchor_label)]
-            pairs['negative'] = records_neg_subset[np.random.choice(records_neg_subset.shape[0])]
-            self.pairs_list.append(pairs)
+                # select positive
+                records_pos_subset = self.volumes_list[np.where(labels == anchor_label)]
+                # records_pos_subset = records_pos_subset[records_pos_subset != anchor]
+                pairs['supportive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
+
+                self.pairs_list.append(pairs)
+            else:
+                # generate negative pair
+                anchor = self.volumes_list[np.random.choice(self.volumes_list.shape[0])]
+                anchor_label = labels[np.where(np.array(self.volumes_list) == anchor)]
+                pairs['anchor'] = anchor
+
+                # select positive
+                records_neg_subset = self.volumes_list[np.where(labels != anchor_label)]
+                pairs['supportive'] = records_neg_subset[np.random.choice(records_neg_subset.shape[0])]
+
+
+                self.pairs_list.append(pairs)
 
         self.volumes_list = self.volumes_list.tolist()
 
@@ -61,25 +73,24 @@ class Dataset_train(Dataset):
 
     def __getitem__(self, idx):
 
-        X_anchor, X_positive, X_negative = self.load_data(idx)
+        X_anchor, X_supportive = self.load_data(idx)
 
         X_anchor = torch.tensor(X_anchor, dtype=torch.float)
-        X_positive = torch.tensor(X_positive, dtype=torch.float)
-        X_negative = torch.tensor(X_negative, dtype=torch.float)
+        X_supportive = torch.tensor(X_supportive, dtype=torch.float)
 
-        return X_anchor, X_positive, X_negative
+        return X_anchor, X_supportive
 
     def load_data(self, id):
 
         X_anchor = np.load(self.pairs_list[id]['anchor'])
-        X_positive = np.load(self.pairs_list[id]['positive'])
-        X_negative = np.load(self.pairs_list[id]['negative'])
+        X_supportive = np.load(self.pairs_list[id]['supportive'])
+
 
         X_anchor = self.preprocessing.run(X_anchor)
-        X_positive = self.preprocessing.run(X_positive)
-        X_negative = self.preprocessing.run(X_negative)
+        X_supportive = self.preprocessing.run(X_supportive)
 
-        return X_anchor, X_positive, X_negative
+
+        return X_anchor, X_supportive
 
 
 class Preprocessing:

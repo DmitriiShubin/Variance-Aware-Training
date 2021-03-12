@@ -4,17 +4,17 @@ from utils.logger import Logger
 from models.encoder_triplet import Model
 import yaml
 import os
-from experiments.triplet_loss_encoder.data_generator import Dataset_train
-from experiments.triplet_loss_encoder.train_pipeline import TrainPipeline
+from experiments.contrastive_loss_encoder.data_generator import Dataset_train
+from experiments.contrastive_loss_encoder.train_pipeline import TrainPipeline
 
 
 def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
-    gpu='0,1,2,3',
+    gpu='2,3,4,5',
     dropout=None,
-    experiment='./experiments/triplet_loss_encoder/config_brats.yml',
+    experiment='./experiments/contrastive_loss_encoder/config_brats.yml',
 ):
 
     # load hyperparameters

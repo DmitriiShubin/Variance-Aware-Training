@@ -16,10 +16,10 @@ from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from utils.post_processing import Post_Processing
 from time import time
-from utils.loss_functions import TripletLoss
+from utils.loss_functions import ContrastiveLoss
 
 # model
-from models.encoder_triplet.structure import Encoder_triplet
+from models.encoder_contrastive.structure import Encoder_contrastive
 
 
 class Model:
@@ -78,30 +78,27 @@ class Model:
             self.model.train()
             avg_loss = 0.0
 
-            for X_anchor, X_positive, X_negative in tqdm(train_loader):
+            for X_anchor, X_supportive in tqdm(train_loader):
 
                 # push the data into the GPU
                 X_anchor = X_anchor.float().to(self.device)
-                X_positive = X_positive.float().to(self.device)
-                X_negative = X_negative.float().to(self.device)
+                X_supportive = X_supportive.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
                 # get model predictions
                 pred_anchor = self.model(X_anchor)
-                pred_positive = self.model(X_positive)
-                pred_negative = self.model(X_negative)
+                pred_supportive = self.model(X_supportive)
 
-                train_loss = self.loss(pred_anchor, pred_positive, pred_negative)
+                train_loss = self.loss(pred_anchor, pred_supportive)
 
                 # remove data from GPU
+                # remove data from GPU
                 X_anchor = X_anchor.float().cpu().detach()
-                X_positive = X_positive.float().cpu().detach()
-                X_negative = X_negative.float().cpu().detach()
+                X_supportive = X_supportive.float().cpu().detach()
                 pred_anchor = pred_anchor.float().cpu().detach()
-                pred_positive = pred_positive.float().cpu().detach()
-                pred_negative = pred_negative.float().cpu().detach()
+                pred_supportive = pred_supportive.float().cpu().detach()
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
@@ -127,31 +124,27 @@ class Model:
 
             with torch.no_grad():
 
-                for X_anchor, X_positive, X_negative in tqdm(valid_loader):
+                for X_anchor, X_supportive in tqdm(valid_loader):
                     # push the data into the GPU
                     X_anchor = X_anchor.float().to(self.device)
-                    X_positive = X_positive.float().to(self.device)
-                    X_negative = X_negative.float().to(self.device)
+                    X_supportive = X_supportive.float().to(self.device)
 
                     # clean gradients from the previous step
                     self.optimizer.zero_grad()
 
                     # get model predictions
                     pred_anchor = self.model(X_anchor)
-                    pred_positive = self.model(X_positive)
-                    pred_negative = self.model(X_negative)
+                    pred_supportive = self.model(X_supportive)
 
-                    avg_val_loss += self.loss(pred_anchor, pred_positive, pred_negative).item() / len(
+                    avg_val_loss += self.loss(pred_anchor, pred_supportive).item() / len(
                         valid_loader
                     )
 
                     # remove data from GPU
                     X_anchor = X_anchor.float().cpu().detach()
-                    X_positive = X_positive.float().cpu().detach()
-                    X_negative = X_negative.float().cpu().detach()
+                    X_supportive = X_supportive.float().cpu().detach()
                     pred_anchor = pred_anchor.float().cpu().detach()
-                    pred_positive = pred_positive.float().cpu().detach()
-                    pred_negative = pred_negative.float().cpu().detach()
+                    pred_supportive = pred_supportive.float().cpu().detach()
 
             # early stopping for scheduler
             if self.hparams['scheduler_name'] == 'ReduceLROnPlateau':
@@ -221,31 +214,27 @@ class Model:
 
         print('Getting predictions')
         with torch.no_grad():
-            for X_anchor, X_positive, X_negative in tqdm(test_loader):
+            for X_anchor, X_supportive in tqdm(test_loader):
                 # push the data into the GPU
                 X_anchor = X_anchor.float().to(self.device)
-                X_positive = X_positive.float().to(self.device)
-                X_negative = X_negative.float().to(self.device)
+                X_supportive = X_supportive.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
                 # get model predictions
                 pred_anchor = self.model(X_anchor)
-                pred_positive = self.model(X_positive)
-                pred_negative = self.model(X_negative)
+                pred_supportive = self.model(X_supportive)
 
-                avg_test_loss += self.loss(pred_anchor, pred_positive, pred_negative).item() / len(
+                avg_test_loss += self.loss(pred_anchor, pred_supportive).item() / len(
                     test_loader
                 )
 
                 # remove data from GPU
                 X_anchor = X_anchor.float().cpu().detach()
-                X_positive = X_positive.float().cpu().detach()
-                X_negative = X_negative.float().cpu().detach()
+                X_supportive = X_supportive.float().cpu().detach()
                 pred_anchor = pred_anchor.float().cpu().detach()
-                pred_positive = pred_positive.float().cpu().detach()
-                pred_negative = pred_negative.float().cpu().detach()
+                pred_supportive = pred_supportive.float().cpu().detach()
 
         return avg_test_loss
 
@@ -301,21 +290,21 @@ class Model:
         # TODO: re-write to pure DDP
         if inference or gpu is None:
             self.device = torch.device('cpu')
-            self.model = Encoder_triplet(hparams=self.hparams['model']).to(self.device)
+            self.model = Encoder_contrastive(hparams=self.hparams['model']).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 1:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = Encoder_triplet(hparams=self.hparams['model']).to(self.device)
+                    self.model = Encoder_contrastive(hparams=self.hparams['model']).to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = Encoder_triplet(hparams=self.hparams['model']).to(self.device)
+                    self.model = Encoder_contrastive(hparams=self.hparams['model']).to(self.device)
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                self.model = Encoder_triplet(hparams=self.hparams['model']).to(self.device)
+                self.model = Encoder_contrastive(hparams=self.hparams['model']).to(self.device)
                 print('Only one GPU is available')
 
         print('Cuda available: ', torch.cuda.is_available())
@@ -325,7 +314,7 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = TripletLoss()
+        self.loss = ContrastiveLoss()
 
         # 2. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

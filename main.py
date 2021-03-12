@@ -1,10 +1,11 @@
-from experiments.baseline.run_experiment import run
+from experiments.baseline.run_experiment import run as run_baseline
+from experiments.triplet_loss_encoder.run_experiment import run as run_triplet_pre_train
 
 
 def main():
 
     # baseline upper-boundaries
-    run()
+    run_triplet_pre_train()
 
     # baseline (without pre-trianing)
 

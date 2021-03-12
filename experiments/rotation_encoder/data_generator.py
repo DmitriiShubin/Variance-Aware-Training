@@ -13,73 +13,40 @@ np.random.seed(42)
 
 
 class Dataset_train(Dataset):
-    def __init__(self, volumes_list, aug, dataset):
+    def __init__(self, volums_list, aug, n_classes, dataset):
 
-        self.volumes_list = volumes_list
+        self.n_classes = n_classes
+        self.volums_list = volums_list
         self.preprocessing = Preprocessing(aug, dataset)
 
-        self.generate_pairs(n_pairs=len(self.volumes_list) * 10)
-
-    # TODO
-    def generate_pairs(self, n_pairs: int):
-
-        # create a list of labels
-        labels = []
-        for volume in self.volumes_list:
-            labels.append(volume.split('/')[-2])
-
-        labels = np.array(labels)
-
-        self.volumes_list = np.array(self.volumes_list)
-
-        # generate pairs
-        self.pairs_list = []
-        for i in range(n_pairs):
-            pairs = {}
-
-            # select anchor
-            anchor = self.volumes_list[np.random.choice(self.volumes_list.shape[0])]
-            anchor_label = labels[np.where(np.array(self.volumes_list) == anchor)]
-            pairs['anchor'] = anchor
-
-            # select positive
-            records_pos_subset = self.volumes_list[np.where(labels == anchor_label)]
-            # records_pos_subset = records_pos_subset[records_pos_subset != anchor]
-            pairs['positive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
-
-            # select negative
-            records_neg_subset = self.volumes_list[np.where(labels != anchor_label)]
-            pairs['negative'] = records_neg_subset[np.random.choice(records_neg_subset.shape[0])]
-            self.pairs_list.append(pairs)
-
-        self.volumes_list = self.volumes_list.tolist()
-
-        return True
-
     def __len__(self):
-        return len(self.pairs_list)
+        return len(self.volums_list)
 
     def __getitem__(self, idx):
 
-        X_anchor, X_positive, X_negative = self.load_data(idx)
+        X, y = self.load_data(idx)
 
-        X_anchor = torch.tensor(X_anchor, dtype=torch.float)
-        X_positive = torch.tensor(X_positive, dtype=torch.float)
-        X_negative = torch.tensor(X_negative, dtype=torch.float)
+        X = torch.tensor(X, dtype=torch.float)
+        y = torch.tensor(y, dtype=torch.float)
 
-        return X_anchor, X_positive, X_negative
+        return X, y
 
     def load_data(self, id):
 
-        X_anchor = np.load(self.pairs_list[id]['anchor'])
-        X_positive = np.load(self.pairs_list[id]['positive'])
-        X_negative = np.load(self.pairs_list[id]['negative'])
+        X = np.load(self.volums_list[id]).astype(np.float32)
+        y = np.load(self.volums_list[id][:-10] + 'labels.npy').astype(np.float32)
 
-        X_anchor = self.preprocessing.run(X_anchor)
-        X_positive = self.preprocessing.run(X_positive)
-        X_negative = self.preprocessing.run(X_negative)
+        y = self.one_hot_voxel(y)
 
-        return X_anchor, X_positive, X_negative
+        X, y = self.preprocessing.run(X=X, y=y)
+
+        return X, y
+
+    def one_hot_voxel(self, y):
+        y = np.transpose(y.astype(np.int32), (1, 2, 0))
+        y = np.eye(self.n_classes)[y[:, :, -1].astype(np.int32)]
+        y = np.transpose(y.astype(np.float32), (2, 0, 1))
+        return y
 
 
 class Preprocessing:
@@ -88,15 +55,15 @@ class Preprocessing:
         self.aug = aug
         self.augmentations = Augmentations(dataset)
 
-    def run(self, X):
+    def run(self, X, y):
 
         X = self.standard_scaling(X)
 
         if self.aug:
 
-            X = self.augmentations.run(X)
+            X, y = self.augmentations.run(X, y)
 
-        return X
+        return X, y
 
     def standard_scaling(self, X):
         std = np.std(X)
@@ -157,15 +124,18 @@ class Augmentations:
                 ]
             )
 
-    def run(self, image):
+    def run(self, image, mask):
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))
+        mask = np.transpose(mask.astype(np.float32), (1, 2, 0))
 
         # apply augs
-        augmented = self.augs(image=image)
+        augmented = self.augs(image=image, mask=mask)
 
         image = augmented['image']
+        mask = augmented['mask']
 
         image = np.transpose(image.astype(np.float32), (2, 0, 1))
+        mask = np.transpose(mask.astype(np.float32), (2, 0, 1))
 
-        return image
+        return image, mask
