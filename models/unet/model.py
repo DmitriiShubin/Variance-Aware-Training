@@ -19,7 +19,7 @@ from time import time
 from utils.loss_functions import f1_loss, Dice_loss
 
 # model
-from models.unet_3d.structure import UNet
+from models.unet.structure import UNet
 
 
 class Model:
@@ -91,8 +91,8 @@ class Model:
                 pred = self.model(X_batch)
 
                 # process main loss
-                y_batch = y_batch.permute(0, 2, 3, 4, 1)
-                pred = pred.permute(0, 2, 3, 4, 1)
+                y_batch = y_batch.permute(0, 2, 3, 1)
+                pred = pred.permute(0, 2, 3, 1)
                 pred = pred.reshape(-1, pred.shape[-1])
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
                 train_loss = self.loss(pred, y_batch)
@@ -146,8 +146,8 @@ class Model:
                     pred = self.model(X_batch)
 
                     # calculate main loss
-                    y_batch = y_batch.permute(0, 2, 3, 4, 1)
-                    pred = pred.permute(0, 2, 3, 4, 1)
+                    y_batch = y_batch.permute(0, 2, 3, 1)
+                    pred = pred.permute(0, 2, 3, 1)
                     pred = pred.reshape(-1, pred.shape[-1])
                     y_batch = y_batch.reshape(-1, y_batch.shape[-1])
 
@@ -238,20 +238,21 @@ class Model:
 
         error_samplewise = []
 
-        predictions_running = np.empty((0, self.hparams['model']['n_classes']))
-
         self.metric.reset()
 
         print('Getting predictions')
         with torch.no_grad():
-            for i, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
+            for i, (X_batch, y_batch) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
                 pred = self.model(X_batch)
 
-                pred = pred.view(-1, pred.shape[-1])
-                y_batch = y_batch.view(-1, y_batch.shape[-1])
+                # calculate main loss
+                y_batch = y_batch.permute(0, 2, 3, 1)
+                pred = pred.permute(0, 2, 3, 1)
+                pred = pred.reshape(-1, pred.shape[-1])
+                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
 
                 pred = pred.cpu().detach().numpy()
                 X_batch = X_batch.cpu().detach().numpy()
@@ -260,8 +261,6 @@ class Model:
                 # calculate a sample-wise error
                 error_samplewise += self.metric.calc_running_score_samplewise(labels=y_batch, outputs=pred)
 
-                predictions_running = np.append(predictions_running, pred, axis=0)
-
                 pred = self.postprocessing.run(pred)
                 y_batch = self.postprocessing.run(y_batch)
 
@@ -269,11 +268,8 @@ class Model:
 
         fold_score = self.metric.compute()
         error_samplewise = np.array(error_samplewise)
-        predictions_running = np.array(predictions_running)
 
-        self.model = self.early_stopping.load_best_weights()
-
-        return error_samplewise, fold_score, predictions_running
+        return error_samplewise, fold_score
 
     def save(self, model_path):
 

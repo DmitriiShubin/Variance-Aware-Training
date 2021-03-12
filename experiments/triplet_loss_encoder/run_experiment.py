@@ -2,11 +2,10 @@ import click
 from utils.update_hparams import update_hparams
 from experiments.baseline.train_pipeline import TrainPipeline
 from utils.logger import Logger
-from models.unet_3d import Model as Model_3d
-from models.unet_2d import Model as Model_2d
+from models.encoder_triplet import Model
 import yaml
 import os
-from experiments.triplet_loss_pretrain.data_generator_2d import Dataset_train as Dataset_train_2d
+from experiments.triplet_loss_encoder.data_generator import Dataset_train
 
 # @click.command()
 # @click.option('--batch_size', default=None, help='batch size')
@@ -42,7 +41,7 @@ def run(
     logger = Logger()
 
     # run cross-val
-    cross_val = TrainPipeline(hparams=hparams, gpu=gpu, model=Model_2d, Dataset_train=Dataset_train_2d)
+    cross_val = TrainPipeline(hparams=hparams, gpu=gpu, model=Model, Dataset_train=Dataset_train)
     fold_scores_val, fold_scores_test, start_training = cross_val.train()
 
     # save logs

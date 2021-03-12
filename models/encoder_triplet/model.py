@@ -19,7 +19,7 @@ from time import time
 from utils.loss_functions import f1_loss, Dice_loss
 
 # model
-from models.unet_2d.structure import UNet
+from models.unet.structure import UNet
 
 
 class Model:

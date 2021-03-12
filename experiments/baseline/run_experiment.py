@@ -2,26 +2,19 @@ import click
 from utils.update_hparams import update_hparams
 from experiments.baseline.train_pipeline import TrainPipeline
 from utils.logger import Logger
-from models.unet_3d import Model as Model_3d
-from models.unet_2d import Model as Model_2d
+from models.unet import Model
 import yaml
 import os
-from experiments.baseline.data_generator_2d import Dataset_train as Dataset_train_2d
+from experiments.baseline.data_generator import Dataset_train
 
-# @click.command()
-# @click.option('--batch_size', default=None, help='batch size')
-# @click.option('--lr', default=None, help='learning rate')
-# @click.option('--n_epochs', default=None, help='number of epoches to run')
-# @click.option('--gpu', default='0', help='list of GPUs will be used for training')
-# @click.option('--dropout', default=None, help='')
-# @click.option('--hparams', default='./experiments/baseline/config_prostate_UB.yml', help='')
+
 def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
     gpu='2,3',
     dropout=None,
-    experiment='./experiments/baseline/config_brats_1_2d.yml',
+    experiment='./experiments/baseline/config_brats_1.yml',
 ):
 
     # load hyperparameters
@@ -42,7 +35,7 @@ def run(
     logger = Logger()
 
     # run cross-val
-    cross_val = TrainPipeline(hparams=hparams, gpu=gpu, model=Model_2d, Dataset_train=Dataset_train_2d)
+    cross_val = TrainPipeline(hparams=hparams, gpu=gpu, model=Model, Dataset_train=Dataset_train)
     fold_scores_val, fold_scores_test, start_training = cross_val.train()
 
     # save logs
