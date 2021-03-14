@@ -138,9 +138,7 @@ class Model:
                     pred_anchor = self.model(X_anchor)
                     pred_supportive = self.model(X_supportive)
 
-                    avg_val_loss += self.loss(pred_anchor, pred_supportive).item() / len(
-                        valid_loader
-                    )
+                    avg_val_loss += self.loss(pred_anchor, pred_supportive).item() / len(valid_loader)
 
                     # remove data from GPU
                     X_anchor = X_anchor.float().cpu().detach()

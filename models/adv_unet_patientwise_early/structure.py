@@ -202,7 +202,7 @@ class UNet(nn.Module):
         )
         self.outc = OutConv(self.hparams['n_filters_input'], self.n_classes)
 
-    def forward(self, x1,x2=None, train=False):
+    def forward(self, x1, x2=None, train=False):
 
         if train:
             # main head (predictive)

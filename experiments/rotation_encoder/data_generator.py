@@ -66,11 +66,11 @@ class Preprocessing:
 
     def run(self, X):
 
-        X = self.standard_scaling(X)
-
         if self.aug:
 
             X = self.augmentations.run(X)
+
+        X = self.standard_scaling(X)
 
         return X
 

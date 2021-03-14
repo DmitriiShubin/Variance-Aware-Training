@@ -12,7 +12,7 @@ def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
-    gpu='2,3',
+    gpu='0',
     dropout=None,
     experiment='./experiments/baseline/config_brats_1.yml',
 ):
