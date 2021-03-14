@@ -57,21 +57,25 @@ class Preprocessing:
 
     def run(self, X, y):
 
-        X = self.standard_scaling(X)
-
         if self.aug:
 
             X, y = self.augmentations.run(X, y)
 
+        X = self.standard_scaling(X)
+
         return X, y
 
     def standard_scaling(self, X):
-        std = np.std(X)
-        mean = np.mean(X)
-        if std > 0:
-            X = (X - mean) / std
-        else:
-            X = X - mean
+        X = X.astype(np.float32)
+
+        for i in range(X.shape[0]):
+            std = np.std(X[i, :, :])
+            mean = np.mean(X[i, :, :])
+            if std > 0:
+                X[i, :, :] = (X[i, :, :] - mean) / std
+            else:
+                X[i, :, :] = X[i, :, :] - mean
+
         return X
 
     def minmax_scaling(self, X):
