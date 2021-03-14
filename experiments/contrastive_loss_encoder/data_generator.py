@@ -18,7 +18,7 @@ class Dataset_train(Dataset):
         self.volumes_list = volumes_list
         self.preprocessing = Preprocessing(aug, dataset)
 
-        self.generate_pairs(n_pairs=len(self.volumes_list) * 1)
+        self.generate_pairs(n_pairs=len(self.volumes_list) * 10)
 
     # TODO
     def generate_pairs(self, n_pairs: int):
