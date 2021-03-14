@@ -1,18 +1,19 @@
 import click
 from utils.update_hparams import update_hparams
 from utils.logger import Logger
-from models.encoder_triplet import Model
 import yaml
 import os
+
 from experiments.contrastive_loss_encoder.data_generator import Dataset_train
 from experiments.contrastive_loss_encoder.train_pipeline import TrainPipeline
+from models.encoder_contrastive import Model
 
 
 def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
-    gpu='2,3,4,5',
+    gpu='0',
     dropout=None,
     experiment='./experiments/contrastive_loss_encoder/config_brats.yml',
 ):

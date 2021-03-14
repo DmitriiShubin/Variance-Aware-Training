@@ -149,17 +149,20 @@ class Encoder_contrastive(nn.Module):
         self.factor = 2 if bilinear else 1
 
         self.encoder = self.create_encoder()
-        self.outfc = nn.Linear(self.hparams['n_filters_input'] * (2 ** 3), self.emb_dim)
+        self.fc1 = nn.Linear(
+            self.hparams['n_filters_input'] * (2 ** 3), self.hparams['n_filters_input'] * (2 ** 3)
+        )
+        self.fc2 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 3), self.emb_dim)
 
     def forward(self, x):
-
         for layer in self.encoder:
             x = layer(x)
 
         x = torch.mean(x, dim=2)
         x = torch.mean(x, dim=2)
 
-        logits = torch.relu(self.outfc(x))
+        x = torch.relu(self.fc1(x))
+        logits = self.fc2(x)
         return logits
 
     def create_encoder(self):

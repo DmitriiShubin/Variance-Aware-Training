@@ -49,7 +49,7 @@ class TrainPipeline:
         train = self.Dataset_train(
             self.splits['train'].values[0], aug=True, dataset=self.hparams['dataset'],
         )
-        valid = self.Dataset_train(self.splits['val'].values[0], aug=False, dataset=self.hparams['dataset'],)
+        valid = self.Dataset_train(self.splits['val'].values[0], aug=True, dataset=self.hparams['dataset'],)
 
         # train model
         start_training = self.model.fit(train=train, valid=valid)

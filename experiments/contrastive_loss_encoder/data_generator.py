@@ -18,7 +18,7 @@ class Dataset_train(Dataset):
         self.volumes_list = volumes_list
         self.preprocessing = Preprocessing(aug, dataset)
 
-        self.generate_pairs(n_pairs=len(self.volumes_list) * 10)
+        self.generate_pairs(n_pairs=len(self.volumes_list) * 1)
 
     # TODO
     def generate_pairs(self, n_pairs: int):
@@ -50,6 +50,7 @@ class Dataset_train(Dataset):
                 # records_pos_subset = records_pos_subset[records_pos_subset != anchor]
                 pairs['supportive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
 
+                pairs['label'] = [1.0]
                 self.pairs_list.append(pairs)
             else:
                 # generate negative pair
@@ -61,7 +62,7 @@ class Dataset_train(Dataset):
                 records_neg_subset = self.volumes_list[np.where(labels != anchor_label)]
                 pairs['supportive'] = records_neg_subset[np.random.choice(records_neg_subset.shape[0])]
 
-
+                pairs['label'] = [0.0]
                 self.pairs_list.append(pairs)
 
         self.volumes_list = self.volumes_list.tolist()
@@ -73,24 +74,24 @@ class Dataset_train(Dataset):
 
     def __getitem__(self, idx):
 
-        X_anchor, X_supportive = self.load_data(idx)
+        X_anchor, X_supportive, y = self.load_data(idx)
 
         X_anchor = torch.tensor(X_anchor, dtype=torch.float)
         X_supportive = torch.tensor(X_supportive, dtype=torch.float)
+        y = torch.tensor(y, dtype=torch.float)
 
-        return X_anchor, X_supportive
+        return X_anchor, X_supportive, y
 
     def load_data(self, id):
 
         X_anchor = np.load(self.pairs_list[id]['anchor'])
         X_supportive = np.load(self.pairs_list[id]['supportive'])
-
+        y = self.pairs_list[id]['label']
 
         X_anchor = self.preprocessing.run(X_anchor)
         X_supportive = self.preprocessing.run(X_supportive)
 
-
-        return X_anchor, X_supportive
+        return X_anchor, X_supportive, y
 
 
 class Preprocessing:
@@ -101,21 +102,27 @@ class Preprocessing:
 
     def run(self, X):
 
-        X = self.standard_scaling(X)
+
 
         if self.aug:
 
             X = self.augmentations.run(X)
 
+        X = self.standard_scaling(X)
+
         return X
 
     def standard_scaling(self, X):
-        std = np.std(X)
-        mean = np.mean(X)
-        if std > 0:
-            X = (X - mean) / std
-        else:
-            X = X - mean
+        X = X.astype(np.float32)
+
+        for i in range(X.shape[0]):
+            std = np.std(X[i, :, :])
+            mean = np.mean(X[i, :, :])
+            if std > 0:
+                X[i, :, :] = (X[i, :, :] - mean) / std
+            else:
+                X[i, :, :] = X[i, :, :] - mean
+
         return X
 
     def minmax_scaling(self, X):

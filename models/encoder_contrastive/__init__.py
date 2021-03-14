@@ -1,1 +1,1 @@
-from models.encoder_triplet.model import Model  # pyflakes.ignore
+from models.encoder_contrastive.model import Model  # pyflakes.ignore

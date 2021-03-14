@@ -1,4 +1,4 @@
-batch_size: 32
+batch_size: 4
 n_epochs: 300
 patience: 30 #number of epochs wait until improvement
 clipping: false #apply gradient clipping

@@ -1,4 +1,4 @@
-batch_size: 32
+batch_size: 2
 n_epochs: 300
 patience: 30 #number of epochs wait until improvement
 clipping: false #apply gradient clipping
@@ -17,15 +17,15 @@ model_path: ./data/model_weights/encoder_triplet_brats # CHANGE WHEN CREATE A NE
 dataset: 'brats'
 model:
   in_channels: 4
-  emb_dim: 512
-  n_filters_input: 64
+  emb_dim: 256
+  n_filters_input: 32
   n_layers: 5
   dropout_rate: 0.1
   kernel_size: 3
   dilation: 3
 optimizer_name: Adam
 optimizer_hparams:
-  lr: 0.0001
+  lr: 0.00001
   weight_decay: 0.0
 scheduler_name: ReduceLROnPlateau
 scheduler_hparams:

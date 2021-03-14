@@ -6,9 +6,6 @@ import torch
 import os
 
 
-
-
-
 def seed_everything(seed):
     np.random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -58,21 +55,21 @@ class TrainPipeline:
         start_training = self.model.fit(train=train, valid=valid)
 
         # get model predictions
-        triplet_loss = self.model.predict(valid)
+        contrastive_loss = self.model.predict(valid)
 
-        print("Model's final triplet loss: ", triplet_loss)
+        print("Model's final contrastive loss: ", contrastive_loss)
 
         # save the model
         self.model.save(
             self.hparams['model_path']
             + f"_{self.hparams['split_table_path'].split('/')[-1][:-5]}"
             + '_fold_'
-            + str(np.round(triplet_loss, 2))
+            + str(np.round(contrastive_loss, 2))
             + '_'
             + str(start_training)
         )
 
-        return triplet_loss, start_training
+        return contrastive_loss, start_training
 
     def save_debug_data(self, error, validation_list):
 

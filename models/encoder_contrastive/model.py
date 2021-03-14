@@ -16,7 +16,7 @@ from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from utils.post_processing import Post_Processing
 from time import time
-from utils.loss_functions import ContrastiveLoss
+from utils.loss_functions import SimclrCriterion, contrastive_loss
 
 # model
 from models.encoder_contrastive.structure import Encoder_contrastive
@@ -78,11 +78,12 @@ class Model:
             self.model.train()
             avg_loss = 0.0
 
-            for X_anchor, X_supportive in tqdm(train_loader):
+            for X_anchor, X_supportive, y_batch in tqdm(train_loader):
 
                 # push the data into the GPU
                 X_anchor = X_anchor.float().to(self.device)
                 X_supportive = X_supportive.float().to(self.device)
+                y_batch = y_batch.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
@@ -94,11 +95,11 @@ class Model:
                 train_loss = self.loss(pred_anchor, pred_supportive)
 
                 # remove data from GPU
-                # remove data from GPU
                 X_anchor = X_anchor.float().cpu().detach()
                 X_supportive = X_supportive.float().cpu().detach()
                 pred_anchor = pred_anchor.float().cpu().detach()
                 pred_supportive = pred_supportive.float().cpu().detach()
+                y_batch = y_batch.float().cpu().detach()
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
@@ -124,10 +125,11 @@ class Model:
 
             with torch.no_grad():
 
-                for X_anchor, X_supportive in tqdm(valid_loader):
+                for X_anchor, X_supportive, y_batch in tqdm(valid_loader):
                     # push the data into the GPU
                     X_anchor = X_anchor.float().to(self.device)
                     X_supportive = X_supportive.float().to(self.device)
+                    y_batch = y_batch.float().to(self.device)
 
                     # clean gradients from the previous step
                     self.optimizer.zero_grad()
@@ -145,6 +147,7 @@ class Model:
                     X_supportive = X_supportive.float().cpu().detach()
                     pred_anchor = pred_anchor.float().cpu().detach()
                     pred_supportive = pred_supportive.float().cpu().detach()
+                    y_batch = y_batch.float().cpu().detach()
 
             # early stopping for scheduler
             if self.hparams['scheduler_name'] == 'ReduceLROnPlateau':
@@ -214,10 +217,11 @@ class Model:
 
         print('Getting predictions')
         with torch.no_grad():
-            for X_anchor, X_supportive in tqdm(test_loader):
+            for X_anchor, X_supportive, y_batch in tqdm(test_loader):
                 # push the data into the GPU
                 X_anchor = X_anchor.float().to(self.device)
                 X_supportive = X_supportive.float().to(self.device)
+                y_batch = y_batch.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
@@ -226,15 +230,14 @@ class Model:
                 pred_anchor = self.model(X_anchor)
                 pred_supportive = self.model(X_supportive)
 
-                avg_test_loss += self.loss(pred_anchor, pred_supportive).item() / len(
-                    test_loader
-                )
+                avg_test_loss += self.loss(pred_anchor, pred_supportive).item() / len(test_loader)
 
                 # remove data from GPU
                 X_anchor = X_anchor.float().cpu().detach()
                 X_supportive = X_supportive.float().cpu().detach()
                 pred_anchor = pred_anchor.float().cpu().detach()
                 pred_supportive = pred_supportive.float().cpu().detach()
+                y_batch = y_batch.float().cpu().detach()
 
         return avg_test_loss
 
@@ -314,7 +317,7 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = ContrastiveLoss()
+        self.loss = contrastive_loss()
 
         # 2. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

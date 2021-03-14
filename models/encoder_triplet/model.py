@@ -133,9 +133,6 @@ class Model:
                     X_positive = X_positive.float().to(self.device)
                     X_negative = X_negative.float().to(self.device)
 
-                    # clean gradients from the previous step
-                    self.optimizer.zero_grad()
-
                     # get model predictions
                     pred_anchor = self.model(X_anchor)
                     pred_positive = self.model(X_positive)
@@ -226,9 +223,6 @@ class Model:
                 X_anchor = X_anchor.float().to(self.device)
                 X_positive = X_positive.float().to(self.device)
                 X_negative = X_negative.float().to(self.device)
-
-                # clean gradients from the previous step
-                self.optimizer.zero_grad()
 
                 # get model predictions
                 pred_anchor = self.model(X_anchor)

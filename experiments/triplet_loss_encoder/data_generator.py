@@ -76,8 +76,8 @@ class Dataset_train(Dataset):
         X_negative = np.load(self.pairs_list[id]['negative'])
 
         X_anchor = self.preprocessing.run(X_anchor)
-        X_positive = self.preprocessing.run(X_positive)
-        X_negative = self.preprocessing.run(X_negative)
+        X_positive = self.preprocessing.run(X_positive, aug=True)
+        X_negative = self.preprocessing.run(X_negative, aug=True)
 
         return X_anchor, X_positive, X_negative
 
@@ -88,23 +88,26 @@ class Preprocessing:
         self.aug = aug
         self.augmentations = Augmentations(dataset)
 
-    def run(self, X):
+    def run(self, X, aug=False):
+
+        if aug:
+            X = self.augmentations.run(X)
 
         X = self.standard_scaling(X)
-
-        if self.aug:
-
-            X = self.augmentations.run(X)
 
         return X
 
     def standard_scaling(self, X):
-        std = np.std(X)
-        mean = np.mean(X)
-        if std > 0:
-            X = (X - mean) / std
-        else:
-            X = X - mean
+        X = X.astype(np.float32)
+
+        for i in range(X.shape[0]):
+            std = np.std(X[i, :, :])
+            mean = np.mean(X[i, :, :])
+            if std > 0:
+                X[i, :, :] = (X[i, :, :] - mean) / std
+            else:
+                X[i, :, :] = X[i, :, :] - mean
+
         return X
 
     def minmax_scaling(self, X):
@@ -145,15 +148,15 @@ class Augmentations:
     def __init__(self, dataset):
 
         if dataset == 'brats':
-            prob = 0.5
+            prob = 1
             self.augs = A.Compose(
-                [  # A.Blur(blur_limit=3,p=prob),
+                [  # A.Blur(blur_limit=1,p=prob),
                     A.HorizontalFlip(p=prob),
                     A.VerticalFlip(p=prob),
                     A.Rotate(limit=10, p=prob),
                     # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
                     A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
-                    # A.RandomGamma(gamma_limit=(80,120),p=prob)
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
 

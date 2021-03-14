@@ -12,7 +12,7 @@ def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
-    gpu='0,1,2,3',
+    gpu='0,1',
     dropout=None,
     experiment='./experiments/triplet_loss_encoder/config_brats.yml',
 ):

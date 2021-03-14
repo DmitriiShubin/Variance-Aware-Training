@@ -135,61 +135,57 @@ class SimclrCriterion(nn.Module):
 
         self.register_buffer('mask', torch.ones((batch_size, batch_size), dtype=bool).fill_diagonal_(0))
 
-    def forward(self, z_i, z_j):
+    def forward(self, z1, z2):
+        sim11 = self.cossim(z1.unsqueeze(-2), z1.unsqueeze(-3)) / self.temperature
+        sim22 = self.cossim(z2.unsqueeze(-2), z2.unsqueeze(-3)) / self.temperature
+        sim12 = self.cossim(z1.unsqueeze(-2), z2.unsqueeze(-3)) / self.temperature
+        d = sim12.shape[-1]
+        sim11[..., range(d), range(d)] = float('-inf')
+        sim22[..., range(d), range(d)] = float('-inf')
+        raw_scores1 = torch.cat([sim12, sim11], dim=-1)
+        raw_scores2 = torch.cat([sim22, sim12.transpose(-1, -2)], dim=-1)
+        raw_scores = torch.cat([raw_scores1, raw_scores2], dim=-2)
+        targets = torch.arange(2 * d, dtype=torch.long, device=raw_scores.device)
 
+        loss = F.cross_entropy(raw_scores, targets)
+
+        return loss
+
+
+class contrastive_loss(nn.Module):
+    def __init__(self, tau=100, normalize=False):
+        super(contrastive_loss, self).__init__()
+        self.tau = tau
+        self.normalize = normalize
+
+    def forward(self, xi, xj):
+
+        x = torch.cat((xi, xj), dim=0)
+
+        is_cuda = x.is_cuda
+        sim_mat = torch.mm(x, x.T)
         if self.normalize:
-            z_i_norm = F.normalize(z_i, p=2, dim=-1)
-            z_j_norm = F.normalize(z_j, p=2, dim=-1)
+            sim_mat_denom = torch.mm(torch.norm(x, dim=1).unsqueeze(1), torch.norm(x, dim=1).unsqueeze(1).T)
+            sim_mat = sim_mat / sim_mat_denom.clamp(min=1e-16)
 
+        sim_mat = torch.exp(sim_mat / self.tau)
+
+        # no diag because it's not diffrentiable -> sum - exp(1 / tau)
+        # diag_ind = torch.eye(xi.size(0) * 2).bool()
+        # diag_ind = diag_ind.cuda() if use_cuda else diag_ind
+
+        # sim_mat = sim_mat.masked_fill_(diag_ind, 0)
+
+        # top
+        if self.normalize:
+            sim_mat_denom = torch.norm(xi, dim=1) * torch.norm(xj, dim=1)
+            sim_match = torch.exp(torch.sum(xi * xj, dim=-1) / sim_mat_denom / self.tau)
         else:
-            z_i_norm = z_i
-            z_j_norm = z_j
+            sim_match = torch.exp(torch.sum(xi * xj, dim=-1) / self.tau)
 
-        bsz = z_i_norm.size(0)
+        sim_match = torch.cat((sim_match, sim_match), dim=0)
 
-        ''' Note: **
-        Cosine similarity matrix of all samples in batch:
-        a = z_i
-        b = z_j
-         ____ ____
-        | aa | ab |
-        |____|____|
-        | ba | bb |
-        |____|____|
-        Postives:
-        Diagonals of ab and ba '\'
-        Negatives:
-        All values that do not lie on leading diagonals of aa, bb, ab, ba.
-        '''
-
-        # Cosine similarity between all views
-        logits_aa = torch.mm(z_i_norm, z_i_norm.t()) / self.temperature
-        logits_bb = torch.mm(z_j_norm, z_j_norm.t()) / self.temperature
-        logits_ab = torch.mm(z_i_norm, z_j_norm.t()) / self.temperature
-        logits_ba = torch.mm(z_j_norm, z_i_norm.t()) / self.temperature
-
-        # Compute Postive Logits
-        logits_ab_pos = logits_ab[torch.logical_not(self.mask)]
-        logits_ba_pos = logits_ba[torch.logical_not(self.mask)]
-
-        # Compute Negative Logits
-        logit_aa_neg = logits_aa[self.mask].reshape(bsz, -1)
-        logit_bb_neg = logits_bb[self.mask].reshape(bsz, -1)
-        logit_ab_neg = logits_ab[self.mask].reshape(bsz, -1)
-        logit_ba_neg = logits_ba[self.mask].reshape(bsz, -1)
-
-        # Postive Logits over all samples
-        pos = torch.cat((logits_ab_pos, logits_ba_pos)).unsqueeze(1)
-
-        # Negative Logits over all samples
-        neg_a = torch.cat((logit_aa_neg, logit_ab_neg), dim=1)
-        neg_b = torch.cat((logit_ba_neg, logit_bb_neg), dim=1)
-
-        neg = torch.cat((neg_a, neg_b), dim=0)
-
-        # Compute cross entropy
-        logits = torch.cat((pos, neg), dim=1)
-
-        loss = F.cross_entropy(logits, self.labels)
-
+        norm_sum = torch.exp(torch.ones(x.size(0)) / self.tau)
+        norm_sum = norm_sum.cuda() if is_cuda else norm_sum
+        loss = torch.mean(-torch.log(sim_match / (torch.sum(sim_mat, dim=-1) - norm_sum)))
         return loss

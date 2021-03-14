@@ -62,22 +62,14 @@ class TrainPipeline:
             n_classes=self.hparams['model']['n_classes'],
             dataset=self.hparams['dataset'],
         )
-        test = self.Dataset_train(
-            self.splits_test['test'].values[0],
-            aug=False,
-            n_classes=self.hparams['model']['n_classes'],
-            dataset=self.hparams['dataset'],
-        )
 
         # train model
         start_training = self.model.fit(train=train, valid=valid)
 
         # get model predictions
         error_val, fold_score = self.model.predict(valid)
-        error_test, fold_score_test = self.model.predict(test)
 
         print("Model's final scrore, cv: ", fold_score)
-        print("Model's final scrore, test: ", fold_score_test)
 
         # save the model
         self.model.save(
@@ -86,16 +78,13 @@ class TrainPipeline:
             + '_fold_'
             + str(np.round(fold_score, 2))
             + '_'
-            + str(np.round(fold_score_test, 2))
-            + '_'
             + str(start_training[-1])
         )
 
         # save data for debug
         self.save_debug_data(error_val, self.splits['val'].values[0])
-        self.save_debug_data(error_test, self.splits_test['test'].values[0])
 
-        return fold_score, fold_score_test, start_training
+        return fold_score, start_training
 
     def save_debug_data(self, error, validation_list):
 
