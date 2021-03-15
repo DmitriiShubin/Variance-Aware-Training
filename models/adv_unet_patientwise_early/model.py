@@ -77,8 +77,9 @@ class Model:
             # training mode
             self.model.train()
             avg_loss = 0.0
+            avg_adv_loss = 0.0
 
-            for X_batch, y_batch in tqdm(train_loader):
+            for X_batch, y_batch,X_batch_adv,y_batch_adv in tqdm(train_loader):
 
                 # push the data into the GPU
                 X_batch = X_batch.float().to(self.device)
