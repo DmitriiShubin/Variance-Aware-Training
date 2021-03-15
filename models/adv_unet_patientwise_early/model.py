@@ -19,7 +19,7 @@ from time import time
 from utils.loss_functions import f1_loss, Dice_loss
 
 # model
-from models.unet.structure import UNet
+from models.adv_unet_patientwise_early.structure import UNet
 
 
 class Model:
@@ -79,17 +79,19 @@ class Model:
             avg_loss = 0.0
             avg_adv_loss = 0.0
 
-            for X_batch, y_batch,X_batch_adv,y_batch_adv in tqdm(train_loader):
+            for X_batch, y_batch, X_batch_adv, y_batch_adv in tqdm(train_loader):
 
                 # push the data into the GPU
                 X_batch = X_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
+                X_batch_adv = X_batch_adv.float().to(self.device)
+                y_batch_adv = y_batch_adv.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred = self.model(X_batch)
+                pred, pred_adv = self.model(X_batch, X_batch_adv, train=True)
 
                 # process main loss
                 y_batch = y_batch.permute(0, 2, 3, 1)
@@ -98,13 +100,29 @@ class Model:
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
                 train_loss = self.loss(pred, y_batch)
 
+                # process loss_2
+                pred_adv = pred_adv.reshape(-1)
+                y_batch_adv = y_batch_adv.reshape(-1)
+                adv_loss = self.loss_adv(pred_adv, y_batch_adv)
+
+                a = self.hparams['model']['alpha'] * np.log10(1 + epoch) * adv_loss / 1.3
+                a1 = self.hparams['model']['alpha'] * adv_loss
+
+                # calc loss
+                avg_loss += train_loss.item() / len(train_loader)
+                avg_adv_loss += adv_loss.item() / len(train_loader)
+
+                train_loss = (
+                    train_loss + self.hparams['model']['alpha'] * np.log10(1 + epoch) * adv_loss / 1.3
+                )  # self.hparams['model']['alpha']*adv_loss
+
                 # remove data from GPU
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
                 X_batch = X_batch.float().cpu().detach()
-
-                # calc loss
-                avg_loss += train_loss.item() / len(train_loader)
+                X_batch_adv = X_batch_adv.float().cpu().detach()
+                y_batch_adv = y_batch_adv.cpu().detach()
+                pred_adv = pred_adv.cpu().detach()
 
                 # gradient clipping
                 if self.apply_clipping:
@@ -137,7 +155,7 @@ class Model:
 
             with torch.no_grad():
 
-                for X_batch, y_batch in tqdm(valid_loader):
+                for X_batch, y_batch, _, _ in tqdm(valid_loader):
 
                     # push the data into the GPU
                     X_batch = X_batch.float().to(self.device)
@@ -185,6 +203,8 @@ class Model:
                     avg_loss,
                     '| Val_loss: ',
                     avg_val_loss,
+                    '| Adv_loss: ',
+                    avg_adv_loss,
                     '| Metric_train: ',
                     metric_train,
                     '| Metric_val: ',
@@ -195,7 +215,9 @@ class Model:
 
             # add data to tensorboard
             writer.add_scalars(
-                'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
+                'Loss',
+                {'Train_loss': avg_loss, 'Val_loss': avg_val_loss},
+                epoch,
             )
             writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
 
@@ -234,7 +256,10 @@ class Model:
         self.model.eval()
 
         test_loader = torch.utils.data.DataLoader(
-            X_test, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=0,
+            X_test,
+            batch_size=self.hparams['batch_size'],
+            shuffle=False,
+            num_workers=0,
         )
 
         error_samplewise = []
@@ -243,7 +268,7 @@ class Model:
 
         print('Getting predictions')
         with torch.no_grad():
-            for i, (X_batch, y_batch) in enumerate(tqdm(test_loader)):
+            for i, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
@@ -349,6 +374,7 @@ class Model:
 
         # 1. define losses
         self.loss = Dice_loss()
+        self.loss_adv = nn.BCELoss()
 
         # 2. define model metric
         self.metric = Metric(self.hparams['model']['n_classes'])

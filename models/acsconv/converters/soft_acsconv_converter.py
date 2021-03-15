@@ -7,7 +7,7 @@ class SoftACSConverter(BaseConverter):
     """
     Decorator class for converting 2d convolution modules
     to corresponding soft-acs version in any networks.
-    
+
     Args:
         model (torch.nn.module): model that needs to be converted
     Warnings:

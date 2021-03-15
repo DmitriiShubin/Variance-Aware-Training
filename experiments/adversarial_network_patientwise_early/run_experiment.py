@@ -9,13 +9,14 @@ from experiments.adversarial_network_patientwise_early.data_generator import Dat
 from experiments.adversarial_network_patientwise_early.train_pipeline import TrainPipeline
 from models.adv_unet_patientwise_early import Model
 
+
 def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
     gpu='0',
     dropout=None,
-    experiment='./experiments/adversarial_network_patientwise_early/config_brats_1.yml',
+    experiment='./experiments/adversarial_network_patientwise_early/config_brats_2.yml',
 ):
 
     # load hyperparameters
@@ -30,7 +31,11 @@ def run(
         gpu = [int(i) for i in gpu.split(",")]
 
     hparams = update_hparams(
-        hparams=hparams, dropout=dropout, batch_size=batch_size, lr=lr, n_epochs=n_epochs,
+        hparams=hparams,
+        dropout=dropout,
+        batch_size=batch_size,
+        lr=lr,
+        n_epochs=n_epochs,
     )
 
     logger = Logger()

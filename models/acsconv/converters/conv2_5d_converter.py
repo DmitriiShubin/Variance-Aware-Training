@@ -8,7 +8,7 @@ class Conv2_5dConverter(BaseConverter):
     """
     Decorator class for converting 2d convolution modules
     to corresponding 3d version in any networks.
-    
+
     Args:
         model (torch.nn.module): model that needs to be converted
     Warnings:

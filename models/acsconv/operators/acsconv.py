@@ -14,7 +14,7 @@ from .base_acsconv import _ACSConv
 class ACSConv(_ACSConv):
     """
     Vallina ACS Convolution
-    
+
     Args:
         acs_kernel_split: optional, equally spit if not specified.
 
@@ -80,7 +80,7 @@ class ACSConv(_ACSConv):
     def forward(self, x):
         """
         Convolution forward function
-        Divide the kernel into three parts on output channels based on acs_kernel_split, 
+        Divide the kernel into three parts on output channels based on acs_kernel_split,
         and conduct convolution on three directions seperately. Bias is added at last.
         """
 

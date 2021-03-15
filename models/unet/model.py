@@ -194,7 +194,9 @@ class Model:
 
             # add data to tensorboard
             writer.add_scalars(
-                'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
+                'Loss',
+                {'Train_loss': avg_loss, 'Val_loss': avg_val_loss},
+                epoch,
             )
             writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
 
@@ -233,7 +235,10 @@ class Model:
         self.model.eval()
 
         test_loader = torch.utils.data.DataLoader(
-            X_test, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=0,
+            X_test,
+            batch_size=self.hparams['batch_size'],
+            shuffle=False,
+            num_workers=0,
         )
 
         error_samplewise = []

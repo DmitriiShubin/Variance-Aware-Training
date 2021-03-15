@@ -62,7 +62,7 @@ class SoftACSConv(_ACSConv):
 
     def conv3D_output_shape_f(self, i, input_shape):
         """
-        Calculate the original output size assuming the convolution is nn.Conv3d based on 
+        Calculate the original output size assuming the convolution is nn.Conv3d based on
         input size, kernel size, dilation, padding and stride.
         """
         return (
@@ -81,8 +81,8 @@ class SoftACSConv(_ACSConv):
     def forward(self, x):
         """
         Convolution forward function
-        Conduct convolution on three directions seperately and then 
-        aggregate the three parts of feature maps by *soft* or *mean* way. 
+        Conduct convolution on three directions seperately and then
+        aggregate the three parts of feature maps by *soft* or *mean* way.
         Bias is added at last.
         """
         B, C_in, *input_shape = x.shape

@@ -11,7 +11,7 @@ split_table_path: './data/split_tables/brats/2_split_table.json'
 test_split_table_path: './data/split_tables/brats_2d/test_split_table.json'
 image_width: 240
 image_height: 240
-debug_path: './data/CV_debug/brats_baseline/1/'
+debug_path: './data/CV_debug/brats_baseline/2/'
 checkpoint_path: ./data/model_weights/unet_2_baseline_brats/checkpoint # CHANGE WHEN CREATE A NEW MODEL
 model_path: ./data/model_weights/unet_2_baseline_brats # CHANGE WHEN CREATE A NEW MODEL
 dataset: 'brats'

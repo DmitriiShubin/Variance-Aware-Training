@@ -16,7 +16,7 @@ class BaseConverter(object):
 
     def convert_module(self, module):
         """
-        A recursive function. 
+        A recursive function.
         Treat the entire model as a tree and convert each leaf module to
             target_conv if it's Conv2d,
             3d counterparts if it's a pooling or normalization module,
@@ -55,7 +55,7 @@ class BaseConverter(object):
     def convert_conv_kwargs(self, kwargs):
         """
         Called by self.convert_module. Transform the original Conv2d arguments
-        to meet the arguments requirements of target_conv. 
+        to meet the arguments requirements of target_conv.
         """
         raise NotImplementedError
 

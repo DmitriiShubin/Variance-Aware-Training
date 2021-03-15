@@ -6,7 +6,7 @@ import os
 
 def conv3D_output_shape_f(i, input_shape, kernel_size, dilation, padding, stride):
     """
-    Calculate the original output size assuming the convolution is nn.Conv3d based on 
+    Calculate the original output size assuming the convolution is nn.Conv3d based on
     input size, kernel size, dilation, padding and stride.
     """
     return (

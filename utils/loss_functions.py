@@ -108,7 +108,7 @@ class ContrastiveLoss(nn.Module):
 
 
 class SimclrCriterion(nn.Module):
-    '''
+    """
     Taken from: https://github.com/google-research/simclr/blob/master/objective.py
     Converted to pytorch, and decomposed for a clearer understanding.
     Args:
@@ -123,7 +123,7 @@ class SimclrCriterion(nn.Module):
             z_j (Tensor): Reprentation of view 'j'
     Returns:
         loss (Tensor): NT_Xent loss between z_i and z_j
-    '''
+    """
 
     def __init__(self, batch_size, normalize=True, temperature=1.0):
         super(SimclrCriterion, self).__init__()
