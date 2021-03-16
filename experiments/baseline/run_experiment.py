@@ -1,11 +1,14 @@
 import click
 from utils.update_hparams import update_hparams
-from experiments.baseline.train_pipeline import TrainPipeline
+
 from utils.logger import Logger
-from models.unet import Model
+
 import yaml
 import os
+
 from experiments.baseline.data_generator import Dataset_train
+from models.unet import Model
+from experiments.baseline.train_pipeline import TrainPipeline
 
 
 def run(

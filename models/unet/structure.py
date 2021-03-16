@@ -131,7 +131,7 @@ class OutConv(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, hparams, bilinear=True):
+    def __init__(self, hparams, bilinear=False):
         super(UNet, self).__init__()
 
         self.hparams = hparams

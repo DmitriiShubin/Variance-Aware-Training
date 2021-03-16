@@ -1,18 +1,20 @@
 import click
 from utils.update_hparams import update_hparams
 from utils.logger import Logger
-from models.unet import Model
+
 import yaml
 import os
+
 from experiments.rotation_encoder.train_pipeline import TrainPipeline
 from experiments.rotation_encoder.data_generator import Dataset_train
+from models.encoder_rotation import Model
 
 
 def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
-    gpu='0',
+    gpu='0,1',
     dropout=None,
     experiment='./experiments/rotation_encoder/config_brats.yml',
 ):

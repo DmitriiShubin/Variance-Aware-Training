@@ -36,10 +36,12 @@ class Dataset_train(Dataset):
         X = np.load(self.volums_list[id]).astype(np.float32)
 
         y = np.random.choice([0, 90, 180, 270])
+
+        X = self.preprocessing.run(X=X)
+
         X = self.rotate_image(X, y)
         y_one_hot = np.zeros((4))
         y_one_hot[[0, 90, 180, 270] == y] = 1
-        X = self.preprocessing.run(X=X)
 
         return X, y_one_hot
 

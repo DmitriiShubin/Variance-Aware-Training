@@ -68,6 +68,7 @@ class TrainPipeline:
         # save the model
         self.model.save(
             self.hparams['model_path']
+            + self.hparams['model_name']
             + f"_{self.hparams['split_table_path'].split('/')[-1][:-5]}"
             + '_fold_'
             + str(np.round(triplet_loss, 2))

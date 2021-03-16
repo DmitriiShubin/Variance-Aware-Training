@@ -1,4 +1,4 @@
-batch_size: 2
+batch_size: 32
 n_epochs: 300
 patience: 30 #number of epochs wait until improvement
 clipping: false #apply gradient clipping
@@ -8,24 +8,24 @@ num_workers: 0
 n_train_samples: 1
 model_name: encoder_triplet_brats # CHANGE WHEN CREATE A NEW MODEL
 split_table_path: './data/split_tables/brats/UB_split_table.json'
-test_split_table_path: './data/split_tables/brats_2d/test_split_table.json'
+test_split_table_path: './data/split_tables/brats/test_split_table.json'
 image_width: 240
 image_height: 240
-debug_path: './data/CV_debug/brats_encoder_triplet/'
-checkpoint_path: ./data/model_weights/encoder_triplet_brats/checkpoint # CHANGE WHEN CREATE A NEW MODEL
-model_path: ./data/model_weights/encoder_triplet_brats # CHANGE WHEN CREATE A NEW MODEL
+debug_path: './data/CV_debug/encoder_triplet_brats/'
+checkpoint_path: ./data/model_weights/encoder_triplet_brats/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
+model_path: ./data/model_weights/encoder_triplet_brats/ # CHANGE WHEN CREATE A NEW MODEL
 dataset: 'brats'
 model:
   in_channels: 4
-  emb_dim: 256
-  n_filters_input: 32
+  emb_dim: 512
+  n_filters_input: 64
   n_layers: 5
-  dropout_rate: 0.1
+  dropout_rate: 0.2
   kernel_size: 3
   dilation: 3
 optimizer_name: Adam
 optimizer_hparams:
-  lr: 0.00001
+  lr: 0.001
   weight_decay: 0.0
 scheduler_name: ReduceLROnPlateau
 scheduler_hparams:

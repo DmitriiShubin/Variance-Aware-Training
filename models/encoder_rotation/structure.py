@@ -137,9 +137,9 @@ class mySequential(nn.Sequential):
         return input
 
 
-class Encoder_contrastive(nn.Module):
+class Encoder_rotation(nn.Module):
     def __init__(self, hparams, bilinear=True):
-        super(Encoder_contrastive, self).__init__()
+        super(Encoder_rotation, self).__init__()
 
         self.hparams = hparams
         self.n_channels = self.hparams['in_channels']
@@ -149,7 +149,7 @@ class Encoder_contrastive(nn.Module):
         self.factor = 2 if bilinear else 1
 
         self.encoder = self.create_encoder()
-        self.outfc = nn.Linear(self.hparams['n_filters_input'] * (2 ** 3), self.emb_dim)
+        self.outfc = nn.Linear(self.hparams['n_filters_input'] * (2 ** 3), self.hparams['n_classes'])
 
     def forward(self, x):
 
@@ -159,7 +159,7 @@ class Encoder_contrastive(nn.Module):
         x = torch.mean(x, dim=2)
         x = torch.mean(x, dim=2)
 
-        logits = torch.relu(self.outfc(x))
+        logits = torch.softmax(self.outfc(x), dim=1)
         return logits
 
     def create_encoder(self):

@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 from time import time
 import numpy as np
-from models.pytorch_revgrad import RevGrad
+from models.encoder_contrastive.structure import Encoder_contrastive
+import yaml
 
 
 class DoubleConvBN(nn.Module):
@@ -97,7 +98,7 @@ class Down(nn.Module):
 class Up(nn.Module):
     """Upscaling then double conv"""
 
-    def __init__(self, in_channels, out_channels, kernel_size, dropout, bilinear=True):
+    def __init__(self, in_channels, out_channels, kernel_size, dropout, bilinear=False):
         super().__init__()
 
         # if bilinear, use the normal convolutions to reduce the number of channels
@@ -131,9 +132,21 @@ class OutConv(nn.Module):
         return self.conv(x)
 
 
-class UNet(nn.Module):
+class UNet(Encoder_contrastive):
     def __init__(self, hparams, bilinear=False):
-        super(UNet, self).__init__()
+
+        hparams_pre_trained = yaml.load(
+            open(hparams['pre_trained_model'] + "_hparams.yml"), Loader=yaml.FullLoader
+        )
+        hparams_pre_trained = hparams_pre_trained['model']
+        super().__init__(hparams=hparams_pre_trained)
+
+        self.load_state_dict(torch.load(hparams['pre_trained_model'] + '.pt'))
+
+        # freeze encoder
+        if hparams['freeze_layers']:
+            for param in self.encoder.parameters():
+                param.requires_grad = False
 
         self.hparams = hparams
         self.n_channels = self.hparams['in_channels']
@@ -142,37 +155,6 @@ class UNet(nn.Module):
 
         factor = 2 if bilinear else 1
 
-        self.inc = DoubleConv(
-            self.n_channels,
-            self.hparams['n_filters_input'],
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-        )
-        self.down1 = Down(
-            self.hparams['n_filters_input'],
-            self.hparams['n_filters_input'] * 2,
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-        )
-        self.down2 = Down(
-            self.hparams['n_filters_input'] * 2,
-            self.hparams['n_filters_input'] * 4,
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-        )
-        self.down3 = Down(
-            self.hparams['n_filters_input'] * 4,
-            self.hparams['n_filters_input'] * 8,
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-        )
-
-        self.down4 = Down(
-            self.hparams['n_filters_input'] * 8,
-            self.hparams['n_filters_input'] * 16 // factor,
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-        )
         self.up1 = Up(
             self.hparams['n_filters_input'] * 16,
             self.hparams['n_filters_input'] * 8 // factor,
@@ -203,50 +185,12 @@ class UNet(nn.Module):
         )
         self.outc = OutConv(self.hparams['n_filters_input'], self.n_classes)
 
-        # gradient reversal layer
-        self.rever1_1 = RevGrad()
-        self.rever1_2 = RevGrad()
-        self.rever1_3 = RevGrad()
-        self.rever1_4 = RevGrad()
-        self.rever1_5 = RevGrad()
-        self.rever2_1 = RevGrad()
-        self.rever2_2 = RevGrad()
-        self.rever2_3 = RevGrad()
-        self.rever2_4 = RevGrad()
-        self.rever2_5 = RevGrad()
-
-        n_filt = 0
-        for i in range(4 + 1):
-            n_filt += self.hparams['n_filters_input'] * (2 ** (i))
-        n_filt *= 2
-
-        self.adv_fc1 = nn.Linear(n_filt, 300)
-        self.adv_fc2 = nn.Linear(300, 300)
-        self.adv_fc3 = nn.Linear(300, 300)
-        self.adv_fc4 = nn.Linear(300, 1)
-
-    def forward(self, x1, x2=None, train=False):
-
-        if train:
-            # main head (predictive)
-            out, decoder_x = self.predictive_network(x1)
-            # additional head (adversarial)
-            out_s = self.adversarial_network(decoder_x, x2)
-            return out, out_s
-        else:
-            # main head (predictive)
-            out, _ = self.predictive_network(x1)
-            return out
-
-    def encoder(self, x):
-
-        x1 = self.inc(x)
-        x2 = self.down1(x1)
-        x3 = self.down2(x2)
-        x4 = self.down3(x3)
-        x5 = self.down4(x4)
-
-        return x1, x2, x3, x4, x5
+    def forward(self, x):
+        x1, x2, x3, x4, x5 = self.encoder(x)
+        x = self.decoder(x1, x2, x3, x4, x5)
+        logits = self.outc(x)
+        logits = torch.nn.functional.softmax(logits, dim=1)
+        return logits
 
     def decoder(self, x1, x2, x3, x4, x5):
         x = self.up1(x5, x4)
@@ -254,35 +198,3 @@ class UNet(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         return x
-
-    def adversarial_network(self, x, x_s):
-        x1, x2, x3, x4, x5 = self.encoder(x_s)
-        # x_s = self.decoder(x1, x2, x3, x4, x5)
-
-        x1_s = self.rever1_1(x1).mean(dim=2).mean(dim=2)
-        x2_s = self.rever1_2(x2).mean(dim=2).mean(dim=2)
-        x3_s = self.rever1_3(x3).mean(dim=2).mean(dim=2)
-        x4_s = self.rever1_4(x4).mean(dim=2).mean(dim=2)
-        x5_s = self.rever1_5(x5).mean(dim=2).mean(dim=2)
-
-        x1_p = self.rever2_1(x[0]).mean(dim=2).mean(dim=2)
-        x2_p = self.rever2_2(x[1]).mean(dim=2).mean(dim=2)
-        x3_p = self.rever2_3(x[2]).mean(dim=2).mean(dim=2)
-        x4_p = self.rever2_4(x[3]).mean(dim=2).mean(dim=2)
-        x5_p = self.rever2_5(x[4]).mean(dim=2).mean(dim=2)
-
-        x = torch.cat([x1_s, x2_s, x3_s, x4_s, x5_s, x1_p, x2_p, x3_p, x4_p, x5_p], dim=1)
-
-        x = torch.relu(self.adv_fc1(x))
-        x = torch.relu(self.adv_fc2(x))
-        x = torch.relu(self.adv_fc3(x))
-        x = torch.sigmoid(self.adv_fc4(x))
-
-        return x
-
-    def predictive_network(self, x):
-        x1, x2, x3, x4, x5 = self.encoder(x)
-        x = self.decoder(x1, x2, x3, x4, x5)
-        logits = self.outc(x)
-        logits = torch.nn.functional.softmax(logits, dim=1)
-        return logits, [x1, x2, x3, x4, x5]

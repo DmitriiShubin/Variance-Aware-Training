@@ -67,22 +67,20 @@ class TrainPipeline:
         start_training = self.model.fit(train=train, valid=valid)
 
         # get model predictions
-        error_val, fold_score = self.model.predict(valid)
+        fold_score = self.model.predict(valid)
 
         print("Model's final scrore, cv: ", fold_score)
 
         # save the model
         self.model.save(
             self.hparams['model_path']
+            + self.hparams['model_name']
             + f"_{self.hparams['split_table_path'].split('/')[-1][:-5]}"
             + '_fold_'
             + str(np.round(fold_score, 2))
             + '_'
-            + str(start_training[-1])
+            + str(start_training)
         )
-
-        # save data for debug
-        self.save_debug_data(error_val, self.splits['val'].values[0])
 
         return fold_score, start_training
 
