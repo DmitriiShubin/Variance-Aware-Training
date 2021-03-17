@@ -34,15 +34,19 @@ class Dice_loss(nn.Module):
     def forward(self, y_pred, y_true):
         # y_truef = torch.flatten(y_true)
         # y_predf = torch.flatten(y_pred)
-        # y_true = y_true[:, 1:]
-        # y_pred = y_pred[:, 1:]
+        y_true = y_true[:, 1:] #removing background makes less stable
+        y_pred = y_pred[:, 1:]
         tp = torch.sum(y_true * y_pred, dim=0)
         fp = torch.sum(y_pred, dim=0) - tp
         fn = torch.sum(y_true, dim=0) - tp
 
         f1 = torch.mean(
-            ((1 + 2 ** 2) * tp + self.smoothing) / ((1 + 2 ** 2) * tp + 2 ** 2 * fn + fp + self.smoothing)
+            (tp + self.smoothing) / (tp + 0.5*(fn + fp) + self.smoothing)
         )
+
+        # f1 = torch.mean(
+        #     ((1 + 2 ** 2) * tp + self.smoothing) / ((1 + 2 ** 2) * tp + 2 ** 2 * fn + fp + self.smoothing)
+        # )
         return -1 * f1
 
 
@@ -76,7 +80,7 @@ class TripletLoss(nn.Module):
     Takes embeddings of an anchor sample, a positive sample and a negative sample
     """
 
-    def __init__(self, margin=1e-3):
+    def __init__(self, margin=1):
         super(TripletLoss, self).__init__()
         self.margin = margin
 

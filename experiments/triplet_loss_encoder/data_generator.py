@@ -18,7 +18,7 @@ class Dataset_train(Dataset):
         self.volumes_list = volumes_list
         self.preprocessing = Preprocessing(aug, dataset)
 
-        self.generate_pairs(n_pairs=len(self.volumes_list) * 1)
+        self.generate_pairs(n_pairs=int(len(self.volumes_list) *1))
 
     # TODO
     def generate_pairs(self, n_pairs: int):
@@ -150,7 +150,7 @@ class Augmentations:
         if dataset == 'brats':
             prob = 0.5
             self.augs = A.Compose(
-                [  # A.Blur(blur_limit=1,p=prob),
+                [   #A.Blur(blur_limit=1,p=prob),
                     A.HorizontalFlip(p=prob),
                     A.VerticalFlip(p=prob),
                     A.Rotate(limit=10, p=prob),

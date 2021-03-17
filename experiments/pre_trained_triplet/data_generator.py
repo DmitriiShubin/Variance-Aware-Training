@@ -58,6 +58,7 @@ class Preprocessing:
     def run(self, X, y):
 
         if self.aug:
+
             X, y = self.augmentations.run(X, y)
 
         X = self.standard_scaling(X)
@@ -122,7 +123,7 @@ class Augmentations:
                     A.VerticalFlip(p=prob),
                     A.Rotate(limit=10, p=prob),
                     # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    #A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
+                    A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
                     # A.RandomGamma(gamma_limit=(80,120),p=prob)
                 ]
             )

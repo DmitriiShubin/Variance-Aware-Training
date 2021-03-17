@@ -20,7 +20,7 @@ from time import time
 from utils.loss_functions import f1_loss, Dice_loss
 
 # model
-from models.adv_unet_train_val_early.structure import UNet
+from models.unet_pre_trained_triplet.structure import UNet
 
 
 class Model:
@@ -69,8 +69,6 @@ class Model:
             num_workers=self.hparams['num_workers'],
         )
 
-        adv_loader = DataLoader(valid, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=0)
-
         # tensorboard
         writer = SummaryWriter(f"runs/{self.hparams['model_name']}_{self.start_training}")
 
@@ -80,29 +78,27 @@ class Model:
             # training mode
             self.model.train()
             avg_loss = 0.0
-            avg_adv_loss = 0.0
 
-            for X_batch, y_batch, X_batch_adv, y_batch_adv in tqdm(train_loader):
-
-                sample = np.random.uniform()
-                if sample >= 0.5:
-                    X_batch_adv, _, _, _ = next(iter(adv_loader))
-                    X_batch_adv = X_batch_adv[: X_batch.shape[0]]
-                    y_batch_adv[:] = 0.0
+            # freeze encoder
+            if epoch >= self.hparams['model']['freeze_layers_delay']:
+                if self.gpu is not None and len(self.gpu) >1:
+                    for param in self.model.module.encoder.parameters():
+                        param.requires_grad = True
                 else:
-                    y_batch_adv[:] = 1.0
+                    for param in self.model.encoder.parameters():
+                        param.requires_grad = True
+
+            for X_batch, y_batch in tqdm(train_loader):
 
                 # push the data into the GPU
                 X_batch = X_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
-                X_batch_adv = X_batch_adv.float().to(self.device)
-                y_batch_adv = y_batch_adv.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred, pred_adv = self.model(X_batch, X_batch_adv, train=True)
+                pred = self.model(X_batch)
 
                 # process main loss
                 y_batch = y_batch.permute(0, 2, 3, 1)
@@ -111,29 +107,13 @@ class Model:
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
                 train_loss = self.loss(pred, y_batch)
 
-                # process loss_2
-                pred_adv = pred_adv.reshape(-1)
-                y_batch_adv = y_batch_adv.reshape(-1)
-                adv_loss = self.loss_adv(pred_adv, y_batch_adv)
-
-                a = self.hparams['model']['alpha'] * np.log10(1 + epoch) * adv_loss / 1.3
-                a1 = self.hparams['model']['alpha'] * adv_loss
-
-                # calc loss
-                avg_loss += train_loss.item() / len(train_loader)
-                avg_adv_loss += adv_loss.item() / len(train_loader)
-
-                train_loss = (
-                    train_loss + self.hparams['model']['alpha'] * np.log10(1 + epoch) * adv_loss / 1.3
-                )
-
                 # remove data from GPU
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
                 X_batch = X_batch.float().cpu().detach()
-                X_batch_adv = X_batch_adv.float().cpu().detach()
-                y_batch_adv = y_batch_adv.cpu().detach()
-                pred_adv = pred_adv.cpu().detach()
+
+                # calc loss
+                avg_loss += train_loss.item() / len(train_loader)
 
                 # gradient clipping
                 if self.apply_clipping:
@@ -166,7 +146,7 @@ class Model:
 
             with torch.no_grad():
 
-                for X_batch, y_batch, _, _ in tqdm(valid_loader):
+                for X_batch, y_batch in tqdm(valid_loader):
 
                     # push the data into the GPU
                     X_batch = X_batch.float().to(self.device)
@@ -214,8 +194,6 @@ class Model:
                     avg_loss,
                     '| Val_loss: ',
                     avg_val_loss,
-                    '| Adv_loss: ',
-                    avg_adv_loss,
                     '| Metric_train: ',
                     metric_train,
                     '| Metric_val: ',
@@ -279,7 +257,7 @@ class Model:
 
         print('Getting predictions')
         with torch.no_grad():
-            for i, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
+            for i, (X_batch, y_batch) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
@@ -385,7 +363,6 @@ class Model:
 
         # 1. define losses
         self.loss = Dice_loss()
-        self.loss_adv = nn.BCELoss()
 
         # 2. define model metric
         self.metric = Metric(self.hparams['model']['n_classes'])
@@ -423,3 +400,4 @@ class Model:
         random.seed(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+

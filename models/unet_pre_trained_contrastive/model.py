@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 import os
 import yaml
+import random
 
 # pytorch
 import torch
@@ -65,7 +66,7 @@ class Model:
             valid,
             batch_size=self.hparams['batch_size'],
             shuffle=False,
-            num_workers=self.hparams['num_workers'],
+            num_workers=self.hparams['num_workers']
         )
 
         # tensorboard
@@ -392,3 +393,6 @@ class Model:
         np.random.seed(seed)
         os.environ['PYTHONHASHSEED'] = str(seed)
         torch.manual_seed(seed)
+        random.seed(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False

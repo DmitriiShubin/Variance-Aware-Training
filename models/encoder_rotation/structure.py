@@ -138,7 +138,7 @@ class mySequential(nn.Sequential):
 
 
 class Encoder_rotation(nn.Module):
-    def __init__(self, hparams, bilinear=True):
+    def __init__(self, hparams, bilinear=False):
         super(Encoder_rotation, self).__init__()
 
         self.hparams = hparams

@@ -138,7 +138,7 @@ class mySequential(nn.Sequential):
 
 
 class Encoder_contrastive(nn.Module):
-    def __init__(self, hparams, bilinear=True):
+    def __init__(self, hparams, bilinear=False):
         super(Encoder_contrastive, self).__init__()
 
         self.hparams = hparams
@@ -149,10 +149,13 @@ class Encoder_contrastive(nn.Module):
         self.factor = 2 if bilinear else 1
 
         self.encoder = self.create_encoder()
-        self.fc1 = nn.Linear(
-            self.hparams['n_filters_input'] * (2 ** 3), self.hparams['n_filters_input'] * (2 ** 3)
-        )
-        self.fc2 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 3), self.emb_dim)
+        # self.fc1 = nn.Linear(
+        #     self.hparams['n_filters_input'] * (2 ** 3), self.hparams['n_filters_input'] * (2 ** 3)
+        # )
+        # self.fc2 = nn.Linear(
+        #     self.hparams['n_filters_input'] * (2 ** 3), self.hparams['n_filters_input'] * (2 ** 3)
+        #)
+        self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 4), self.emb_dim)
 
     def forward(self, x):
         for layer in self.encoder:
@@ -161,8 +164,9 @@ class Encoder_contrastive(nn.Module):
         x = torch.mean(x, dim=2)
         x = torch.mean(x, dim=2)
 
-        x = torch.relu(self.fc1(x))
-        logits = self.fc2(x)
+        # x = torch.relu(self.fc1(x))
+        # x = torch.relu(self.fc2(x))
+        logits = self.fc3(x)
         return logits
 
     def create_encoder(self):

@@ -18,7 +18,7 @@ class Dataset_train(Dataset):
         self.volumes_list = volumes_list
         self.preprocessing = Preprocessing(aug, dataset)
 
-        self.generate_pairs(n_pairs=len(self.volumes_list) * 1)
+        self.generate_pairs(n_pairs=int(len(self.volumes_list) * 0.5))
 
     # TODO
     def generate_pairs(self, n_pairs: int):
@@ -37,33 +37,19 @@ class Dataset_train(Dataset):
         for i in range(n_pairs):
             pairs = {}
 
-            prob = np.random.uniform()
+            # generate positive pair
+            anchor = self.volumes_list[np.random.choice(self.volumes_list.shape[0])]
+            anchor_label = labels[np.where(np.array(self.volumes_list) == anchor)]
+            pairs['anchor'] = anchor
 
-            if prob >= 0.5:
-                # generate positive pair
-                anchor = self.volumes_list[np.random.choice(self.volumes_list.shape[0])]
-                anchor_label = labels[np.where(np.array(self.volumes_list) == anchor)]
-                pairs['anchor'] = anchor
-
-                # select positive
-                records_pos_subset = self.volumes_list[np.where(labels == anchor_label)]
-                # records_pos_subset = records_pos_subset[records_pos_subset != anchor]
-                pairs['supportive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
-
-                pairs['label'] = [1.0]
-                self.pairs_list.append(pairs)
-            else:
-                # generate negative pair
-                anchor = self.volumes_list[np.random.choice(self.volumes_list.shape[0])]
-                anchor_label = labels[np.where(np.array(self.volumes_list) == anchor)]
-                pairs['anchor'] = anchor
-
-                # select positive
-                records_neg_subset = self.volumes_list[np.where(labels != anchor_label)]
-                pairs['supportive'] = records_neg_subset[np.random.choice(records_neg_subset.shape[0])]
-
-                pairs['label'] = [0.0]
-                self.pairs_list.append(pairs)
+            # select positive
+            sample = anchor.split('/')[-1]
+            records_pos_subset = self.volumes_list[np.where(labels != anchor_label)]
+            records_pos_subset = records_pos_subset.tolist()
+            records_pos_subset = [record for record in records_pos_subset if record.find(sample)!=-1]
+            records_pos_subset = np.array(records_pos_subset)
+            pairs['supportive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
+            self.pairs_list.append(pairs)
 
         self.volumes_list = self.volumes_list.tolist()
 
@@ -86,7 +72,7 @@ class Dataset_train(Dataset):
 
         X_anchor = np.load(self.pairs_list[id]['anchor'])
         X_supportive = np.load(self.pairs_list[id]['supportive'])
-        y = self.pairs_list[id]['label']
+        y = [0]#self.pairs_list[id]['label']
 
         X_anchor = self.preprocessing.run(X_anchor)
         X_supportive = self.preprocessing.run(X_supportive)
@@ -164,18 +150,18 @@ class Augmentations:
             prob = 0.5
             self.augs = A.Compose(
                 [  # A.Blur(blur_limit=3,p=prob),
-                    A.HorizontalFlip(p=prob),
+                    #A.HorizontalFlip(p=prob),
                     A.VerticalFlip(p=prob),
                     A.Rotate(limit=10, p=prob),
                     # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
+                    #A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
                     # A.RandomGamma(gamma_limit=(80,120),p=prob)
                 ]
             )
 
     def run(self, image):
 
-        image = np.transpose(image.astype(np.float32), (1, 2, 0))
+        image = np.transpose(image.astype(np.float32), (1, 2,0))
 
         # apply augs
         augmented = self.augs(image=image)

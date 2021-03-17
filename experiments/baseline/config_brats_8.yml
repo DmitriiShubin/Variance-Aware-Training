@@ -29,6 +29,7 @@ optimizer_hparams:
   weight_decay: 0.0
 scheduler_name: ReduceLROnPlateau
 scheduler_hparams:
-  patience: 10
+  patience: 3
   threshold: 0.02
   verbose: true
+  factor: 0.2

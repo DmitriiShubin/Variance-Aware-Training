@@ -138,7 +138,7 @@ class mySequential(nn.Sequential):
 
 
 class Encoder_triplet(nn.Module):
-    def __init__(self, hparams, bilinear=True):
+    def __init__(self, hparams, bilinear=False):
         super(Encoder_triplet, self).__init__()
 
         self.hparams = hparams
@@ -150,9 +150,9 @@ class Encoder_triplet(nn.Module):
 
         self.encoder = self.create_encoder()
         self.fc1 = nn.Linear(
-            self.hparams['n_filters_input'] * (2 ** 3), self.hparams['n_filters_input'] * (2 ** 3)
+             self.hparams['n_filters_input'] * (2 ** 4), self.hparams['n_filters_input'] * (2 ** 4)
         )
-        self.fc2 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 3), self.emb_dim)
+        self.fc2 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 4), self.emb_dim)
 
     def forward(self, x):
 
