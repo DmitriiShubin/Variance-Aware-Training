@@ -64,7 +64,7 @@ class Model:
         valid_loader = DataLoader(
             valid,
             batch_size=self.hparams['batch_size'],
-            shuffle=False,
+            shuffle=True,
             num_workers=self.hparams['num_workers'],
         )
 

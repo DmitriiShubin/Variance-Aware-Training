@@ -6,25 +6,26 @@ min_delta: 0.01 #min delta of improvement for early stopping
 verbose_train: true
 num_workers: 0
 n_train_samples: 1
-model_name: unet_2_baseline_brats # CHANGE WHEN CREATE A NEW MODEL
+model_name: unet_2_pretrained_contrastive_brats # CHANGE WHEN CREATE A NEW MODEL
 split_table_path: './data/split_tables/brats/2_split_table.json'
 test_split_table_path: './data/split_tables/brats/test_split_table.json'
 image_width: 240
 image_height: 240
-debug_path: './data/CV_debug/unet_2_baseline_brats/'
-checkpoint_path: ./data/model_weights/unet_2_baseline_brats/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
-model_path: ./data/model_weights/unet_2_baseline_brats/ # CHANGE WHEN CREATE A NEW MODEL
+debug_path: './data/CV_debug/unet_2_pretrained_contrastive_brats/'
+checkpoint_path: ./data/model_weights/unet_2_pretrained_contrastive_brats/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
+model_path: ./data/model_weights/unet_2_pretrained_contrastive_brats/ # CHANGE WHEN CREATE A NEW MODEL
 dataset: 'brats'
 model:
   in_channels: 4
   n_classes: 4
-  n_filters_input: 64
+  n_filters_input: 32
   n_layers: 5
   dropout_rate: 0.2
   kernel_size: 3
   dilation: 3
   pre_trained_model: "./data/model_weights/unet_contrastive_brats/encoder_contrastive_brats_UB_split_table_fold_nan_1615921243.3738875"
   freeze_layers: true
+  freeze_layers_delay: 10
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001

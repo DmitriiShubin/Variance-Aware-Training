@@ -78,6 +78,11 @@ class Model:
             self.model.train()
             avg_loss = 0.0
 
+            # freeze encoder
+            if epoch >= self.hparams['model']['freeze_layers_delay']:
+                for param in self.model.encoder.parameters():
+                    param.requires_grad = True
+
             for X_batch, y_batch in tqdm(train_loader):
 
                 # push the data into the GPU

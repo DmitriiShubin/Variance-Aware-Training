@@ -19,18 +19,18 @@ def main():
 
     # pre-training
     # Self-supervised contrastive
-    # run_contrastive_pre_train(experiment='./experiments/contrastive_loss_encoder/config_brats.yml',n_epochs=1)
+    run_contrastive_pre_train(experiment='./experiments/contrastive_loss_encoder/config_brats.yml')
 
     # Self-supervised triplet
-    # run_triplet_pre_train(experiment='./experiments/triplet_loss_encoder/config_brats.yml',n_epochs=1)
+    # run_triplet_pre_train(experiment='./experiments/triplet_loss_encoder/config_brats.yml')
 
     # Self-supervised rotation
-    run_rotation_pre_train(experiment='./experiments/rotation_encoder/config_brats.yml', n_epochs=1)
+    # run_rotation_pre_train(experiment='./experiments/rotation_encoder/config_brats.yml')
 
     # baseline, without pre-train
-    run_baseline(experiment='./experiments/baseline/config_brats_2.yml', n_epochs=1)
-    run_baseline(experiment='./experiments/baseline/config_brats_4.yml', n_epochs=1)
-    run_baseline(experiment='./experiments/baseline/config_brats_8.yml', n_epochs=1)
+    # run_baseline(experiment='./experiments/baseline/config_brats_2.yml')
+    # run_baseline(experiment='./experiments/baseline/config_brats_4.yml')
+    # run_baseline(experiment='./experiments/baseline/config_brats_8.yml')
 
     # pre-train contrastive
     # 2

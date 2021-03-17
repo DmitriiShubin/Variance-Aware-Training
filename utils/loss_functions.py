@@ -153,7 +153,7 @@ class SimclrCriterion(nn.Module):
 
 
 class contrastive_loss(nn.Module):
-    def __init__(self, tau=100, normalize=False):
+    def __init__(self, tau=1, normalize=True):
         super(contrastive_loss, self).__init__()
         self.tau = tau
         self.normalize = normalize
