@@ -146,67 +146,75 @@ class Encoder_contrastive(nn.Module):
         self.emb_dim = self.hparams['emb_dim']
         self.bilinear = bilinear
 
-        self.factor = 2 if bilinear else 1
+        factor = 2 if bilinear else 1
 
-        self.encoder = self.create_encoder()
-        # self.fc1 = nn.Linear(
-        #     self.hparams['n_filters_input'] * (2 ** 3), self.hparams['n_filters_input'] * (2 ** 3)
-        # )
-        # self.fc2 = nn.Linear(
-        #     self.hparams['n_filters_input'] * (2 ** 3), self.hparams['n_filters_input'] * (2 ** 3)
-        #)
-        self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), self.emb_dim)
+        #self.encoder = self.create_encoder()
 
-    def forward(self, x):
-        for layer in self.encoder:
-            x = layer(x)
-
-        x = torch.mean(x, dim=2)
-        x = torch.mean(x, dim=2)
-
-        # x = torch.relu(self.fc1(x))
-        # x = torch.relu(self.fc2(x))
-        logits = self.fc3(x)
-        return logits
-
-    def create_encoder(self):
-        inc = DoubleConv(
+        self.inc = DoubleConv(
             self.n_channels,
             self.hparams['n_filters_input'],
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
-        down1 = Down(
+        self.down1 = Down(
             self.hparams['n_filters_input'],
             self.hparams['n_filters_input'] * 2,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
-        down2 = Down(
+        self.down2 = Down(
             self.hparams['n_filters_input'] * 2,
             self.hparams['n_filters_input'] * 4,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
-        down3 = Down(
+        self.down3 = Down(
             self.hparams['n_filters_input'] * 4,
             self.hparams['n_filters_input'] * 8,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
 
-        down4 = Down(
+        self.down4 = Down(
             self.hparams['n_filters_input'] * 8,
-            self.hparams['n_filters_input'] * 16 // self.factor,
+            self.hparams['n_filters_input'] * 16 // factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
-        down5 = Down(
+        self.down5 = Down(
             self.hparams['n_filters_input'] * 16,
-            self.hparams['n_filters_input'] * 32 // self.factor,
+            self.hparams['n_filters_input'] * 32 // factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
 
-        layers = [inc, down1, down2, down3, down4,down5]
-        return mySequential(*layers)
+        self.fc1 = nn.Linear(
+            self.hparams['n_filters_input'] * (2 ** 5), self.hparams['n_filters_input'] * (2 ** 5)
+        )
+        self.fc2 = nn.Linear(
+            self.hparams['n_filters_input'] * (2 ** 5), self.emb_dim
+        )
+        #self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), 128)#self.emb_dim)
+
+    def forward(self, x):
+        _,_,_,_,_,x  = self.encoder(x)
+
+
+        x = torch.mean(x, dim=2)
+        x = torch.mean(x, dim=2)
+
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        #logits = self.fc3(x)
+        return x
+
+    def encoder(self, x):
+
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+        x6 = self.down5(x5)
+
+        return x1, x2, x3, x4, x5,x6

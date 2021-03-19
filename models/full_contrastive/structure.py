@@ -2,9 +2,7 @@ import torch
 import torch.nn as nn
 from time import time
 import numpy as np
-from models.encoder_contrastive.structure import Encoder_contrastive
-import yaml
-
+from models.unet.structure import UNet as Unet_base
 
 class DoubleConvBN(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
@@ -132,83 +130,14 @@ class OutConv(nn.Module):
         return self.conv(x)
 
 
-class UNet(Encoder_contrastive):
-    def __init__(self, hparams, bilinear=False):
-
-        hparams_pre_trained = yaml.load(
-            open(hparams['pre_trained_model'] + "_hparams.yml"), Loader=yaml.FullLoader
-        )
-        hparams_pre_trained = hparams_pre_trained['model']
-        super().__init__(hparams=hparams_pre_trained)
-
-        self.load_state_dict(torch.load(hparams['pre_trained_model'] + '.pt'))
-
-        # freeze encoder
-        if hparams['freeze_layers']:
-            self.inc.requires_grad = False
-            self.down1.requires_grad = False
-            self.down2.requires_grad = False
-            self.down3.requires_grad = False
-            self.down4.requires_grad = False
-            self.down5.requires_grad = False
+class mySequential(nn.Sequential):
+    def forward(self, *input):
+        for module in self._modules.values():
+            input = module(*input)
+        return input
 
 
-        self.hparams = hparams
-        self.n_channels = self.hparams['in_channels']
-        self.n_classes = self.hparams['n_classes']
-        self.bilinear = bilinear
+class Unet(Unet_base):
+    def __init__(self, hparams):
+        super().__init__(hparams=hparams)
 
-        factor = 2 if bilinear else 1
-
-        self.up1 = Up(
-            self.hparams['n_filters_input'] * 32,
-            self.hparams['n_filters_input'] * 16 // factor,
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-            bilinear,
-        )
-        self.up2 = Up(
-            self.hparams['n_filters_input'] * 16,
-            self.hparams['n_filters_input'] * 8 // factor,
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-            bilinear,
-        )
-        self.up3 = Up(
-            self.hparams['n_filters_input'] * 8,
-            self.hparams['n_filters_input'] * 4 // factor,
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-            bilinear,
-        )
-        self.up4 = Up(
-            self.hparams['n_filters_input'] * 4,
-            self.hparams['n_filters_input'] * 2,
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-            bilinear,
-        )
-        self.up5 = Up(
-            self.hparams['n_filters_input'] * 2,
-            self.hparams['n_filters_input'],
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-            bilinear,
-        )
-        self.outc = OutConv(self.hparams['n_filters_input'], self.n_classes)
-
-    def forward(self, x):
-        x1, x2, x3, x4, x5, x6 = self.encoder(x)
-        x = self.decoder(x1, x2, x3, x4, x5, x6)
-        logits = self.outc(x)
-        logits = torch.nn.functional.softmax(logits, dim=1)
-        return logits
-
-    def decoder(self, x1, x2, x3, x4, x5,x6):
-        x = self.up1(x6, x5)
-        x = self.up2(x, x4)
-        x = self.up3(x, x3)
-        x = self.up4(x, x2)
-        x = self.up5(x, x1)
-
-        return x

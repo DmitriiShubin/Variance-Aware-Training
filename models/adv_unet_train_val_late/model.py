@@ -85,22 +85,22 @@ class Model:
 
             for X_batch, y_batch, X_batch_adv, y_batch_adv in tqdm(train_loader):
 
-                # sample = np.round(np.random.uniform(size=1)[0], 1)
-                # if sample >= 0.5:
-                #     X_batch_adv, _, _, _ = next(iter(adv_loader))
-                #     X_batch_adv = X_batch_adv[: X_batch.shape[0]]
-                #     y_batch_adv[:] = 0.0
-                # else:
-                #     y_batch_adv[:] = 1.0
+                sample = np.round(np.random.uniform(size=1)[0], 1)
+                if sample >= 0.5:
+                    X_batch_adv, _, _, _ = next(iter(adv_loader))
+                    X_batch_adv = X_batch_adv[: X_batch.shape[0]]
+                    y_batch_adv[:] = 0.0
+                else:
+                    y_batch_adv[:] = 1.0
 
-                for i in range(X_batch.shape[0]):
-                    sample = np.random.uniform(size=1)[0]
-                    if sample >= 0.5:
-                        temp_adv, _, _, _ = next(iter(adv_loader))
-                        X_batch_adv[i] = temp_adv[0]
-                        y_batch_adv[i] = 0.0
-                    else:
-                        y_batch_adv[i] = 1.0
+                # for i in range(X_batch.shape[0]):
+                #     sample = np.random.uniform(size=1)[0]
+                #     if sample >= 0.5:
+                #         temp_adv, _, _, _ = next(iter(adv_loader))
+                #         X_batch_adv[i] = temp_adv[0]
+                #         y_batch_adv[i] = 0.0
+                #     else:
+                #         y_batch_adv[i] = 1.0
 
 
                 # push the data into the GPU

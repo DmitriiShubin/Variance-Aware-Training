@@ -17,10 +17,10 @@ from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from utils.post_processing import Post_Processing
 from time import time
-from utils.loss_functions import f1_loss, Dice_loss
+from utils.loss_functions import SimclrCriterion, contrastive_loss,local_contrastive_loss
 
 # model
-from models.unet_pre_trained_contrastive.structure import UNet
+from models.full_contrastive.structure import Unet
 
 
 class Model:
@@ -60,13 +60,13 @@ class Model:
             train,
             batch_size=self.hparams['batch_size'],
             shuffle=True,
-            num_workers=self.hparams['num_workers'],
+            num_workers=self.hparams['num_workers']
         )
         valid_loader = DataLoader(
             valid,
             batch_size=self.hparams['batch_size'],
-            shuffle=False,
-            num_workers=self.hparams['num_workers']
+            shuffle=True,
+            num_workers=self.hparams['num_workers'],
         )
 
         # tensorboard
@@ -79,47 +79,32 @@ class Model:
             self.model.train()
             avg_loss = 0.0
 
-            # freeze encoder
-            if epoch >= self.hparams['model']['freeze_layers_delay']:
-                if self.gpu is not None and len(self.gpu) > 1:
-                    self.model.module.inc.requires_grad = True
-                    self.model.module.down1.requires_grad = True
-                    self.model.module.down2.requires_grad = True
-                    self.model.module.down3.requires_grad = True
-                    self.model.module.down4.requires_grad = True
-                    self.model.module.down5.requires_grad = True
-
-                else:
-                    self.model.inc.requires_grad = True
-                    self.model.down1.requires_grad = True
-                    self.model.down2.requires_grad = True
-                    self.model.down3.requires_grad = True
-                    self.model.down4.requires_grad = True
-                    self.model.down5.requires_grad = True
-
-            for X_batch, y_batch in tqdm(train_loader):
+            for X_anchor, X_supportive, y_batch in tqdm(train_loader):
 
                 # push the data into the GPU
-                X_batch = X_batch.float().to(self.device)
+                X_anchor = X_anchor.float().to(self.device)
+                X_supportive = X_supportive.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred = self.model(X_batch)
+                pred_anchor = self.model(X_anchor)
+                pred_supportive = self.model(X_supportive)
 
-                # process main loss
-                y_batch = y_batch.permute(0, 2, 3, 1)
-                pred = pred.permute(0, 2, 3, 1)
-                pred = pred.reshape(-1, pred.shape[-1])
-                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
-                train_loss = self.loss(pred, y_batch)
+                pred_anchor = pred_anchor.permute(1, 2, 3, 0)
+                pred_supportive = pred_supportive.permute(1, 2, 3, 0)
+                pred_anchor = pred_anchor.reshape(-1, pred_anchor.shape[-1])
+                pred_supportive = pred_supportive.reshape(-1, pred_supportive.shape[-1])
+                train_loss = self.loss(pred_anchor, pred_supportive)
 
                 # remove data from GPU
+                X_anchor = X_anchor.float().cpu().detach()
+                X_supportive = X_supportive.float().cpu().detach()
+                pred_anchor = pred_anchor.float().cpu().detach()
+                pred_supportive = pred_supportive.float().cpu().detach()
                 y_batch = y_batch.float().cpu().detach()
-                pred = pred.float().cpu().detach()
-                X_batch = X_batch.float().cpu().detach()
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
@@ -136,63 +121,49 @@ class Model:
                 # iptimizer step
                 self.optimizer.step()
 
-                pred = self.postprocessing.run(pred.numpy())
-                y_batch = self.postprocessing.run(y_batch.numpy())
-
-                # calculate a step for metrics
-                self.metric.calc_running_score(labels=y_batch, outputs=pred)
-
-            # calc train metrics
-            metric_train = self.metric.compute()
-
-            # evaluate the model
+                # evaluate the model
             print('Model evaluation')
 
             # val mode
             self.model.eval()
-            self.optimizer.zero_grad()
             avg_val_loss = 0.0
 
             with torch.no_grad():
 
-                for X_batch, y_batch in tqdm(valid_loader):
-
+                for X_anchor, X_supportive, y_batch in tqdm(valid_loader):
                     # push the data into the GPU
-                    X_batch = X_batch.float().to(self.device)
+                    X_anchor = X_anchor.float().to(self.device)
+                    X_supportive = X_supportive.float().to(self.device)
                     y_batch = y_batch.float().to(self.device)
 
-                    # get predictions
-                    pred = self.model(X_batch)
+                    # clean gradients from the previous step
+                    self.optimizer.zero_grad()
 
-                    # calculate main loss
-                    y_batch = y_batch.permute(0, 2, 3, 1)
-                    pred = pred.permute(0, 2, 3, 1)
-                    pred = pred.reshape(-1, pred.shape[-1])
-                    y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                    # get model predictions
+                    pred_anchor = self.model(X_anchor)
+                    pred_supportive = self.model(X_supportive)
 
-                    avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
+                    pred_anchor = pred_anchor.permute(1, 2, 3, 0)
+                    pred_supportive = pred_supportive.permute(1, 2, 3, 0)
+                    pred_anchor = pred_anchor.reshape(-1, pred_anchor.shape[-1])
+                    pred_supportive = pred_supportive.reshape(-1, pred_supportive.shape[-1])
+
+                    avg_val_loss += self.loss(pred_anchor, pred_supportive).item() / len(valid_loader)
 
                     # remove data from GPU
-                    X_batch = X_batch.float().cpu().detach()
-                    pred = pred.float().cpu().detach()
+                    X_anchor = X_anchor.float().cpu().detach()
+                    X_supportive = X_supportive.float().cpu().detach()
+                    pred_anchor = pred_anchor.float().cpu().detach()
+                    pred_supportive = pred_supportive.float().cpu().detach()
                     y_batch = y_batch.float().cpu().detach()
-
-                    pred = self.postprocessing.run(pred.numpy())
-                    y_batch = self.postprocessing.run(y_batch.numpy())
-
-                    # calculate a step for metrics
-                    self.metric.calc_running_score(labels=y_batch, outputs=pred)
-
-            # calc val metrics
-            metric_val = self.metric.compute()
 
             # early stopping for scheduler
             if self.hparams['scheduler_name'] == 'ReduceLROnPlateau':
-                self.scheduler.step(metric_val)
+                self.scheduler.step(avg_val_loss)
             else:
                 self.scheduler.step()
 
-            es_result = self.early_stopping(score=metric_val, model=self.model, threshold=None)
+            es_result = self.early_stopping(score=avg_val_loss, model=self.model, threshold=None)
 
             # print statistics
             if self.hparams['verbose_train']:
@@ -203,10 +174,6 @@ class Model:
                     avg_loss,
                     '| Val_loss: ',
                     avg_val_loss,
-                    '| Metric_train: ',
-                    metric_train,
-                    '| Metric_val: ',
-                    metric_val,
                     '| Current LR: ',
                     self.__get_lr(self.optimizer),
                 )
@@ -217,7 +184,6 @@ class Model:
                 {'Train_loss': avg_loss, 'Val_loss': avg_val_loss},
                 epoch,
             )
-            writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
 
             # early stopping procesudre
             if es_result == 2:
@@ -225,7 +191,7 @@ class Model:
                 print(f'global best val_loss model score {self.early_stopping.best_score}')
                 break
             elif es_result == 1:
-                print(f'save global val_loss model score {metric_val}')
+                print(f'save global val_loss model score {avg_val_loss}')
 
         writer.close()
 
@@ -260,40 +226,38 @@ class Model:
             num_workers=0,
         )
 
-        error_samplewise = []
-
-        self.metric.reset()
+        avg_test_loss = 0.0
 
         print('Getting predictions')
         with torch.no_grad():
-            for i, (X_batch, y_batch) in enumerate(tqdm(test_loader)):
-                X_batch = X_batch.float().to(self.device)
+            for X_anchor, X_supportive, y_batch in tqdm(test_loader):
+                # push the data into the GPU
+                X_anchor = X_anchor.float().to(self.device)
+                X_supportive = X_supportive.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
-                pred = self.model(X_batch)
+                # clean gradients from the previous step
+                self.optimizer.zero_grad()
 
-                # calculate main loss
-                y_batch = y_batch.permute(0, 2, 3, 1)
-                pred = pred.permute(0, 2, 3, 1)
-                pred = pred.reshape(-1, pred.shape[-1])
-                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                # get model predictions
+                pred_anchor = self.model(X_anchor)
+                pred_supportive = self.model(X_supportive)
 
-                pred = pred.cpu().detach().numpy()
-                X_batch = X_batch.cpu().detach().numpy()
-                y_batch = y_batch.cpu().detach().numpy()
+                pred_anchor = pred_anchor.permute(1, 2, 3, 0)
+                pred_supportive = pred_supportive.permute(1, 2, 3, 0)
+                pred_anchor = pred_anchor.reshape(-1, pred_anchor.shape[-1])
+                pred_supportive = pred_supportive.reshape(-1, pred_supportive.shape[-1])
 
-                # calculate a sample-wise error
-                error_samplewise += self.metric.calc_running_score_samplewise(labels=y_batch, outputs=pred)
+                avg_test_loss += self.loss(pred_anchor, pred_supportive).item() / len(test_loader)
 
-                pred = self.postprocessing.run(pred)
-                y_batch = self.postprocessing.run(y_batch)
+                # remove data from GPU
+                X_anchor = X_anchor.float().cpu().detach()
+                X_supportive = X_supportive.float().cpu().detach()
+                pred_anchor = pred_anchor.float().cpu().detach()
+                pred_supportive = pred_supportive.float().cpu().detach()
+                y_batch = y_batch.float().cpu().detach()
 
-                self.metric.calc_running_score(labels=y_batch, outputs=pred)
-
-        fold_score = self.metric.compute()
-        error_samplewise = np.array(error_samplewise)
-
-        return error_samplewise, fold_score
+        return avg_test_loss
 
     def save(self, model_path):
 
@@ -347,21 +311,21 @@ class Model:
         # TODO: re-write to pure DDP
         if inference or gpu is None:
             self.device = torch.device('cpu')
-            self.model = UNet(hparams=self.hparams['model']).to(self.device)
+            self.model = Unet(hparams=self.hparams['model']).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 1:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams['model']).to(self.device)
+                    self.model = Unet(hparams=self.hparams['model']).to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams['model']).to(self.device)
+                    self.model = Unet(hparams=self.hparams['model']).to(self.device)
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                self.model = UNet(hparams=self.hparams['model']).to(self.device)
+                self.model = Unet(hparams=self.hparams['model']).to(self.device)
                 print('Only one GPU is available')
 
         print('Cuda available: ', torch.cuda.is_available())
@@ -371,33 +335,30 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = Dice_loss()
+        self.loss = local_contrastive_loss()
 
-        # 2. define model metric
-        self.metric = Metric(self.hparams['model']['n_classes'])
-
-        # 3. define optimizer
+        # 2. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(
             params=self.model.parameters(), **self.hparams['optimizer_hparams']
         )
 
-        # 4. define scheduler
+        # 3. define scheduler
         self.scheduler = eval(f"torch.optim.lr_scheduler.{self.hparams['scheduler_name']}")(
             optimizer=self.optimizer, **self.hparams['scheduler_hparams']
         )
 
-        # 5. define early stopping
+        # 4. define early stopping
         self.early_stopping = EarlyStopping(
             checkpoint_path=self.hparams['checkpoint_path'] + f'/checkpoint_{self.start_training}' + '.pt',
             patience=self.hparams['patience'],
             delta=self.hparams['min_delta'],
-            is_maximize=True,
+            is_maximize=False,
         )
 
-        # 6. set gradient clipping
+        # 5. set gradient clipping
         self.apply_clipping = self.hparams['clipping']  # clipping of gradients
 
-        # 7. Set scaler for optimizer
+        # 6. Set scaler for optimizer
         self.scaler = torch.cuda.amp.GradScaler()
 
         return True

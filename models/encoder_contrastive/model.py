@@ -321,7 +321,7 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = contrastive_loss()
+        self.loss = SimclrCriterion(batch_size=self.hparams['batch_size'],device=self.device)
 
         # 2. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

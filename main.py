@@ -14,12 +14,14 @@ from experiments.rotation_encoder.run_experiment import (
 from experiments.pre_trained_triplet.run_experiment import run as run_pre_trained_triplet
 from experiments.pre_trained_contrastive.run_experiment import run as run_pre_trained_contrastive
 
+from experiments.contrastive_loss_full.run_experiment import run as run_contrastive_loss_full
 def main():
 
     # BRATS
 
     # pre-training
     # Self-supervised contrastive
+    #run_contrastive_loss_full(experiment='./experiments/contrastive_loss_full/config_ACDC.yml',gpu='0')
     #run_contrastive_pre_train(experiment='./experiments/contrastive_loss_encoder/config_ACDC.yml',gpu='0')
 
     # Self-supervised triplet
@@ -35,7 +37,7 @@ def main():
     #run_baseline(experiment='./experiments/baseline/config_ACDC_UB.yml')
 
     # pre-trained contrastive
-    run_pre_trained_contrastive(experiment='./experiments/pre_trained_contrastive/config_ACDC_2.yml')
+    #run_pre_trained_contrastive(experiment='./experiments/pre_trained_contrastive/config_ACDC_2.yml')
     # 4
     # 8
     # UB
@@ -65,7 +67,7 @@ def main():
     # 8
 
     # Single-stage self-supervised early log
-    #run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_2.yml')
+    run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_2.yml')
     # 4
     # 8
 

@@ -1,6 +1,6 @@
 batch_size: 32
 n_epochs: 300
-patience: 10 #number of epochs wait until improvement
+patience: 30 #number of epochs wait until improvement
 clipping: false #apply gradient clipping
 min_delta: 0.01 #min delta of improvement for early stopping
 verbose_train: true
@@ -14,7 +14,7 @@ image_height: 240
 debug_path: './data/CV_debug/unet_2_pretrained_contrastive_ACDC/'
 checkpoint_path: ./data/model_weights/unet_2_pretrained_contrastive_ACDC/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
 model_path: ./data/model_weights/unet_2_pretrained_contrastive_ACDC/ # CHANGE WHEN CREATE A NEW MODEL
-dataset: 'ACDC_2'
+dataset: 'ACDC_8'
 model:
   in_channels: 1
   n_classes: 4
@@ -23,9 +23,9 @@ model:
   dropout_rate: 0.0
   kernel_size: 3
   dilation: 3
-  pre_trained_model: "./data/model_weights/encoder_contrastive_ACDC/encoder_contrastive_ACDC_UB_split_table_fold_4.2_1616116624.2561445"
+  pre_trained_model: "./data/model_weights/encoder_contrastive_ACDC/encoder_contrastive_ACDC_UB_split_table_fold_4.11_1616127583.5863311"
   freeze_layers: false
-  freeze_layers_delay: 300
+  freeze_layers_delay: 500
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001
