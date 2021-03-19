@@ -43,13 +43,34 @@ class Dataset_train(Dataset):
             pairs['anchor'] = anchor
 
             # select positive
-            records_pos_subset = self.volumes_list[np.where(labels == anchor_label)]
-            # records_pos_subset = records_pos_subset[records_pos_subset != anchor]
-            pairs['positive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
+            # records_pos_subset = self.volumes_list[np.where(labels == anchor_label)]
+            # # records_pos_subset = records_pos_subset[records_pos_subset != anchor]
+            # pairs['positive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
 
             # select negative
-            records_neg_subset = self.volumes_list[np.where(labels != anchor_label)]
-            pairs['negative'] = records_neg_subset[np.random.choice(records_neg_subset.shape[0])]
+            sample = anchor.split('/')[-1]
+            records_pos_subset = self.volumes_list[np.where(labels != anchor_label)]
+            records_pos_subset = records_pos_subset.tolist()
+            records_pos_subset = [record for record in records_pos_subset if record.find(sample) == -1]
+            records_pos_subset = np.array(records_pos_subset)
+
+            # records_neg_subset = self.volumes_list[np.where(labels != anchor_label)]
+            pairs['negative'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
+
+            # select negative
+            sample = anchor.split('/')[-1]
+            records_pos_subset = self.volumes_list[np.where(labels != anchor_label)]
+            records_pos_subset = records_pos_subset.tolist()
+            records_pos_subset = [record for record in records_pos_subset if record.find(sample) != -1]
+            records_pos_subset = np.array(records_pos_subset)
+
+            if records_pos_subset.shape[0]==0:
+                records_pos_subset = self.volumes_list[np.where(labels != anchor_label)]
+                records_pos_subset = [record for record in records_pos_subset if record.find('20') != -1]
+                records_pos_subset = np.array(records_pos_subset)
+
+            #records_neg_subset = self.volumes_list[np.where(labels != anchor_label)]
+            pairs['positive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
             self.pairs_list.append(pairs)
 
         self.volumes_list = self.volumes_list.tolist()
@@ -150,13 +171,25 @@ class Augmentations:
         if dataset == 'brats':
             prob = 0.5
             self.augs = A.Compose(
-                [   #A.Blur(blur_limit=1,p=prob),
-                    A.HorizontalFlip(p=prob),
+                [  # A.Blur(blur_limit=3,p=prob),
+                    #A.HorizontalFlip(p=prob),
                     A.VerticalFlip(p=prob),
                     A.Rotate(limit=10, p=prob),
                     # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
-                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                    A.RandomSizedCrop(min_max_height=(120, 120), height=240, width=240, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                ]
+            )
+        elif dataset == 'ACDC':
+            prob = 0.5
+            self.augs = A.Compose(
+                [
+                    A.HorizontalFlip(p=prob),
+                    A.VerticalFlip(p=prob),
+                    A.Rotate(limit=170, p=prob),
+                    A.ElasticTransform(alpha=0.1,p=prob),
+                    A.RandomSizedCrop(min_max_height=(72, 72), height=154, width=154, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
                 ]
             )
 

@@ -20,7 +20,7 @@ from time import time
 from utils.loss_functions import f1_loss, Dice_loss
 
 # model
-from models.adv_unet_train_val_early.structure import UNet
+from models.adv_unet_train_val_late.structure import UNet
 
 
 class Model:
@@ -53,7 +53,7 @@ class Model:
         self.postprocessing = Post_Processing()
         self.__seed_everything(42)
 
-    def fit(self, train, valid):
+    def fit(self, train, valid,pretrain):
 
         # setup train and val dataloaders
         train_loader = DataLoader(
@@ -69,7 +69,8 @@ class Model:
             num_workers=self.hparams['num_workers'],
         )
 
-        adv_loader = DataLoader(valid, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=0)
+
+        adv_loader = DataLoader(pretrain, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=0)
 
         # tensorboard
         writer = SummaryWriter(f"runs/{self.hparams['model_name']}_{self.start_training}")
@@ -84,13 +85,23 @@ class Model:
 
             for X_batch, y_batch, X_batch_adv, y_batch_adv in tqdm(train_loader):
 
-                sample = np.random.uniform()
-                if sample >= 0.5:
-                    X_batch_adv, _, _, _ = next(iter(adv_loader))
-                    X_batch_adv = X_batch_adv[: X_batch.shape[0]]
-                    y_batch_adv[:] = 0.0
-                else:
-                    y_batch_adv[:] = 1.0
+                # sample = np.round(np.random.uniform(size=1)[0], 1)
+                # if sample >= 0.5:
+                #     X_batch_adv, _, _, _ = next(iter(adv_loader))
+                #     X_batch_adv = X_batch_adv[: X_batch.shape[0]]
+                #     y_batch_adv[:] = 0.0
+                # else:
+                #     y_batch_adv[:] = 1.0
+
+                for i in range(X_batch.shape[0]):
+                    sample = np.random.uniform(size=1)[0]
+                    if sample >= 0.5:
+                        temp_adv, _, _, _ = next(iter(adv_loader))
+                        X_batch_adv[i] = temp_adv[0]
+                        y_batch_adv[i] = 0.0
+                    else:
+                        y_batch_adv[i] = 1.0
+
 
                 # push the data into the GPU
                 X_batch = X_batch.float().to(self.device)
@@ -123,9 +134,12 @@ class Model:
                 avg_loss += train_loss.item() / len(train_loader)
                 avg_adv_loss += adv_loss.item() / len(train_loader)
 
-                train_loss = (
-                    train_loss + self.hparams['model']['alpha'] * np.log10(1 + epoch) * adv_loss / 1.3
-                )
+                if self.hparams['model']['flat']:
+                    train_loss = train_loss +  self.hparams['model']['alpha'] *adv_loss
+                else:
+                    train_loss = (
+                        train_loss + self.hparams['model']['alpha'] * np.log10(1 + epoch) * adv_loss / 1.3
+                    )
 
                 # remove data from GPU
                 y_batch = y_batch.float().cpu().detach()

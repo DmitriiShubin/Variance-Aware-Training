@@ -173,28 +173,41 @@ class UNet(nn.Module):
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
+        self.down5 = Down(
+            self.hparams['n_filters_input'] * 16,
+            self.hparams['n_filters_input'] * 32 // factor,
+            self.hparams['kernel_size'],
+            self.hparams['dropout_rate'],
+        )
         self.up1 = Up(
+            self.hparams['n_filters_input'] * 32,
+            self.hparams['n_filters_input'] * 16 // factor,
+            self.hparams['kernel_size'],
+            self.hparams['dropout_rate'],
+            bilinear,
+        )
+        self.up2 = Up(
             self.hparams['n_filters_input'] * 16,
             self.hparams['n_filters_input'] * 8 // factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
             bilinear,
         )
-        self.up2 = Up(
+        self.up3 = Up(
             self.hparams['n_filters_input'] * 8,
             self.hparams['n_filters_input'] * 4 // factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
             bilinear,
         )
-        self.up3 = Up(
+        self.up4 = Up(
             self.hparams['n_filters_input'] * 4,
-            self.hparams['n_filters_input'] * 2 // factor,
+            self.hparams['n_filters_input'] * 2,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
             bilinear,
         )
-        self.up4 = Up(
+        self.up5 = Up(
             self.hparams['n_filters_input'] * 2,
             self.hparams['n_filters_input'],
             self.hparams['kernel_size'],
@@ -204,10 +217,11 @@ class UNet(nn.Module):
         self.outc = OutConv(self.hparams['n_filters_input'], self.n_classes)
 
         # gradient reversal layer
-        self.rever1_5 = RevGrad()
-        self.rever2_5 = RevGrad()
+        self.rever1_6 = RevGrad()
+        self.rever2_6 = RevGrad()
 
-        n_filt = self.hparams['n_filters_input'] * (2 ** (4))
+
+        n_filt =  self.hparams['n_filters_input']*(2**5)*2
 
         self.adv_fc1 = nn.Linear(n_filt, 300)
         self.adv_fc2 = nn.Linear(300, 300)
@@ -234,25 +248,35 @@ class UNet(nn.Module):
         x3 = self.down2(x2)
         x4 = self.down3(x3)
         x5 = self.down4(x4)
+        x6 = self.down5(x5)
 
-        return x1, x2, x3, x4, x5
+        return x1, x2, x3, x4, x5, x6
 
-    def decoder(self, x1, x2, x3, x4, x5):
-        x = self.up1(x5, x4)
-        x = self.up2(x, x3)
-        x = self.up3(x, x2)
-        x = self.up4(x, x1)
+    def decoder(self, x1, x2, x3, x4, x5, x6):
+
+        # x = self.up1(x5, x4)
+        # x = self.up2(x, x3)
+        # x = self.up3(x, x2)
+        # x = self.up4(x, x1)
+
+        x = self.up1(x6, x5)
+        x = self.up2(x, x4)
+        x = self.up3(x, x3)
+        x = self.up4(x, x2)
+        x = self.up5(x, x1)
+
         return x
 
     def adversarial_network(self, x, x_s):
-        x1, x2, x3, x4, x5 = self.encoder(x_s)
+        x1, x2, x3, x4, x5, x6 = self.encoder(x_s)
         # x_s = self.decoder(x1, x2, x3, x4, x5)
 
-        x5_s = self.rever1_5(x5).mean(dim=2).mean(dim=2)
 
-        x5_p = self.rever2_5(x[4]).mean(dim=2).mean(dim=2)
+        x6_s = self.rever1_6(x6).mean(dim=2).mean(dim=2)
 
-        x = torch.cat([x5_s, x5_p], dim=1)
+        x6_p = self.rever1_6(x[5]).mean(dim=2).mean(dim=2)
+
+        x = torch.cat([x6_s,x6_p], dim=1)
 
         x = torch.relu(self.adv_fc1(x))
         x = torch.relu(self.adv_fc2(x))
@@ -262,8 +286,8 @@ class UNet(nn.Module):
         return x
 
     def predictive_network(self, x):
-        x1, x2, x3, x4, x5 = self.encoder(x)
-        x = self.decoder(x1, x2, x3, x4, x5)
+        x1, x2, x3, x4, x5, x6 = self.encoder(x)
+        x = self.decoder(x1, x2, x3, x4, x5,x6)
         logits = self.outc(x)
         logits = torch.nn.functional.softmax(logits, dim=1)
-        return logits, [x1, x2, x3, x4, x5]
+        return logits, [x1, x2, x3, x4, x5,x6]

@@ -18,7 +18,7 @@ class Dataset_train(Dataset):
         self.volumes_list = volumes_list
         self.preprocessing = Preprocessing(aug, dataset)
 
-        self.generate_pairs(n_pairs=int(len(self.volumes_list) * 0.5))
+        self.generate_pairs(n_pairs=int(len(self.volumes_list) * 1))
 
     # TODO
     def generate_pairs(self, n_pairs: int):
@@ -48,6 +48,12 @@ class Dataset_train(Dataset):
             records_pos_subset = records_pos_subset.tolist()
             records_pos_subset = [record for record in records_pos_subset if record.find(sample)!=-1]
             records_pos_subset = np.array(records_pos_subset)
+
+            if records_pos_subset.shape[0]==0:
+                records_pos_subset = self.volumes_list[np.where(labels != anchor_label)]
+                records_pos_subset = [record for record in records_pos_subset if record.find('20') != -1]
+                records_pos_subset = np.array(records_pos_subset)
+
             pairs['supportive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
             self.pairs_list.append(pairs)
 
@@ -158,7 +164,19 @@ class Augmentations:
                     # A.RandomGamma(gamma_limit=(80,120),p=prob)
                 ]
             )
+        elif dataset == 'ACDC_8':
+            prob = 0.5
+            self.augs = A.Compose(
+                [
+                    A.HorizontalFlip(p=prob),
+                    #A.VerticalFlip(p=prob),
+                    A.Rotate(limit=5, p=prob),
 
+                    A.ElasticTransform(alpha=0.05,p=prob),
+                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                ]
+            )
     def run(self, image):
 
         image = np.transpose(image.astype(np.float32), (1, 2,0))

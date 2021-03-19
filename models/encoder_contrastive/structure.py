@@ -155,7 +155,7 @@ class Encoder_contrastive(nn.Module):
         # self.fc2 = nn.Linear(
         #     self.hparams['n_filters_input'] * (2 ** 3), self.hparams['n_filters_input'] * (2 ** 3)
         #)
-        self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 4), self.emb_dim)
+        self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), self.emb_dim)
 
     def forward(self, x):
         for layer in self.encoder:
@@ -170,37 +170,43 @@ class Encoder_contrastive(nn.Module):
         return logits
 
     def create_encoder(self):
-        self.inc = DoubleConv(
+        inc = DoubleConv(
             self.n_channels,
             self.hparams['n_filters_input'],
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
-        self.down1 = Down(
+        down1 = Down(
             self.hparams['n_filters_input'],
             self.hparams['n_filters_input'] * 2,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
-        self.down2 = Down(
+        down2 = Down(
             self.hparams['n_filters_input'] * 2,
             self.hparams['n_filters_input'] * 4,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
-        self.down3 = Down(
+        down3 = Down(
             self.hparams['n_filters_input'] * 4,
             self.hparams['n_filters_input'] * 8,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
 
-        self.down4 = Down(
+        down4 = Down(
             self.hparams['n_filters_input'] * 8,
             self.hparams['n_filters_input'] * 16 // self.factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
+        down5 = Down(
+            self.hparams['n_filters_input'] * 16,
+            self.hparams['n_filters_input'] * 32 // self.factor,
+            self.hparams['kernel_size'],
+            self.hparams['dropout_rate'],
+        )
 
-        layers = [self.inc, self.down1, self.down2, self.down3, self.down4]
+        layers = [inc, down1, down2, down3, down4,down5]
         return mySequential(*layers)

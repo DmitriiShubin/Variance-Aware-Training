@@ -141,7 +141,7 @@ class UNet(Encoder_contrastive):
         hparams_pre_trained = hparams_pre_trained['model']
         super().__init__(hparams=hparams_pre_trained)
 
-        self.load_state_dict(torch.load(hparams['pre_trained_model'] + '.pt'))
+        #self.load_state_dict(torch.load(hparams['pre_trained_model'] + '.pt'))
 
         # freeze encoder
         if hparams['freeze_layers']:
@@ -156,27 +156,34 @@ class UNet(Encoder_contrastive):
         factor = 2 if bilinear else 1
 
         self.up1 = Up(
+            self.hparams['n_filters_input'] * 32,
+            self.hparams['n_filters_input'] * 16 // factor,
+            self.hparams['kernel_size'],
+            self.hparams['dropout_rate'],
+            bilinear,
+        )
+        self.up2 = Up(
             self.hparams['n_filters_input'] * 16,
             self.hparams['n_filters_input'] * 8 // factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
             bilinear,
         )
-        self.up2 = Up(
+        self.up3 = Up(
             self.hparams['n_filters_input'] * 8,
             self.hparams['n_filters_input'] * 4 // factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
             bilinear,
         )
-        self.up3 = Up(
+        self.up4 = Up(
             self.hparams['n_filters_input'] * 4,
-            self.hparams['n_filters_input'] * 2 // factor,
+            self.hparams['n_filters_input'] * 2,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
             bilinear,
         )
-        self.up4 = Up(
+        self.up5 = Up(
             self.hparams['n_filters_input'] * 2,
             self.hparams['n_filters_input'],
             self.hparams['kernel_size'],
@@ -186,15 +193,22 @@ class UNet(Encoder_contrastive):
         self.outc = OutConv(self.hparams['n_filters_input'], self.n_classes)
 
     def forward(self, x):
-        x1, x2, x3, x4, x5 = self.encoder(x)
-        x = self.decoder(x1, x2, x3, x4, x5)
+
+        encoder_outputs = []
+        for layer in self.encoder:
+            x = layer(x)
+            encoder_outputs.append(x)
+
+        x = self.decoder(*encoder_outputs)
         logits = self.outc(x)
         logits = torch.nn.functional.softmax(logits, dim=1)
         return logits
 
-    def decoder(self, x1, x2, x3, x4, x5):
-        x = self.up1(x5, x4)
-        x = self.up2(x, x3)
-        x = self.up3(x, x2)
-        x = self.up4(x, x1)
+    def decoder(self, x1, x2, x3, x4, x5,x6):
+        x = self.up1(x6, x5)
+        x = self.up2(x, x4)
+        x = self.up3(x, x3)
+        x = self.up4(x, x2)
+        x = self.up5(x, x1)
+
         return x

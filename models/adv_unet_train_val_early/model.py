@@ -53,7 +53,7 @@ class Model:
         self.postprocessing = Post_Processing()
         self.__seed_everything(42)
 
-    def fit(self, train, valid):
+    def fit(self, train, valid,pretrain):
 
         # setup train and val dataloaders
         train_loader = DataLoader(
@@ -69,7 +69,8 @@ class Model:
             num_workers=self.hparams['num_workers'],
         )
 
-        adv_loader = DataLoader(valid, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=0)
+
+        adv_loader = DataLoader(pretrain, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=0)
 
         # tensorboard
         writer = SummaryWriter(f"runs/{self.hparams['model_name']}_{self.start_training}")
@@ -83,6 +84,7 @@ class Model:
             avg_adv_loss = 0.0
 
             for X_batch, y_batch, X_batch_adv, y_batch_adv in tqdm(train_loader):
+
 
                 sample = np.round(np.random.uniform(size=1)[0], 1)
                 if sample >= 0.5:
@@ -123,9 +125,12 @@ class Model:
                 avg_loss += train_loss.item() / len(train_loader)
                 avg_adv_loss += adv_loss.item() / len(train_loader)
 
-                train_loss = (
-                    train_loss + self.hparams['model']['alpha'] * np.log10(1 + epoch) * adv_loss / 1.3
-                )
+                if self.hparams['model']['flat']:
+                    train_loss = train_loss +  self.hparams['model']['alpha'] *adv_loss
+                else:
+                    train_loss = (
+                        train_loss + self.hparams['model']['alpha'] * np.log10(1 + epoch) * adv_loss / 1.3
+                    )
 
                 # remove data from GPU
                 y_batch = y_batch.float().cpu().detach()

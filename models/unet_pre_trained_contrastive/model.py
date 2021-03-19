@@ -81,8 +81,12 @@ class Model:
 
             # freeze encoder
             if epoch >= self.hparams['model']['freeze_layers_delay']:
-                for param in self.model.encoder.parameters():
-                    param.requires_grad = True
+                if self.gpu is not None and len(self.gpu) > 1:
+                    for param in self.model.module.encoder.parameters():
+                        param.requires_grad = True
+                else:
+                    for param in self.model.encoder.parameters():
+                        param.requires_grad = True
 
             for X_batch, y_batch in tqdm(train_loader):
 

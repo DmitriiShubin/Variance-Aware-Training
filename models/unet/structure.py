@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from time import time
 import numpy as np
-
+from models.encoder_contrastive.structure import Encoder_contrastive
 
 class DoubleConvBN(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
@@ -172,29 +172,42 @@ class UNet(nn.Module):
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
+        self.down5 = Down(
+            self.hparams['n_filters_input'] * 16,
+            self.hparams['n_filters_input'] * 32 // factor,
+            self.hparams['kernel_size'],
+            self.hparams['dropout_rate'],
+        )
         self.up1 = Up(
+            self.hparams['n_filters_input'] * 32,
+            self.hparams['n_filters_input'] * 16 // factor,
+            self.hparams['kernel_size'],
+            self.hparams['dropout_rate'],
+            bilinear,
+        )
+        self.up2 = Up(
             self.hparams['n_filters_input'] * 16,
             self.hparams['n_filters_input'] * 8 // factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
             bilinear,
         )
-        self.up2 = Up(
+        self.up3 = Up(
             self.hparams['n_filters_input'] * 8,
             self.hparams['n_filters_input'] * 4 // factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
             bilinear,
         )
-        self.up3 = Up(
+        self.up4 = Up(
             self.hparams['n_filters_input'] * 4,
-            self.hparams['n_filters_input'] * 2 // factor,
+            self.hparams['n_filters_input'] *2,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
             bilinear,
         )
-        self.up4 = Up(
-            self.hparams['n_filters_input'] * 2,
+        self.up5 = Up(
+            self.hparams['n_filters_input'] *2,
             self.hparams['n_filters_input'],
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
@@ -203,8 +216,8 @@ class UNet(nn.Module):
         self.outc = OutConv(self.hparams['n_filters_input'], self.n_classes)
 
     def forward(self, x):
-        x1, x2, x3, x4, x5 = self.encoder(x)
-        x = self.decoder(x1, x2, x3, x4, x5)
+        x1, x2, x3, x4,x5,x6 = self.encoder(x)
+        x = self.decoder(x1, x2, x3, x4, x5,x6)
         logits = self.outc(x)
         logits = torch.nn.functional.softmax(logits, dim=1)
         return logits
@@ -216,12 +229,21 @@ class UNet(nn.Module):
         x3 = self.down2(x2)
         x4 = self.down3(x3)
         x5 = self.down4(x4)
+        x6 = self.down5(x5)
 
-        return x1, x2, x3, x4, x5
+        return x1, x2, x3, x4, x5,x6
 
-    def decoder(self, x1, x2, x3, x4, x5):
-        x = self.up1(x5, x4)
-        x = self.up2(x, x3)
-        x = self.up3(x, x2)
-        x = self.up4(x, x1)
+    def decoder(self, x1, x2, x3, x4, x5,x6):
+
+        # x = self.up1(x5, x4)
+        # x = self.up2(x, x3)
+        # x = self.up3(x, x2)
+        # x = self.up4(x, x1)
+
+        x = self.up1(x6, x5)
+        x = self.up2(x, x4)
+        x = self.up3(x, x3)
+        x = self.up4(x, x2)
+        x = self.up5(x, x1)
+
         return x

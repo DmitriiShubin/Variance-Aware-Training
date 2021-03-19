@@ -6,17 +6,17 @@ min_delta: 0.01 #min delta of improvement for early stopping
 verbose_train: true
 num_workers: 0
 n_train_samples: 1
-model_name: unet_8_baseline_brats # CHANGE WHEN CREATE A NEW MODEL
-split_table_path: './data/split_tables/brats/8_split_table.json'
-test_split_table_path: './data/split_tables/brats/test_split_table.json'
+model_name: unet_8_baseline_ACDC # CHANGE WHEN CREATE A NEW MODEL
+split_table_path: './data/split_tables/ACDC/8_split_table.json'
+test_split_table_path: './data/split_tables/ACDC/test_split_table.json'
 image_width: 240
 image_height: 240
-debug_path: './data/CV_debug/unet_8_baseline_brats/'
-checkpoint_path: ./data/model_weights/unet_8_baseline_brats/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
-model_path: ./data/model_weights/unet_8_baseline_brats/ # CHANGE WHEN CREATE A NEW MODEL
-dataset: 'brats'
+debug_path: './data/CV_debug/unet_8_baseline_ACDC/'
+checkpoint_path: ./data/model_weights/unet_8_baseline_ACDC/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
+model_path: ./data/model_weights/unet_8_baseline_ACDC/ # CHANGE WHEN CREATE A NEW MODEL
+dataset: 'ACDC_8'
 model:
-  in_channels: 4
+  in_channels: 1
   n_classes: 4
   n_filters_input: 16
   n_layers: 5

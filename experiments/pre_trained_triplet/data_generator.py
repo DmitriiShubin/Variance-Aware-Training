@@ -119,12 +119,12 @@ class Augmentations:
             prob = 0.5
             self.augs = A.Compose(
                 [  # A.Blur(blur_limit=3,p=prob),
-                    #A.HorizontalFlip(p=prob),
+                    # A.HorizontalFlip(p=prob),
                     A.VerticalFlip(p=prob),
                     A.Rotate(limit=10, p=prob),
                     # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
-                    # A.RandomGamma(gamma_limit=(80,120),p=prob)
+                    #A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
                 ]
             )
 

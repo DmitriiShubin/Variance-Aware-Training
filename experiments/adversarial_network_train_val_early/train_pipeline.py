@@ -62,6 +62,12 @@ class TrainPipeline:
             n_classes=self.hparams['model']['n_classes'],
             dataset=self.hparams['dataset'],
         )
+        pretrain = self.Dataset_train(
+            self.splits['val'].values[0],
+            aug=True,
+            n_classes=self.hparams['model']['n_classes'],
+            dataset=self.hparams['dataset'],
+        )
         test = self.Dataset_train(
             self.splits_test['test'].values[0],
             aug=False,
@@ -70,7 +76,7 @@ class TrainPipeline:
         )
 
         # train model
-        start_training = self.model.fit(train=train, valid=valid)
+        start_training = self.model.fit(train=train, valid=valid,pretrain=pretrain)
 
         # get model predictions
         error_val, fold_score = self.model.predict(valid)

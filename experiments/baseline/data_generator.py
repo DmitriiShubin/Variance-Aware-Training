@@ -122,8 +122,43 @@ class Augmentations:
                     A.VerticalFlip(p=prob),
                     A.Rotate(limit=10, p=prob),
                     # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    #A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
-                    # A.RandomGamma(gamma_limit=(80,120),p=prob)
+                    A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
+                    A.RandomGamma(gamma_limit=(80,120),p=prob)
+                ]
+            )
+        elif dataset == 'ACDC_4':
+            prob = 0.5
+            self.augs = A.Compose(
+                [
+                    A.HorizontalFlip(p=prob),
+                    #A.VerticalFlip(p=prob),
+                    A.Rotate(limit=5, p=prob),
+
+                    A.ElasticTransform(alpha=0.05,p=prob),
+                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                ]
+            )
+        elif dataset == 'ACDC_8':
+            prob = 0.5
+            self.augs = A.Compose(
+                [
+                    A.HorizontalFlip(p=prob),
+                    #A.VerticalFlip(p=prob),
+                    A.Rotate(limit=5, p=prob),
+
+                    A.ElasticTransform(alpha=0.05,p=prob),
+                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                ]
+            )
+        elif dataset == 'ACDC_2':
+            prob = 0.5
+            self.augs = A.Compose(
+                [
+                    A.HorizontalFlip(p=prob),
+                    A.Rotate(limit=5, p=prob),
+
                 ]
             )
 

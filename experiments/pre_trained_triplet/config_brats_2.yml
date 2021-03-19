@@ -18,14 +18,14 @@ dataset: 'brats'
 model:
   in_channels: 4
   n_classes: 4
-  n_filters_input: 32
+  n_filters_input: 16
   n_layers: 5
   dropout_rate: 0.0
   kernel_size: 3
   dilation: 3
-  pre_trained_model: "./data/model_weights/encoder_triplet_brats/encoder_triplet_brats_UB_split_table_fold_0.58_1615957979.4926438"
+  pre_trained_model: "./data/model_weights/encoder_triplet_brats/encoder_triplet_brats_UB_split_table_fold_0.09_1616081820.678809"
   freeze_layers: false
-  freeze_layers_delay: 0
+  freeze_layers_delay: 1000
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001

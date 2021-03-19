@@ -29,12 +29,12 @@ class Metric:
     def compute(self):
 
         # dice macro
-        # f1 = []
-        # for i in range(self.n_classes):
-        #     if i != self.exclude_class:
-        #         f1.append(self.tp[i] / (self.tp[i] + 0.5 * (self.fp[i] + self.fn[i]) + 1e-3))
-        f1 = ((1 + 2 ** 2) * self.tp[1:] + 1e-3) / (
-            (1 + 2 ** 2) * self.tp[1:] + 2 ** 2 * self.fn[1:] + self.fp[1:] + 1e-3
+        # f1 = ((1 + 2 ** 2) * self.tp[1:] + 1e-3) / (
+        #     (1 + 2 ** 2) * self.tp[1:] + 2 ** 2 * self.fn[1:] + self.fp[1:] + 1e-3
+        # )
+
+        f1 = ((1 + 2 ** 2) * self.tp + 1e-3) / (
+                (1 + 2 ** 2) * self.tp + 2 ** 2 * self.fn + self.fp + 1e-3
         )
 
         self.tp = np.array([0] * (self.n_classes))
