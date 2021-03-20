@@ -63,7 +63,7 @@ class TrainPipeline:
             dataset=self.hparams['dataset'],
         )
         pretrain = self.Dataset_train(
-            self.splits['val'].values[0],
+            self.splits['pretrain'].values[0],
             aug=True,
             n_classes=self.hparams['model']['n_classes'],
             dataset=self.hparams['dataset'],
