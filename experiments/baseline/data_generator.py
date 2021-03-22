@@ -131,7 +131,7 @@ class Augmentations:
             self.augs = A.Compose(
                 [
                     A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
+                    A.VerticalFlip(p=prob),
                     A.Rotate(limit=5, p=prob),
 
                     A.ElasticTransform(alpha=0.05,p=prob),

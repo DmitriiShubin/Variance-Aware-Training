@@ -218,10 +218,12 @@ class UNet(nn.Module):
 
         # gradient reversal layer
         self.rever1_6 = RevGrad()
+        self.rever1_7 = RevGrad()
         self.rever2_6 = RevGrad()
+        self.rever2_7 = RevGrad()
 
 
-        n_filt =  self.hparams['n_filters_input']*(2**5)*2
+        n_filt =  self.hparams['n_filters_input']*(2**5)*4
 
         self.adv_fc1 = nn.Linear(n_filt, 300)
         self.adv_fc2 = nn.Linear(300, 300)
@@ -273,14 +275,16 @@ class UNet(nn.Module):
 
 
         x6_s = self.rever1_6(x6).mean(dim=2).mean(dim=2)
+        x7_s = self.rever1_6(x6).std(dim=2).std(dim=2)
 
         x6_p = self.rever1_6(x[5]).mean(dim=2).mean(dim=2)
+        x7_p = self.rever1_6(x[5]).std(dim=(2)).std(dim=2)
 
-        x = torch.cat([x6_s,x6_p], dim=1)
+        x = torch.cat([x6_s,x7_s,x6_p,x7_p], dim=1)
 
         x = torch.relu(self.adv_fc1(x))
-        x = torch.relu(self.adv_fc2(x))
-        x = torch.relu(self.adv_fc3(x))
+        # x = torch.relu(self.adv_fc2(x))
+        # x = torch.relu(self.adv_fc3(x))
         x = torch.sigmoid(self.adv_fc4(x))
 
         return x

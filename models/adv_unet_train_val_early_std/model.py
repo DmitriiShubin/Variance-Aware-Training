@@ -86,13 +86,13 @@ class Model:
             for X_batch, y_batch, X_batch_adv, y_batch_adv in tqdm(train_loader):
 
 
-                sample = np.round(np.random.uniform(size=1)[0], 1)
-                if sample >= 0.5:
-                    X_batch_adv, _, _, _ = next(iter(adv_loader))
-                    X_batch_adv = X_batch_adv[: X_batch.shape[0]]
-                    y_batch_adv[:] = 0.0
-                else:
-                    y_batch_adv[:] = 1.0
+                sample = np.round(np.random.uniform(size=X_batch.shape[0]), 2)
+                X_batch_adv_train_val, _, _, _ = next(iter(adv_loader))
+                X_batch_adv_train_val = X_batch_adv_train_val[:X_batch.shape[0]]
+                X_batch_adv[sample >= 0.5] = X_batch_adv_train_val[sample >= 0.5]
+                y_batch_adv[sample >= 0.5] = 1
+                y_batch_adv[sample < 0.5] = 0
+
 
                 # push the data into the GPU
                 X_batch = X_batch.float().to(self.device)

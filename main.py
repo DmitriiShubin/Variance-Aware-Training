@@ -69,14 +69,18 @@ def main():
     # 8
 
     # Single-stage self-supervised early log
-    run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_2.yml')
-    # 4
-    # 8
+    #run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_2.yml')
+    #run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_4.yml')
+    #run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_8.yml')
 
-    # Single-stage self-supervised full
-    #run_adversarial_network_train_val_full(experiment='./experiments/adversarial_network_train_val_full/config_ACDC_2.yml')
-    # 4
-    # 8
+    run_adversarial_network_train_val_early(
+        experiment='./experiments/adversarial_network_train_val_early/config_ACDC_8_1.yml')
+    run_adversarial_network_train_val_early(
+        experiment='./experiments/adversarial_network_train_val_early/config_ACDC_8_2.yml')
+    run_adversarial_network_train_val_early(
+        experiment='./experiments/adversarial_network_train_val_early/config_ACDC_8_3.yml')
+
+
 
     # Single-stage self-supervised late flat
     # 2
