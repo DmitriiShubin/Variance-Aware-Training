@@ -1,25 +1,37 @@
+#baseline models
 from experiments.baseline.run_experiment import run as run_baseline
+
+#pre-training encoders
 from experiments.triplet_loss_encoder.run_experiment import run as run_triplet_pre_train
 from experiments.rotation_encoder.run_experiment import run as run_rotation_pre_train
 from experiments.contrastive_loss_encoder.run_experiment import run as run_contrastive_pre_train
+
+#pre-trained models
+from experiments.pre_trained_rotation.run_experiment import run as run_pre_trained_rotation
+from experiments.pre_trained_triplet.run_experiment import run as run_pre_trained_triplet
+from experiments.pre_trained_contrastive.run_experiment import run as run_pre_trained_contrastive
+
+#adversarial models
 from experiments.adversarial_network_train_val_early.run_experiment import (
     run as run_adversarial_network_train_val_early,
 )
 from experiments.adversarial_network_train_val_late.run_experiment import (
     run as run_adversarial_network_train_val_late
 )
-from experiments.pre_trained_triplet.run_experiment import run as run_pre_trained_triplet
-from experiments.pre_trained_contrastive.run_experiment import run as run_pre_trained_contrastive
-import os
+
+
+
+
 
 
 def main():
 
-    # BRATS
+    # ACDC
 
     # pre-training
     # Self-supervised contrastive
     #run_contrastive_pre_train(experiment='./experiments/contrastive_loss_encoder/config_ACDC.yml',gpu='7')
+
     # Self-supervised triplet
     #run_triplet_pre_train(experiment='./experiments/triplet_loss_encoder/config_ACDC.yml',gpu='7')
 
@@ -34,33 +46,21 @@ def main():
 
     # pre-trained contrastive
     run_pre_trained_contrastive(experiment='./experiments/pre_trained_contrastive/config_ACDC_2.yml')
-    # 4
-    # 8
-    # UB
+    run_pre_trained_contrastive(experiment='./experiments/pre_trained_contrastive/config_ACDC_4.yml')
+    run_pre_trained_contrastive(experiment='./experiments/pre_trained_contrastive/config_ACDC_8.yml')
+
 
     # pre-trained triplet
     run_pre_trained_triplet(experiment='./experiments/pre_trained_triplet/config_ACDC_2.yml')
-    # 4
-    # 8
-    # UB
+    run_pre_trained_triplet(experiment='./experiments/pre_trained_triplet/config_ACDC_4.yml')
+    run_pre_trained_triplet(experiment='./experiments/pre_trained_triplet/config_ACDC_8.yml')
+
 
     # pre-train rotation
-    # 2
-    # 4
-    # 8
-    # UB
+    run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_2.yml')
+    run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_4.yml')
+    run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_8.yml')
 
-    # pre-train puzzle
-    # 2
-    # 4
-    # 8
-    # UB
-
-    # TODO: select alpha grid
-    # Single-stage self-supervised late log
-    # 2
-    # 4
-    # 8
 
     # Single-stage self-supervised early flat
     #run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_2.yml')
