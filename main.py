@@ -19,12 +19,12 @@ def main():
 
     # pre-training
     # Self-supervised contrastive
-    run_contrastive_pre_train(experiment='./experiments/contrastive_loss_encoder/config_ACDC.yml',gpu='7')
+    #run_contrastive_pre_train(experiment='./experiments/contrastive_loss_encoder/config_ACDC.yml',gpu='7')
     # Self-supervised triplet
-    run_triplet_pre_train(experiment='./experiments/triplet_loss_encoder/config_ACDC.yml',gpu='7')
+    #run_triplet_pre_train(experiment='./experiments/triplet_loss_encoder/config_ACDC.yml',gpu='7')
 
     # Self-supervised rotation
-    run_rotation_pre_train(experiment='./experiments/rotation_encoder/config_ACDC.yml',gpu='7')
+    #run_rotation_pre_train(experiment='./experiments/rotation_encoder/config_ACDC.yml',gpu='7')
 
     # baseline, without pre-train
     #run_baseline(experiment='./experiments/baseline/config_ACDC_2.yml')
@@ -33,13 +33,13 @@ def main():
     #run_baseline(experiment='./experiments/baseline/config_ACDC_UB.yml')
 
     # pre-trained contrastive
-    #run_pre_trained_contrastive(experiment='./experiments/pre_trained_contrastive/config_ACDC_2.yml')
+    run_pre_trained_contrastive(experiment='./experiments/pre_trained_contrastive/config_ACDC_2.yml')
     # 4
     # 8
     # UB
 
     # pre-trained triplet
-    #run_pre_trained_triplet(experiment='./experiments/pre_trained_triplet/config_brats_2.yml')
+    run_pre_trained_triplet(experiment='./experiments/pre_trained_triplet/config_ACDC_2.yml')
     # 4
     # 8
     # UB
