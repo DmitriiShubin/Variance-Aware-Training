@@ -180,19 +180,19 @@ class Augmentations:
                     A.RandomGamma(gamma_limit=(80, 120), p=prob)
                 ]
             )
-        elif dataset == 'ACDC':
+        elif dataset == 'ACDC_8':
             prob = 0.5
             self.augs = A.Compose(
                 [
                     A.HorizontalFlip(p=prob),
-                    A.VerticalFlip(p=prob),
-                    A.Rotate(limit=170, p=prob),
-                    A.ElasticTransform(alpha=0.1,p=prob),
-                    A.RandomSizedCrop(min_max_height=(72, 72), height=154, width=154, p=prob),
+                    # A.VerticalFlip(p=prob),
+                    A.Rotate(limit=5, p=prob),
+
+                    A.ElasticTransform(alpha=0.05, p=prob),
+                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
                     A.RandomGamma(gamma_limit=(80, 120), p=prob)
                 ]
             )
-
     def run(self, image):
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))

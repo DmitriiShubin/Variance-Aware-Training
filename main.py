@@ -6,16 +6,12 @@ from experiments.adversarial_network_train_val_early.run_experiment import (
     run as run_adversarial_network_train_val_early,
 )
 from experiments.adversarial_network_train_val_late.run_experiment import (
-    run as run_adversarial_network_train_val_late,
-)
-from experiments.rotation_encoder.run_experiment import (
-    run as run_adversarial_network_train_val_late,
+    run as run_adversarial_network_train_val_late
 )
 from experiments.pre_trained_triplet.run_experiment import run as run_pre_trained_triplet
 from experiments.pre_trained_contrastive.run_experiment import run as run_pre_trained_contrastive
+import os
 
-from experiments.contrastive_loss_full.run_experiment import run as run_contrastive_loss_full
-from experiments.adversarial_network_train_val_full.run_experiment import run as run_adversarial_network_train_val_full
 
 def main():
 
@@ -23,14 +19,12 @@ def main():
 
     # pre-training
     # Self-supervised contrastive
-    #run_contrastive_loss_full(experiment='./experiments/contrastive_loss_full/config_ACDC.yml',gpu='0')
-    #run_contrastive_pre_train(experiment='./experiments/contrastive_loss_encoder/config_ACDC.yml',gpu='0')
-
+    run_contrastive_pre_train(experiment='./experiments/contrastive_loss_encoder/config_ACDC.yml',gpu='7')
     # Self-supervised triplet
-    #run_triplet_pre_train(experiment='./experiments/triplet_loss_encoder/config_ACDC.yml')
+    run_triplet_pre_train(experiment='./experiments/triplet_loss_encoder/config_ACDC.yml',gpu='7')
 
     # Self-supervised rotation
-    # run_rotation_pre_train(experiment='./experiments/rotation_encoder/config_brats.yml')
+    run_rotation_pre_train(experiment='./experiments/rotation_encoder/config_ACDC.yml',gpu='7')
 
     # baseline, without pre-train
     #run_baseline(experiment='./experiments/baseline/config_ACDC_2.yml')
@@ -68,29 +62,18 @@ def main():
     # 4
     # 8
 
-    # Single-stage self-supervised early log
+    # Single-stage self-supervised early flat
     #run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_2.yml')
     #run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_4.yml')
     #run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_8.yml')
 
-    run_adversarial_network_train_val_early(
-        experiment='./experiments/adversarial_network_train_val_early/config_ACDC_8_1.yml')
-    run_adversarial_network_train_val_early(
-        experiment='./experiments/adversarial_network_train_val_early/config_ACDC_8_2.yml')
-    run_adversarial_network_train_val_early(
-        experiment='./experiments/adversarial_network_train_val_early/config_ACDC_8_3.yml')
-
 
 
     # Single-stage self-supervised late flat
-    # 2
-    # 4
-    # 8
+    # run_adversarial_network_train_val_late(experiment='./experiments/adversarial_network_train_val_late/config_ACDC_2.yml')
+    # run_adversarial_network_train_val_late(experiment='./experiments/adversarial_network_train_val_late/config_ACDC_4.yml')
+    # run_adversarial_network_train_val_late(experiment='./experiments/adversarial_network_train_val_late/config_ACDC_8.yml')
 
-    # Single-stage self-supervised early flat
-    # 2
-    # 4
-    # 8
 
     return None
 

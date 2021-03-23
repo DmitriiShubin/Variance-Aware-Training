@@ -223,17 +223,30 @@ class UNet(nn.Module):
         self.rever1_4 = RevGrad()
         self.rever1_5 = RevGrad()
         self.rever1_6 = RevGrad()
+        self.rever1_7 = RevGrad()
+        self.rever1_8 = RevGrad()
+        self.rever1_9 = RevGrad()
+        self.rever1_10 = RevGrad()
+        self.rever1_11 = RevGrad()
+        self.rever1_12 = RevGrad()
+
         self.rever2_1 = RevGrad()
         self.rever2_2 = RevGrad()
         self.rever2_3 = RevGrad()
         self.rever2_4 = RevGrad()
         self.rever2_5 = RevGrad()
         self.rever2_6 = RevGrad()
+        self.rever2_7 = RevGrad()
+        self.rever2_8 = RevGrad()
+        self.rever2_9 = RevGrad()
+        self.rever2_10 = RevGrad()
+        self.rever2_11 = RevGrad()
+        self.rever2_12 = RevGrad()
 
         n_filt = 0
         for i in range(5 + 1):
             n_filt += self.hparams['n_filters_input'] * (2 ** (i))
-        n_filt *= 2
+        n_filt *= 4
 
         self.adv_fc1 = nn.Linear(n_filt, 300)
         self.adv_fc2 = nn.Linear(300, 300)
@@ -289,6 +302,13 @@ class UNet(nn.Module):
         x4_s = self.rever1_4(x4).mean(dim=2).mean(dim=2)
         x5_s = self.rever1_5(x5).mean(dim=2).mean(dim=2)
         x6_s = self.rever1_6(x6).mean(dim=2).mean(dim=2)
+        x7_s = self.rever1_7(x1).std(dim=2).std(dim=2)
+        x8_s = self.rever1_8(x2).std(dim=2).std(dim=2)
+        x9_s = self.rever1_9(x3).std(dim=2).std(dim=2)
+        x10_s = self.rever1_10(x4).std(dim=2).std(dim=2)
+        x11_s = self.rever1_11(x5).std(dim=2).std(dim=2)
+        x12_s = self.rever1_12(x6).std(dim=2).std(dim=2)
+
 
         x1_p = self.rever2_1(x[0]).mean(dim=2).mean(dim=2)
         x2_p = self.rever2_2(x[1]).mean(dim=2).mean(dim=2)
@@ -296,8 +316,15 @@ class UNet(nn.Module):
         x4_p = self.rever2_4(x[3]).mean(dim=2).mean(dim=2)
         x5_p = self.rever2_5(x[4]).mean(dim=2).mean(dim=2)
         x6_p = self.rever1_6(x[5]).mean(dim=2).mean(dim=2)
+        x7_p = self.rever2_7(x[0]).std(dim=2).std(dim=2)
+        x8_p = self.rever2_8(x[1]).std(dim=2).std(dim=2)
+        x9_p = self.rever2_9(x[2]).std(dim=2).std(dim=2)
+        x10_p = self.rever2_10(x[3]).std(dim=2).std(dim=2)
+        x11_p = self.rever2_11(x[4]).std(dim=2).std(dim=2)
+        x12_p = self.rever1_12(x[5]).std(dim=2).std(dim=2)
 
-        x = torch.cat([x1_s, x2_s, x3_s, x4_s, x5_s, x6_s, x1_p, x2_p, x3_p, x4_p, x5_p,x6_p], dim=1)
+        x = torch.cat([x1_s, x2_s, x3_s, x4_s, x5_s, x6_s, x7_s, x8_s, x9_s, x10_s, x11_s, x12_s,
+                       x1_p, x2_p, x3_p, x4_p, x5_p,x6_p, x7_p, x8_p, x9_p, x10_p, x11_p,x12_p], dim=1)
 
         x = torch.relu(self.adv_fc1(x))
         #x = torch.relu(self.adv_fc2(x))

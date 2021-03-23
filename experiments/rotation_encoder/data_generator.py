@@ -2,6 +2,7 @@
 import numpy as np
 import torch
 import cv2
+import imutils
 
 # pytorch
 import torch
@@ -34,7 +35,6 @@ class Dataset_train(Dataset):
     def load_data(self, id):
 
         X = np.load(self.volums_list[id]).astype(np.float32)
-
         y = np.random.choice([0, 90, 180, 270])
 
         X = self.preprocessing.run(X=X)
@@ -53,11 +53,23 @@ class Dataset_train(Dataset):
 
     def rotate_image(self, image, angle):
         image = np.transpose(image.astype(np.float32), (1, 2, 0))
-        image_center = tuple(np.array(image.shape[1::-1]) / 2)
-        rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
-        result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
-        result = np.transpose(result.astype(np.float32), (2, 0, 1))
-        return result
+
+        if angle == 90:
+            image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+        elif angle == 180:
+            image = cv2.rotate(image, cv2.ROTATE_180)
+        elif angle == 270:
+            image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+        if len(image.shape) < 3:
+            image = np.expand_dims(image,axis=2)
+
+        return np.transpose(image.astype(np.float32), (2, 0, 1))
+        # image_center = tuple(np.array(image.shape[1::-1]) / 2)
+        # rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
+        # result = cv2.warpAffine(image, rot_mat, image.shape)#[1::-1], flags=cv2.INTER_LINEAR)
+        # result = np.transpose(result.astype(np.float32), (2, 0, 1))
+        # return result
 
 
 class Preprocessing:
@@ -135,7 +147,19 @@ class Augmentations:
                     A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
+        elif dataset == 'ACDC_8':
+            prob = 0.5
+            self.augs = A.Compose(
+                [
+                    A.HorizontalFlip(p=prob),
+                    #A.VerticalFlip(p=prob),
+                    A.Rotate(limit=5, p=prob),
 
+                    A.ElasticTransform(alpha=0.05,p=prob),
+                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                ]
+            )
     def run(self, image):
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))

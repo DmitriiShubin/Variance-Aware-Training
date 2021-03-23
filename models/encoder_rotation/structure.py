@@ -148,21 +148,6 @@ class Encoder_rotation(nn.Module):
 
         self.factor = 2 if bilinear else 1
 
-        self.encoder = self.create_encoder()
-        self.outfc = nn.Linear(self.hparams['n_filters_input'] * (2 ** 3), self.hparams['n_classes'])
-
-    def forward(self, x):
-
-        for layer in self.encoder:
-            x = layer(x)
-
-        x = torch.mean(x, dim=2)
-        x = torch.mean(x, dim=2)
-
-        logits = torch.softmax(self.outfc(x), dim=1)
-        return logits
-
-    def create_encoder(self):
         self.inc = DoubleConv(
             self.n_channels,
             self.hparams['n_filters_input'],
@@ -194,6 +179,38 @@ class Encoder_rotation(nn.Module):
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
+        self.down5 = Down(
+            self.hparams['n_filters_input'] * 16,
+            self.hparams['n_filters_input'] * 32 // self.factor,
+            self.hparams['kernel_size'],
+            self.hparams['dropout_rate'],
+        )
 
-        layers = [self.inc, self.down1, self.down2, self.down3, self.down4]
-        return mySequential(*layers)
+        self.fc1 = nn.Linear(
+            self.hparams['n_filters_input'] * (2 ** 5), self.hparams['n_filters_input'] * (2 ** 5)
+        )
+        self.fc2 = nn.Linear(
+            self.hparams['n_filters_input'] * (2 ** 5), self.hparams['n_classes']
+        )
+        # self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), 128)#self.emb_dim)
+
+    def forward(self, x):
+        _, _, _, _, _, x = self.encoder(x)
+
+        x = torch.mean(x, dim=2)
+        x = torch.mean(x, dim=2)
+
+        x = torch.relu(self.fc1(x))
+        x = torch.softmax(self.fc2(x),dim=1)
+        # logits = self.fc3(x)
+        return x
+
+    def encoder(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+        x6 = self.down5(x5)
+
+        return x1, x2, x3, x4, x5, x6

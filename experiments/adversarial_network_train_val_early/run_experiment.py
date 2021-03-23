@@ -7,7 +7,7 @@ import os
 
 from experiments.adversarial_network_train_val_early.data_generator import Dataset_train
 from experiments.adversarial_network_train_val_early.train_pipeline import TrainPipeline
-from models.adv_unet_train_val_early_std import Model
+from models.adv_unet_train_val_early import Model
 
 
 def run(

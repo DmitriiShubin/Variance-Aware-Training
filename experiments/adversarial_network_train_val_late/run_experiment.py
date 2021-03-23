@@ -16,7 +16,7 @@ def run(
     n_epochs=None,
     gpu='0',
     dropout=None,
-    experiment='./experiments/adversarial_network_train_val_late/config_brats_2.yml',
+    experiment='./experiments/adversarial_network_train_val_early/config_brats_2.yml',
 ):
 
     # load hyperparameters
