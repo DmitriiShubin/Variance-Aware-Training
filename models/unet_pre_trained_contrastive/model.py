@@ -90,12 +90,12 @@ class Model:
                     self.model.module.down5.requires_grad = True
 
                 else:
-                    self.model.inc.requires_grad = True
-                    self.model.down1.requires_grad = True
-                    self.model.down2.requires_grad = True
-                    self.model.down3.requires_grad = True
-                    self.model.down4.requires_grad = True
-                    self.model.down5.requires_grad = True
+                    self.model.inc.requires_grad = False
+                    self.model.down1.requires_grad = False
+                    self.model.down2.requires_grad = False
+                    self.model.down3.requires_grad = False
+                    self.model.down4.requires_grad = False
+                    self.model.down5.requires_grad = False
 
             for X_batch, y_batch in tqdm(train_loader):
 

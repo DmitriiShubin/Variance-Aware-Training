@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import math
 
 class f1_loss(nn.Module):
     def __init__(self):
@@ -129,7 +129,7 @@ class SimclrCriterion(nn.Module):
         loss (Tensor): NT_Xent loss between z_i and z_j
     '''
 
-    def __init__(self, batch_size, device,normalize=True, temperature=1.0):
+    def __init__(self, batch_size, device,normalize=False, temperature=0.1):
         super(SimclrCriterion, self).__init__()
 
         self.temperature = temperature
@@ -203,6 +203,50 @@ class SimclrCriterion(nn.Module):
 
         return loss
 
+
+class SimCLR_2(nn.Module):
+    def __init__(self,temperature=1):
+        super(SimCLR_2, self).__init__()
+        self.temperature = temperature
+
+    def forward(self, out_1, out_2 , eps=1e-6):
+        """
+            assume out_1 and out_2 are normalized
+            out_1: [batch_size, dim]
+            out_2: [batch_size, dim]
+        """
+        # gather representations in case of distributed training
+        # out_1_dist: [batch_size * world_size, dim]
+        # out_2_dist: [batch_size * world_size, dim]
+        # if torch.distributed.is_available() and torch.distributed.is_initialized():
+        #     out_1_dist = SyncFunction.apply(out_1)
+        #     out_2_dist = SyncFunction.apply(out_2)
+        # else:
+        out_1_dist = out_1
+        out_2_dist = out_2
+
+        # out: [2 * batch_size, dim]
+        # out_dist: [2 * batch_size * world_size, dim]
+        out = torch.cat([out_1, out_2], dim=0)
+        out_dist = torch.cat([out_1_dist, out_2_dist], dim=0)
+
+        # cov and sim: [2 * batch_size, 2 * batch_size * world_size]
+        # neg: [2 * batch_size]
+        cov = torch.mm(out, out_dist.t().contiguous())
+        sim = torch.exp(cov / self.temperature)
+        neg = sim.sum(dim=-1)
+
+        # from each row, subtract e^1 to remove similarity measure for x1.x1
+        row_sub = torch.Tensor(neg.shape).fill_(math.e).to(neg.device)
+        neg = torch.clamp(neg - row_sub, min=eps)  # clamp for numerical stability
+
+        # Positive similarity, pos becomes [2 * batch_size]
+        pos = torch.exp(torch.sum(out_1 * out_2, dim=-1) / self.temperature)
+        pos = torch.cat([pos, pos], dim=0)
+
+        loss = -torch.log(pos / (neg + eps)).mean()
+
+        return loss
 
 class contrastive_loss(nn.Module):
     def __init__(self, tau=1, normalize=True):

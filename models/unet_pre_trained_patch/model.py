@@ -20,7 +20,7 @@ from time import time
 from utils.loss_functions import f1_loss, Dice_loss
 
 # model
-from models.unet_pre_trained_rotation.structure import UNet
+from models.unet_pre_trained_patch.structure import UNet
 
 
 class Model:

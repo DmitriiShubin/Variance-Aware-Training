@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from time import time
 import numpy as np
+from models.encoder_patch.structure import Encoder_patch
+import yaml
 
 
 class DoubleConvBN(nn.Module):
@@ -130,91 +132,83 @@ class OutConv(nn.Module):
         return self.conv(x)
 
 
-class mySequential(nn.Sequential):
-    def forward(self, *input):
-        for module in self._modules.values():
-            input = module(*input)
-        return input
-
-
-class Encoder_contrastive(nn.Module):
+class UNet(Encoder_patch):
     def __init__(self, hparams, bilinear=False):
-        super(Encoder_contrastive, self).__init__()
+
+        hparams_pre_trained = yaml.load(
+            open(hparams['pre_trained_model'] + "_hparams.yml"), Loader=yaml.FullLoader
+        )
+        hparams_pre_trained = hparams_pre_trained['model']
+        super().__init__(hparams=hparams_pre_trained)
+
+        self.load_state_dict(torch.load(hparams['pre_trained_model'] + '.pt'))
+
+        # freeze encoder
+        if hparams['freeze_layers']:
+            self.inc.requires_grad = False
+            self.down1.requires_grad = False
+            self.down2.requires_grad = False
+            self.down3.requires_grad = False
+            self.down4.requires_grad = False
+            self.down5.requires_grad = False
+
 
         self.hparams = hparams
         self.n_channels = self.hparams['in_channels']
-        self.emb_dim = self.hparams['emb_dim']
+        self.n_classes = self.hparams['n_classes']
         self.bilinear = bilinear
 
         factor = 2 if bilinear else 1
 
-        #self.encoder = self.create_encoder()
-
-        self.inc = DoubleConv(
-            self.n_channels,
-            self.hparams['n_filters_input'],
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-        )
-        self.down1 = Down(
-            self.hparams['n_filters_input'],
-            self.hparams['n_filters_input'] * 2,
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-        )
-        self.down2 = Down(
-            self.hparams['n_filters_input'] * 2,
-            self.hparams['n_filters_input'] * 4,
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-        )
-        self.down3 = Down(
-            self.hparams['n_filters_input'] * 4,
-            self.hparams['n_filters_input'] * 8,
-            self.hparams['kernel_size'],
-            self.hparams['dropout_rate'],
-        )
-
-        self.down4 = Down(
-            self.hparams['n_filters_input'] * 8,
+        self.up1 = Up(
+            self.hparams['n_filters_input'] * 32,
             self.hparams['n_filters_input'] * 16 // factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
+            bilinear,
         )
-        self.down5 = Down(
+        self.up2 = Up(
             self.hparams['n_filters_input'] * 16,
-            self.hparams['n_filters_input'] * 32 // factor,
+            self.hparams['n_filters_input'] * 8 // factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
+            bilinear,
         )
-
-        self.fc1 = nn.Linear(
-            self.hparams['n_filters_input'] * (2 ** 5), self.hparams['n_filters_input'] * (2 ** 5)
+        self.up3 = Up(
+            self.hparams['n_filters_input'] * 8,
+            self.hparams['n_filters_input'] * 4 // factor,
+            self.hparams['kernel_size'],
+            self.hparams['dropout_rate'],
+            bilinear,
         )
-        self.fc2 = nn.Linear(
-            self.hparams['n_filters_input'] * (2 ** 5),self.hparams['n_filters_input'] * (2 ** 5)
+        self.up4 = Up(
+            self.hparams['n_filters_input'] * 4,
+            self.hparams['n_filters_input'] * 2,
+            self.hparams['kernel_size'],
+            self.hparams['dropout_rate'],
+            bilinear,
         )
-        self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), self.emb_dim)
+        self.up5 = Up(
+            self.hparams['n_filters_input'] * 2,
+            self.hparams['n_filters_input'],
+            self.hparams['kernel_size'],
+            self.hparams['dropout_rate'],
+            bilinear,
+        )
+        self.outc = OutConv(self.hparams['n_filters_input'], self.n_classes)
 
     def forward(self, x):
-        _,_,_,_,_,x  = self.encoder(x)
+        x1, x2, x3, x4, x5, x6 = self.encoder(x)
+        x = self.decoder(x1, x2, x3, x4, x5, x6)
+        logits = self.outc(x)
+        logits = torch.nn.functional.softmax(logits, dim=1)
+        return logits
 
+    def decoder(self, x1, x2, x3, x4, x5,x6):
+        x = self.up1(x6, x5)
+        x = self.up2(x, x4)
+        x = self.up3(x, x3)
+        x = self.up4(x, x2)
+        x = self.up5(x, x1)
 
-        x = torch.mean(x, dim=2)
-        x = torch.mean(x, dim=2)
-
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
         return x
-
-    def encoder(self, x):
-
-        x1 = self.inc(x)
-        x2 = self.down1(x1)
-        x3 = self.down2(x2)
-        x4 = self.down3(x3)
-        x5 = self.down4(x4)
-        x6 = self.down5(x5)
-
-        return x1, x2, x3, x4, x5,x6

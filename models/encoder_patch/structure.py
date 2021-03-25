@@ -137,18 +137,16 @@ class mySequential(nn.Sequential):
         return input
 
 
-class Encoder_contrastive(nn.Module):
+class Encoder_patch(nn.Module):
     def __init__(self, hparams, bilinear=False):
-        super(Encoder_contrastive, self).__init__()
+        super(Encoder_patch, self).__init__()
 
         self.hparams = hparams
         self.n_channels = self.hparams['in_channels']
         self.emb_dim = self.hparams['emb_dim']
         self.bilinear = bilinear
 
-        factor = 2 if bilinear else 1
-
-        #self.encoder = self.create_encoder()
+        self.factor = 2 if bilinear else 1
 
         self.inc = DoubleConv(
             self.n_channels,
@@ -177,39 +175,40 @@ class Encoder_contrastive(nn.Module):
 
         self.down4 = Down(
             self.hparams['n_filters_input'] * 8,
-            self.hparams['n_filters_input'] * 16 // factor,
+            self.hparams['n_filters_input'] * 16 // self.factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
         self.down5 = Down(
             self.hparams['n_filters_input'] * 16,
-            self.hparams['n_filters_input'] * 32 // factor,
+            self.hparams['n_filters_input'] * 32 // self.factor,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
         )
 
         self.fc1 = nn.Linear(
-            self.hparams['n_filters_input'] * (2 ** 5), self.hparams['n_filters_input'] * (2 ** 5)
+            self.hparams['n_filters_input'] * (2 ** 5)*2, self.hparams['n_filters_input'] * (2 ** 5)*2
         )
         self.fc2 = nn.Linear(
-            self.hparams['n_filters_input'] * (2 ** 5),self.hparams['n_filters_input'] * (2 ** 5)
+            self.hparams['n_filters_input'] * (2 ** 5)*2, self.hparams['n_classes']
         )
-        self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), self.emb_dim)
+        # self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), 128)#self.emb_dim)
 
-    def forward(self, x):
-        _,_,_,_,_,x  = self.encoder(x)
+    def forward(self, x1,x2):
+        _, _, _, _, _, x1 = self.encoder(x1)
+        _, _, _, _, _, x2 = self.encoder(x2)
 
+        x = torch.cat([x1,x2],dim=1)
 
         x = torch.mean(x, dim=2)
         x = torch.mean(x, dim=2)
 
         x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = torch.softmax(self.fc2(x),dim=1)
+        # logits = self.fc3(x)
         return x
 
     def encoder(self, x):
-
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
@@ -217,4 +216,4 @@ class Encoder_contrastive(nn.Module):
         x5 = self.down4(x4)
         x6 = self.down5(x5)
 
-        return x1, x2, x3, x4, x5,x6
+        return x1, x2, x3, x4, x5, x6

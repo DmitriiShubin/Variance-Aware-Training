@@ -25,7 +25,7 @@ model:
   dilation: 3
   pre_trained_model: "./data/model_weights/encoder_rotation_ACDC/encoder_rotation_ACDC_UB_split_table_fold_0.25_1616491212.6487856"
   freeze_layers: false
-  freeze_layers_delay: 500
+  freeze_layers_delay: 50000
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001

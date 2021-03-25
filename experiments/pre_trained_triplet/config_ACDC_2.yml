@@ -20,12 +20,12 @@ model:
   n_classes: 4
   n_filters_input: 16
   n_layers: 5
-  dropout_rate: 0.0
+  dropout_rate: 0.5
   kernel_size: 3
   dilation: 3
-  pre_trained_model: "./data/model_weights/encoder_triplet_ACDC/encoder_triplet_ACDC_UB_split_table_fold_0.88_1616483261.4758973"
+  pre_trained_model: "./data/model_weights/encoder_triplet_ACDC/encoder_triplet_ACDC_UB_split_table_fold_0.13_1616530444.562537"
   freeze_layers: false
-  freeze_layers_delay: 500
+  freeze_layers_delay: 50000
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001

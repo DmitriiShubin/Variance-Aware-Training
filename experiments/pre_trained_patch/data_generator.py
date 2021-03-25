@@ -13,76 +13,40 @@ np.random.seed(42)
 
 
 class Dataset_train(Dataset):
-    def __init__(self, volumes_list, aug, dataset):
+    def __init__(self, volums_list, aug, n_classes, dataset):
 
-        self.volumes_list = volumes_list
+        self.n_classes = n_classes
+        self.volums_list = volums_list
         self.preprocessing = Preprocessing(aug, dataset)
 
-        self.generate_pairs(n_pairs=int(len(self.volumes_list) * 10))
-
-    # TODO
-    def generate_pairs(self, n_pairs: int):
-
-        # create a list of labels
-        labels = []
-        for volume in self.volumes_list:
-            labels.append(volume.split('/')[-2])
-
-        labels = np.array(labels)
-
-        self.volumes_list = np.array(self.volumes_list)
-
-        # generate pairs
-        self.pairs_list = []
-        for i in range(n_pairs):
-            pairs = {}
-
-            # generate positive pair
-            anchor = self.volumes_list[np.random.choice(self.volumes_list.shape[0])]
-            sample = anchor.split('/')[-1]
-            anchor_label = labels[np.where(np.array(self.volumes_list) == anchor)]
-            pairs['anchor'] = anchor
-
-            # select positive
-            sample = anchor.split('/')[-1]
-            sample_int = sample
-            sample_int = int(sample_int.split('_')[0])
-            records_pos_subset = self.volumes_list[np.where(labels != anchor_label)]
-            records_pos_subset = records_pos_subset.tolist()
-            records_pos_subset = [record for record in records_pos_subset if record.find(sample)!=-1]
-            records_pos_subset = np.array(records_pos_subset)
-
-            if records_pos_subset.shape[0]==0:
-                continue
-
-            pairs['supportive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
-            self.pairs_list.append(pairs)
-
-        self.volumes_list = self.volumes_list.tolist()
-
-        return True
-
     def __len__(self):
-        return len(self.volumes_list)
+        return len(self.volums_list)
 
     def __getitem__(self, idx):
 
-        X_anchor, X_supportive, y = self.load_data(idx)
+        X, y = self.load_data(idx)
 
-        X_anchor = torch.tensor(X_anchor, dtype=torch.float)
-        X_supportive = torch.tensor(X_supportive, dtype=torch.float)
+        X = torch.tensor(X, dtype=torch.float)
         y = torch.tensor(y, dtype=torch.float)
 
-        return X_anchor, X_supportive, y
+        return X, y
 
     def load_data(self, id):
 
-        X = np.load(self.volumes_list[id])
-        X_supportive = X.copy()
-        y = [0]
-        X = self.preprocessing.run(X,augs=True)
-        X_supportive = self.preprocessing.run(X_supportive,augs=True)
-        return X, X_supportive, y
+        X = np.load(self.volums_list[id]).astype(np.float32)
+        y = np.load(self.volums_list[id][:-10] + 'labels.npy').astype(np.float32)
+
+        y = self.one_hot_voxel(y)
+
+        X, y = self.preprocessing.run(X=X, y=y)
+
+        return X, y
+
+    def one_hot_voxel(self, y):
+        y = np.transpose(y.astype(np.int32), (1, 2, 0))
+        y = np.eye(self.n_classes)[y[:, :, -1].astype(np.int32)]
+        y = np.transpose(y.astype(np.float32), (2, 0, 1))
+        return y
 
 
 class Preprocessing:
@@ -91,15 +55,15 @@ class Preprocessing:
         self.aug = aug
         self.augmentations = Augmentations(dataset)
 
-    def run(self, X,augs):
+    def run(self, X, y):
 
-        if augs:
+        if self.aug:
 
-            X = self.augmentations.run(X)
+            X, y = self.augmentations.run(X, y)
 
-        X = self.minmax_scaling(X)
+        X = self.standard_scaling(X)
 
-        return X
+        return X, y
 
     def standard_scaling(self, X):
         X = X.astype(np.float32)
@@ -155,36 +119,61 @@ class Augmentations:
             prob = 0.5
             self.augs = A.Compose(
                 [  # A.Blur(blur_limit=3,p=prob),
-                    #A.HorizontalFlip(p=prob),
+                    A.HorizontalFlip(p=prob),
                     A.VerticalFlip(p=prob),
                     A.Rotate(limit=10, p=prob),
                     # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    #A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
+                    A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
                     # A.RandomGamma(gamma_limit=(80,120),p=prob)
                 ]
             )
-        elif dataset == 'ACDC_8':
-            prob = 0.7
+        elif dataset == 'ACDC_4':
+            prob = 0.5
             self.augs = A.Compose(
                 [
                     A.HorizontalFlip(p=prob),
-                    A.VerticalFlip(p=prob),
-                    A.Rotate(limit=180, p=prob),
-                    #
-                    # A.ElasticTransform(alpha=0.05,p=prob),
-                    #A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    #A.VerticalFlip(p=prob),
+                    A.Rotate(limit=5, p=prob),
+
+                    A.ElasticTransform(alpha=0.05,p=prob),
+                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
                     A.RandomGamma(gamma_limit=(80, 120), p=prob)
                 ]
             )
-    def run(self, image):
+        elif dataset == 'ACDC_8':
+            prob = 0.5
+            self.augs = A.Compose(
+                [
+                    A.HorizontalFlip(p=prob),
+                    #A.VerticalFlip(p=prob),
+                    A.Rotate(limit=5, p=prob),
 
-        image = np.transpose(image.astype(np.float32), (1, 2,0))
+                    A.ElasticTransform(alpha=0.05,p=prob),
+                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                ]
+            )
+        elif dataset == 'ACDC_2':
+            prob = 0.5
+            self.augs = A.Compose(
+                [
+                    A.HorizontalFlip(p=prob),
+                    A.Rotate(limit=5, p=prob),
+
+                ]
+            )
+    def run(self, image, mask):
+
+        image = np.transpose(image.astype(np.float32), (1, 2, 0))
+        mask = np.transpose(mask.astype(np.float32), (1, 2, 0))
 
         # apply augs
-        augmented = self.augs(image=image)
+        augmented = self.augs(image=image, mask=mask)
 
         image = augmented['image']
+        mask = augmented['mask']
 
         image = np.transpose(image.astype(np.float32), (2, 0, 1))
+        mask = np.transpose(mask.astype(np.float32), (2, 0, 1))
 
-        return image
+        return image, mask

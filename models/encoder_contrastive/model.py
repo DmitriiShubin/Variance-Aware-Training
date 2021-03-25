@@ -17,7 +17,7 @@ from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from utils.post_processing import Post_Processing
 from time import time
-from utils.loss_functions import SimclrCriterion, contrastive_loss
+from utils.loss_functions import SimclrCriterion, contrastive_loss,SimCLR_2
 
 # model
 from models.encoder_contrastive.structure import Encoder_contrastive
@@ -321,7 +321,7 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = SimclrCriterion(batch_size=self.hparams['batch_size'],device=self.device)
+        self.loss = SimCLR_2(temperature=100)#SimclrCriterion(batch_size=self.hparams['batch_size'],device=self.device)
 
         # 2. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

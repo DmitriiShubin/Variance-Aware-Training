@@ -93,7 +93,7 @@ class Dataset_train(Dataset):
     def load_data(self, id):
 
         X_anchor = np.load(self.pairs_list[id]['anchor'])
-        X_positive = np.load(self.pairs_list[id]['positive'])
+        X_positive = X_anchor.copy()#np.load(self.pairs_list[id]['positive'])
         X_negative = np.load(self.pairs_list[id]['negative'])
 
         X_anchor = self.preprocessing.run(X_anchor)
@@ -172,9 +172,9 @@ class Augmentations:
             prob = 0.5
             self.augs = A.Compose(
                 [  # A.Blur(blur_limit=3,p=prob),
-                    #A.HorizontalFlip(p=prob),
-                    A.VerticalFlip(p=prob),
-                    A.Rotate(limit=10, p=prob),
+                    A.HorizontalFlip(p=prob),
+                    #A.VerticalFlip(p=prob),
+                    A.Rotate(limit=180, p=prob),
                     # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
                     A.RandomSizedCrop(min_max_height=(120, 120), height=240, width=240, p=prob),
                     A.RandomGamma(gamma_limit=(80, 120), p=prob)
@@ -186,7 +186,7 @@ class Augmentations:
                 [
                     A.HorizontalFlip(p=prob),
                     # A.VerticalFlip(p=prob),
-                    A.Rotate(limit=5, p=prob),
+                    A.Rotate(limit=180, p=prob),
 
                     A.ElasticTransform(alpha=0.05, p=prob),
                     A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),

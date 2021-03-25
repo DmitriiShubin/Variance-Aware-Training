@@ -15,7 +15,7 @@ def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
-    gpu='2,3',
+    gpu='7',
     dropout=None,
     experiment='./experiments/pre_trained_contrastive/config_brats_2.yml',
 ):

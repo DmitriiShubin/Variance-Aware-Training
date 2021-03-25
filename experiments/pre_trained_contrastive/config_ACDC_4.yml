@@ -18,14 +18,14 @@ dataset: 'ACDC_8'
 model:
   in_channels: 1
   n_classes: 4
-  n_filters_input: 16
+  n_filters_input: 32
   n_layers: 5
-  dropout_rate: 0.0
+  dropout_rate: 0.1
   kernel_size: 3
   dilation: 3
-  pre_trained_model: "./data/model_weights/encoder_contrastive_ACDC/encoder_contrastive_ACDC_UB_split_table_fold_4.14_1616479299.6650329"
+  pre_trained_model: "./data/model_weights/encoder_contrastive_ACDC/encoder_contrastive_ACDC_UB_split_table_fold_1.3_1616618909.2522228"
   freeze_layers: false
-  freeze_layers_delay: 500
+  freeze_layers_delay: 10
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001
