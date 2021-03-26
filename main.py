@@ -40,7 +40,7 @@ def main():
     #run_rotation_pre_train(experiment='./experiments/rotation_encoder/config_ACDC.yml',gpu='7')
 
     # Self-supervised patch
-    run_patch_pre_train(experiment='./experiments/patch_encoder/config_ACDC.yml',gpu='6')
+    #run_patch_pre_train(experiment='./experiments/patch_encoder/config_ACDC.yml',gpu='6')
 
     # baseline, without pre-train
     #run_baseline(experiment='./experiments/baseline/config_ACDC_2.yml')
@@ -53,8 +53,8 @@ def main():
     #run_pre_trained_contrastive(experiment='./experiments/pre_trained_contrastive/config_ACDC_4.yml')
     #run_pre_trained_contrastive(experiment='./experiments/pre_trained_contrastive/config_ACDC_8.yml')
 
-    # # pre-train rotation
-    #run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_2.yml')
+    # # pre-trained rotation
+    run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_2.yml')
     # run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_4.yml')
     # run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_8.yml')
 

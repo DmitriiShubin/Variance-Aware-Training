@@ -38,7 +38,7 @@ class Dataset_train(Dataset):
         X = np.load(self.volums_list[id]).astype(np.float32)
         X = self.preprocessing.run(X)
 
-        y = np.random.choice(np.arange(9))
+        y = np.random.choice(np.arange(8))
 
         X1,X2 = self.select_patch(X,y)
 
@@ -46,44 +46,42 @@ class Dataset_train(Dataset):
 
         return X1,X2, y
 
-    def select_patch(self,X,sector):
-        #optional: upsample if too much
+    def select_patch(self,X, sector):
+        # optional: upsample if too much
 
         X = np.transpose(X.astype(np.float32), (1, 2, 0))
 
-        X = cv2.resize(X, (X.shape[0]*3, X.shape[1]*3))
+        X = cv2.resize(X, (X.shape[0] * 3, X.shape[1] * 3))
 
-        if len(X.shape)<3:
-            X = np.expand_dims(X,axis=2)
+        if len(X.shape) < 3:
+            X = np.expand_dims(X, axis=2)
 
-        split_x = X.shape[0]//3
-        split_y = X.shape[1]//3
+        split_x = X.shape[0] // 3
+        split_y = X.shape[1] // 3
 
-        X1 = X[split_x:split_x*2,split_y:split_y*2,:]
+        X1 = X[split_x:split_x * 2, split_y:split_y * 2, :]
 
         if sector == 0:
-            X2 = X[0:split_x , 0:split_y, :]
+            X2 = X[0:split_x, 0:split_y, :]
         elif sector == 1:
-            X2 = X[split_x:split_x*2, 0:split_y, :]
+            X2 = X[split_x:split_x * 2, 0:split_y, :]
         elif sector == 2:
-            X2 = X[split_x*2:split_x*3, 0:split_y, :]
+            X2 = X[split_x * 2:split_x * 3, 0:split_y, :]
         elif sector == 3:
-            X2 = X[split_x*2:split_x*3, split_y:split_y*2, :]
+            X2 = X[split_x * 2:split_x * 3, split_y:split_y * 2, :]
         elif sector == 4:
-            X2 = X[split_x*2:split_x*3, split_y*2:split_y*3, :]
+            X2 = X[split_x * 2:split_x * 3, split_y * 2:split_y * 3, :]
         elif sector == 5:
-            X2 = X[split_x*2:split_x*3, split_y*2:split_y*3, :]
+            X2 = X[split_x:split_x * 2, split_y * 2:split_y * 3, :]
         elif sector == 6:
-            X2 = X[split_x:split_x*2, split_y*2:split_y*3, :]
+            X2 = X[0:split_x, split_y * 2:split_y * 3, :]
         elif sector == 7:
-            X2 = X[0:split_x, split_y*2:split_y*3, :]
-        elif sector == 8:
-            X2 = X[split_x:split_x*2, split_y:split_y*2, :]
+            X2 = X[0:split_x, split_y:split_y * 2, :]
 
         X1 = np.transpose(X1.astype(np.float32), (2, 0, 1))
         X2 = np.transpose(X2.astype(np.float32), (2, 0, 1))
 
-        return X1,X2
+        return X1, X2
 
 
 class Preprocessing:
@@ -166,11 +164,11 @@ class Augmentations:
             self.augs = A.Compose(
                 [
                     A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
-                    A.Rotate(limit=5, p=prob),
+                    # A.VerticalFlip(p=prob),
+                    A.Rotate(limit=10, p=prob),
 
-                    A.ElasticTransform(alpha=0.05,p=prob),
-                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    #A.ElasticTransform(alpha=0.05,p=prob),
+                    #A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
                     A.RandomGamma(gamma_limit=(80, 120), p=prob)
                 ]
             )
