@@ -39,10 +39,21 @@ class Dataset_train(Dataset):
         X = self.preprocessing.run(X)
 
         y = np.random.choice(np.arange(8))
+        y2 = np.random.choice(np.arange(8))
 
-        X1,X2 = self.select_patch(X,y)
+        X1 = self.select_patch(X, y)
+        X2 = self.select_patch(X,y2)
 
-        y = np.eye(self.n_classes)[y]
+        if y2 == 8 or y == 8:
+            y = [1]
+        elif abs(y2 - y) == 1:
+            y = [1]
+        elif (y2 == 7 and y == 0) or (y == 7 and y2==0):
+            y = [1]
+        else:
+            y = [0]
+
+
 
         return X1,X2, y
 
@@ -51,7 +62,7 @@ class Dataset_train(Dataset):
 
         X = np.transpose(X.astype(np.float32), (1, 2, 0))
 
-        X = cv2.resize(X, (X.shape[0] * 3, X.shape[1] * 3))
+        #X = cv2.resize(X, (X.shape[0] * 3, X.shape[1] * 3))
 
         if len(X.shape) < 3:
             X = np.expand_dims(X, axis=2)
@@ -59,29 +70,30 @@ class Dataset_train(Dataset):
         split_x = X.shape[0] // 3
         split_y = X.shape[1] // 3
 
-        X1 = X[split_x:split_x * 2, split_y:split_y * 2, :]
+        overlap = split_x // 4
 
         if sector == 0:
-            X2 = X[0:split_x, 0:split_y, :]
+            X2 = X[0:split_x + overlap * 2, 0:split_y + overlap * 2, :]
         elif sector == 1:
-            X2 = X[split_x:split_x * 2, 0:split_y, :]
+            X2 = X[split_x - overlap:split_x * 2 + overlap, 0:split_y + overlap * 2, :]
         elif sector == 2:
-            X2 = X[split_x * 2:split_x * 3, 0:split_y, :]
+            X2 = X[split_x * 2 - overlap * 2:split_x * 3, 0:split_y + overlap * 2, :]
         elif sector == 3:
-            X2 = X[split_x * 2:split_x * 3, split_y:split_y * 2, :]
+            X2 = X[split_x * 2 - overlap * 2:split_x * 3, split_y - overlap:split_y * 2 + overlap, :]
         elif sector == 4:
-            X2 = X[split_x * 2:split_x * 3, split_y * 2:split_y * 3, :]
+            X2 = X[split_x * 2 - overlap * 2:split_x * 3, split_y * 2 - overlap * 2:split_y * 3, :]
         elif sector == 5:
-            X2 = X[split_x:split_x * 2, split_y * 2:split_y * 3, :]
+            X2 = X[split_x - overlap:split_x * 2 + overlap, split_y * 2 - overlap * 2:split_y * 3, :]
         elif sector == 6:
-            X2 = X[0:split_x, split_y * 2:split_y * 3, :]
+            X2 = X[0:split_x + overlap * 2, split_y * 2 - overlap * 2:split_y * 3, :]
         elif sector == 7:
-            X2 = X[0:split_x, split_y:split_y * 2, :]
+            X2 = X[0:split_x + overlap * 2, split_y - overlap:split_y * 2 + overlap, :]
+        elif sector == 8:
+            X2 = X[split_x - overlap:split_x * 2 + overlap, split_y - overlap:split_y * 2 + overlap, :]
 
-        X1 = np.transpose(X1.astype(np.float32), (2, 0, 1))
         X2 = np.transpose(X2.astype(np.float32), (2, 0, 1))
 
-        return X1, X2
+        return X2
 
 
 class Preprocessing:

@@ -58,7 +58,7 @@ class TrainPipeline:
         )
         valid = self.Dataset_train(
             self.splits['val'].values[0],
-            aug=True,
+            aug=False,
             n_classes=self.hparams['model']['n_classes'],
             dataset=self.hparams['dataset'],
         )

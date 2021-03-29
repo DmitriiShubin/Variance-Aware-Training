@@ -54,11 +54,13 @@ def main():
     #run_pre_trained_contrastive(experiment='./experiments/pre_trained_contrastive/config_ACDC_8.yml')
 
     # # pre-trained rotation
-    run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_2.yml')
+    #run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_2.yml')
     # run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_4.yml')
     # run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_8.yml')
 
-    #run_pre_trained_patch(experiment='./experiments/pre_trained_patch/config_ACDC_2.yml')
+    run_pre_trained_patch(experiment='./experiments/pre_trained_patch/config_ACDC_2.yml')
+    run_pre_trained_patch(experiment='./experiments/pre_trained_patch/config_ACDC_4.yml')
+    run_pre_trained_patch(experiment='./experiments/pre_trained_patch/config_ACDC_8.yml')
 
 
     # Single-stage self-supervised early flat

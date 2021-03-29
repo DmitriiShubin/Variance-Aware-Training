@@ -17,7 +17,7 @@ model_path: ./data/model_weights/encoder_patch_ACDC/ # CHANGE WHEN CREATE A NEW 
 dataset: 'ACDC_8'
 model:
   in_channels: 1
-  n_classes: 9
+  n_classes: 1
   emb_dim: 256
   n_filters_input: 16
   n_layers: 5

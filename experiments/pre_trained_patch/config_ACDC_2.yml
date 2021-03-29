@@ -18,12 +18,12 @@ dataset: 'ACDC_8'
 model:
   in_channels: 1
   n_classes: 4
-  n_filters_input: 32
+  n_filters_input: 16
   n_layers: 5
   dropout_rate: 0.0
   kernel_size: 3
   dilation: 3
-  pre_trained_model: "./data/model_weights/encoder_patch_ACDC/encoder_patch_ACDC_UB_split_table_fold_0.14_1616699319.6902502"
+  pre_trained_model: "./data/model_weights/encoder_patch_ACDC/encoder_patch_ACDC_UB_split_table_fold_0.14_1616797621.6653237"
   freeze_layers: false
   freeze_layers_delay: 50000
 optimizer_name: Adam

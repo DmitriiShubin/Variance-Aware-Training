@@ -6,26 +6,26 @@ min_delta: 0.005 #min delta of improvement for early stopping
 verbose_train: true
 num_workers: 0
 n_train_samples: 1
-model_name: unet_8_pretrained_contrastive_ACDC # CHANGE WHEN CREATE A NEW MODEL
+model_name: unet_8_pretrained_patch_ACDC # CHANGE WHEN CREATE A NEW MODEL
 split_table_path: './data/split_tables/ACDC/8_split_table.json'
 test_split_table_path: './data/split_tables/ACDC/test_split_table.json'
 image_width: 240
 image_height: 240
-debug_path: './data/CV_debug/unet_8_pretrained_contrastive_ACDC/'
-checkpoint_path: ./data/model_weights/unet_8_pretrained_contrastive_ACDC/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
-model_path: ./data/model_weights/unet_8_pretrained_contrastive_ACDC/ # CHANGE WHEN CREATE A NEW MODEL
+debug_path: './data/CV_debug/unet_8_pretrained_patch_ACDC/'
+checkpoint_path: ./data/model_weights/unet_8_pretrained_patch_ACDC/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
+model_path: ./data/model_weights/unet_8_pretrained_patch_ACDC/ # CHANGE WHEN CREATE A NEW MODEL
 dataset: 'ACDC_8'
 model:
   in_channels: 1
   n_classes: 4
   n_filters_input: 32
   n_layers: 5
-  dropout_rate: 0.1
+  dropout_rate: 0.3
   kernel_size: 3
   dilation: 3
-  pre_trained_model: "./data/model_weights/encoder_contrastive_ACDC/encoder_contrastive_ACDC_UB_split_table_fold_1.3_1616618909.2522228"
+  pre_trained_model: "./data/model_weights/encoder_patch_ACDC/encoder_patch_ACDC_UB_split_table_fold_0.12_1616782138.207728"
   freeze_layers: false
-  freeze_layers_delay: 10
+  freeze_layers_delay: 50000
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001

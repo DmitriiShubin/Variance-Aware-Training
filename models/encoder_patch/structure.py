@@ -204,7 +204,7 @@ class Encoder_patch(nn.Module):
         x = torch.mean(x, dim=2)
 
         x = torch.relu(self.fc1(x))
-        x = torch.softmax(self.fc2(x),dim=1)
+        x = torch.sigmoid(self.fc2(x))
         # logits = self.fc3(x)
         return x
 
