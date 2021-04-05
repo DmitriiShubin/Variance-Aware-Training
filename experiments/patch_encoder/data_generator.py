@@ -25,13 +25,13 @@ class Dataset_train(Dataset):
 
     def __getitem__(self, idx):
 
-        X1,X2, y = self.load_data(idx)
+        X1, X2, y = self.load_data(idx)
 
         X1 = torch.tensor(X1, dtype=torch.float)
         X2 = torch.tensor(X2, dtype=torch.float)
         y = torch.tensor(y, dtype=torch.float)
 
-        return X1,X2, y
+        return X1, X2, y
 
     def load_data(self, id):
 
@@ -42,27 +42,25 @@ class Dataset_train(Dataset):
         y2 = np.random.choice(np.arange(8))
 
         X1 = self.select_patch(X, y)
-        X2 = self.select_patch(X,y2)
+        X2 = self.select_patch(X, y2)
 
         if y2 == 8 or y == 8:
             y = [1]
         elif abs(y2 - y) == 1:
             y = [1]
-        elif (y2 == 7 and y == 0) or (y == 7 and y2==0):
+        elif (y2 == 7 and y == 0) or (y == 7 and y2 == 0):
             y = [1]
         else:
             y = [0]
 
+        return X1, X2, y
 
-
-        return X1,X2, y
-
-    def select_patch(self,X, sector):
+    def select_patch(self, X, sector):
         # optional: upsample if too much
 
         X = np.transpose(X.astype(np.float32), (1, 2, 0))
 
-        #X = cv2.resize(X, (X.shape[0] * 3, X.shape[1] * 3))
+        # X = cv2.resize(X, (X.shape[0] * 3, X.shape[1] * 3))
 
         if len(X.shape) < 3:
             X = np.expand_dims(X, axis=2)
@@ -73,23 +71,23 @@ class Dataset_train(Dataset):
         overlap = split_x // 4
 
         if sector == 0:
-            X2 = X[0:split_x + overlap * 2, 0:split_y + overlap * 2, :]
+            X2 = X[0 : split_x + overlap * 2, 0 : split_y + overlap * 2, :]
         elif sector == 1:
-            X2 = X[split_x - overlap:split_x * 2 + overlap, 0:split_y + overlap * 2, :]
+            X2 = X[split_x - overlap : split_x * 2 + overlap, 0 : split_y + overlap * 2, :]
         elif sector == 2:
-            X2 = X[split_x * 2 - overlap * 2:split_x * 3, 0:split_y + overlap * 2, :]
+            X2 = X[split_x * 2 - overlap * 2 : split_x * 3, 0 : split_y + overlap * 2, :]
         elif sector == 3:
-            X2 = X[split_x * 2 - overlap * 2:split_x * 3, split_y - overlap:split_y * 2 + overlap, :]
+            X2 = X[split_x * 2 - overlap * 2 : split_x * 3, split_y - overlap : split_y * 2 + overlap, :]
         elif sector == 4:
-            X2 = X[split_x * 2 - overlap * 2:split_x * 3, split_y * 2 - overlap * 2:split_y * 3, :]
+            X2 = X[split_x * 2 - overlap * 2 : split_x * 3, split_y * 2 - overlap * 2 : split_y * 3, :]
         elif sector == 5:
-            X2 = X[split_x - overlap:split_x * 2 + overlap, split_y * 2 - overlap * 2:split_y * 3, :]
+            X2 = X[split_x - overlap : split_x * 2 + overlap, split_y * 2 - overlap * 2 : split_y * 3, :]
         elif sector == 6:
-            X2 = X[0:split_x + overlap * 2, split_y * 2 - overlap * 2:split_y * 3, :]
+            X2 = X[0 : split_x + overlap * 2, split_y * 2 - overlap * 2 : split_y * 3, :]
         elif sector == 7:
-            X2 = X[0:split_x + overlap * 2, split_y - overlap:split_y * 2 + overlap, :]
+            X2 = X[0 : split_x + overlap * 2, split_y - overlap : split_y * 2 + overlap, :]
         elif sector == 8:
-            X2 = X[split_x - overlap:split_x * 2 + overlap, split_y - overlap:split_y * 2 + overlap, :]
+            X2 = X[split_x - overlap : split_x * 2 + overlap, split_y - overlap : split_y * 2 + overlap, :]
 
         X2 = np.transpose(X2.astype(np.float32), (2, 0, 1))
 
@@ -110,7 +108,6 @@ class Preprocessing:
         X = self.standard_scaling(X)
 
         return X
-
 
     def standard_scaling(self, X):
         X = X.astype(np.float32)
@@ -178,12 +175,15 @@ class Augmentations:
                     A.HorizontalFlip(p=prob),
                     # A.VerticalFlip(p=prob),
                     A.Rotate(limit=10, p=prob),
-
-                    #A.ElasticTransform(alpha=0.05,p=prob),
-                    #A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                    # A.ElasticTransform(alpha=0.05,p=prob),
+                    # A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
+        elif dataset == 'kitti':
+            prob = 0.5
+            self.augs = A.Compose([A.HorizontalFlip(p=prob), A.Rotate(limit=5, p=prob),])
+
     def run(self, image):
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))

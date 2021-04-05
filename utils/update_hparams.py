@@ -1,9 +1,5 @@
 def update_hparams(
-    hparams,
-    dropout,
-    batch_size,
-    lr,
-    n_epochs,
+    hparams, dropout, batch_size, lr, n_epochs,
 ):
 
     if dropout is not None:

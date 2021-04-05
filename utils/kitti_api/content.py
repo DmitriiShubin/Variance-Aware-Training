@@ -12,11 +12,7 @@ from auxiliary.laserscan import SemLaserScan
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("./content.py")
     parser.add_argument(
-        '--dataset',
-        '-d',
-        type=str,
-        required=True,
-        help='Dataset to calculate content. No Default',
+        '--dataset', '-d', type=str, required=True, help='Dataset to calculate content. No Default',
     )
     parser.add_argument(
         '--config',

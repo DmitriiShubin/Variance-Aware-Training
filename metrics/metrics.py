@@ -26,7 +26,7 @@ class Metric:
         self.fp = self.fp + fp
         self.fn = self.fn + fn
 
-    def compute(self):
+    def compute(self, dataset):
 
         # dice macro
         f1 = ((1 + 2 ** 2) * self.tp[1:] + 1e-3) / (
@@ -40,6 +40,10 @@ class Metric:
         self.tp = np.array([0] * (self.n_classes))
         self.fp = np.array([0] * (self.n_classes))
         self.fn = np.array([0] * (self.n_classes))
+
+        if dataset == 'kitti':
+            for index, score in enumerate(f1):
+                print(f'Class {index+1}; F1: {np.round(score,2)}')
 
         return np.mean(f1)
 

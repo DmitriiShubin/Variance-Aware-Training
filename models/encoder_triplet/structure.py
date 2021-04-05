@@ -189,9 +189,7 @@ class Encoder_triplet(nn.Module):
         self.fc1 = nn.Linear(
             self.hparams['n_filters_input'] * (2 ** 5), self.hparams['n_filters_input'] * (2 ** 5)
         )
-        self.fc2 = nn.Linear(
-            self.hparams['n_filters_input'] * (2 ** 5), self.emb_dim
-        )
+        self.fc2 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), self.emb_dim)
         # self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), 128)#self.emb_dim)
 
     def forward(self, x):
@@ -214,4 +212,3 @@ class Encoder_triplet(nn.Module):
         x6 = self.down5(x5)
 
         return x1, x2, x3, x4, x5, x6
-

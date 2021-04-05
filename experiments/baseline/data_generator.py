@@ -17,6 +17,7 @@ class Dataset_train(Dataset):
 
         self.n_classes = n_classes
         self.volums_list = volums_list
+        self.dataset = dataset
         self.preprocessing = Preprocessing(aug, dataset)
 
     def __len__(self):
@@ -34,7 +35,10 @@ class Dataset_train(Dataset):
     def load_data(self, id):
 
         X = np.load(self.volums_list[id]).astype(np.float32)
-        y = np.load(self.volums_list[id][:-10] + 'labels.npy').astype(np.float32)
+        if self.dataset == 'kitti':
+            y = np.load(self.volums_list[id][:-8] + 'label.npy').astype(np.float32)
+        else:
+            y = np.load(self.volums_list[id][:-10] + 'labels.npy').astype(np.float32)
 
         y = self.one_hot_voxel(y)
 
@@ -117,14 +121,14 @@ class Augmentations:
         if dataset == 'brats':
             prob = 0.5
             self.augs = A.Compose(
-                [   #A.Blur(blur_limit=1,p=prob),
+                [  # A.Blur(blur_limit=1,p=prob),
                     A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
+                    # A.VerticalFlip(p=prob),
                     A.Rotate(limit=20, p=prob),
-                    #A.ElasticTransform(alpha=0.05, p=prob),
+                    # A.ElasticTransform(alpha=0.05, p=prob),
                     # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    #A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
-                    #A.RandomGamma(gamma_limit=(80,120),p=prob)
+                    # A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
+                    # A.RandomGamma(gamma_limit=(80,120),p=prob)
                 ]
             )
         elif dataset == 'ACDC_4':
@@ -132,12 +136,11 @@ class Augmentations:
             self.augs = A.Compose(
                 [
                     A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
+                    # A.VerticalFlip(p=prob),
                     A.Rotate(limit=5, p=prob),
-
-                    A.ElasticTransform(alpha=0.05,p=prob),
+                    A.ElasticTransform(alpha=0.05, p=prob),
                     A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
         elif dataset == 'ACDC_8':
@@ -145,23 +148,19 @@ class Augmentations:
             self.augs = A.Compose(
                 [
                     A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
+                    # A.VerticalFlip(p=prob),
                     A.Rotate(limit=5, p=prob),
-
-                    A.ElasticTransform(alpha=0.05,p=prob),
+                    A.ElasticTransform(alpha=0.05, p=prob),
                     A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
         elif dataset == 'ACDC_2':
             prob = 0.5
-            self.augs = A.Compose(
-                [
-                    A.HorizontalFlip(p=prob),
-                    A.Rotate(limit=5, p=prob),
-
-                ]
-            )
+            self.augs = A.Compose([A.HorizontalFlip(p=prob), A.Rotate(limit=5, p=prob),])
+        elif dataset == 'kitti':
+            prob = 0.5
+            self.augs = A.Compose([A.HorizontalFlip(p=prob), A.Rotate(limit=5, p=prob),])
 
     def run(self, image, mask):
 

@@ -18,7 +18,7 @@ class Dataset_train(Dataset):
         self.volumes_list = volumes_list
         self.preprocessing = Preprocessing(aug, dataset)
 
-        self.generate_pairs(n_pairs=int(len(self.volumes_list) *1))
+        self.generate_pairs(n_pairs=int(len(self.volumes_list) * 1))
 
     # TODO
     def generate_pairs(self, n_pairs: int):
@@ -64,12 +64,12 @@ class Dataset_train(Dataset):
             records_pos_subset = [record for record in records_pos_subset if record.find(sample) != -1]
             records_pos_subset = np.array(records_pos_subset)
 
-            if records_pos_subset.shape[0]==0:
+            if records_pos_subset.shape[0] == 0:
                 records_pos_subset = self.volumes_list[np.where(labels != anchor_label)]
                 records_pos_subset = [record for record in records_pos_subset if record.find('20') != -1]
                 records_pos_subset = np.array(records_pos_subset)
 
-            #records_neg_subset = self.volumes_list[np.where(labels != anchor_label)]
+            # records_neg_subset = self.volumes_list[np.where(labels != anchor_label)]
             pairs['positive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
             self.pairs_list.append(pairs)
 
@@ -93,7 +93,7 @@ class Dataset_train(Dataset):
     def load_data(self, id):
 
         X_anchor = np.load(self.pairs_list[id]['anchor'])
-        X_positive = X_anchor.copy()#np.load(self.pairs_list[id]['positive'])
+        X_positive = X_anchor.copy()  # np.load(self.pairs_list[id]['positive'])
         X_negative = np.load(self.pairs_list[id]['negative'])
 
         X_anchor = self.preprocessing.run(X_anchor)
@@ -173,11 +173,11 @@ class Augmentations:
             self.augs = A.Compose(
                 [  # A.Blur(blur_limit=3,p=prob),
                     A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
+                    # A.VerticalFlip(p=prob),
                     A.Rotate(limit=180, p=prob),
                     # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
                     A.RandomSizedCrop(min_max_height=(120, 120), height=240, width=240, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
         elif dataset == 'ACDC_8':
@@ -187,12 +187,12 @@ class Augmentations:
                     A.HorizontalFlip(p=prob),
                     # A.VerticalFlip(p=prob),
                     A.Rotate(limit=180, p=prob),
-
                     A.ElasticTransform(alpha=0.05, p=prob),
                     A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
+
     def run(self, image):
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))

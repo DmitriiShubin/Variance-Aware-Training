@@ -187,18 +187,16 @@ class Encoder_patch(nn.Module):
         )
 
         self.fc1 = nn.Linear(
-            self.hparams['n_filters_input'] * (2 ** 5)*2, self.hparams['n_filters_input'] * (2 ** 5)*2
+            self.hparams['n_filters_input'] * (2 ** 5) * 2, self.hparams['n_filters_input'] * (2 ** 5) * 2
         )
-        self.fc2 = nn.Linear(
-            self.hparams['n_filters_input'] * (2 ** 5)*2, self.hparams['n_classes']
-        )
+        self.fc2 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5) * 2, self.hparams['n_classes'])
         # self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), 128)#self.emb_dim)
 
-    def forward(self, x1,x2):
+    def forward(self, x1, x2):
         _, _, _, _, _, x1 = self.encoder(x1)
         _, _, _, _, _, x2 = self.encoder(x2)
 
-        x = torch.cat([x1,x2],dim=1)
+        x = torch.cat([x1, x2], dim=1)
 
         x = torch.mean(x, dim=2)
         x = torch.mean(x, dim=2)

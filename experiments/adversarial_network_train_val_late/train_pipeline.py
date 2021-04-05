@@ -76,7 +76,7 @@ class TrainPipeline:
         )
 
         # train model
-        start_training = self.model.fit(train=train, valid=valid,pretrain=pretrain)
+        start_training = self.model.fit(train=train, valid=valid, pretrain=pretrain)
 
         # get model predictions
         error_val, fold_score = self.model.predict(valid)

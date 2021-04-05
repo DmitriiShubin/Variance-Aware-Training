@@ -60,11 +60,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SSC semantic-kitti")
 
     parser.add_argument(
-        '--dataset',
-        '-d',
-        type=str,
-        required=True,
-        help='Dataset dir. No Default',
+        '--dataset', '-d', type=str, required=True, help='Dataset dir. No Default',
     )
 
     parser.add_argument(

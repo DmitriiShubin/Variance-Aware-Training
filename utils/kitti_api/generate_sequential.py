@@ -82,11 +82,7 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        '--output',
-        '-o',
-        type=str,
-        required=True,
-        help='output folder for generated sequence scans.',
+        '--output', '-o', type=str, required=True, help='output folder for generated sequence scans.',
     )
 
     parser.add_argument(

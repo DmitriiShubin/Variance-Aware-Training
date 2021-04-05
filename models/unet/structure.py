@@ -4,6 +4,7 @@ from time import time
 import numpy as np
 from models.encoder_contrastive.structure import Encoder_contrastive
 
+
 class DoubleConvBN(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
@@ -201,13 +202,13 @@ class UNet(nn.Module):
         )
         self.up4 = Up(
             self.hparams['n_filters_input'] * 4,
-            self.hparams['n_filters_input'] *2,
+            self.hparams['n_filters_input'] * 2,
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
             bilinear,
         )
         self.up5 = Up(
-            self.hparams['n_filters_input'] *2,
+            self.hparams['n_filters_input'] * 2,
             self.hparams['n_filters_input'],
             self.hparams['kernel_size'],
             self.hparams['dropout_rate'],
@@ -216,8 +217,8 @@ class UNet(nn.Module):
         self.outc = OutConv(self.hparams['n_filters_input'], self.n_classes)
 
     def forward(self, x):
-        x1, x2, x3, x4,x5,x6 = self.encoder(x)
-        x = self.decoder(x1, x2, x3, x4, x5,x6)
+        x1, x2, x3, x4, x5, x6 = self.encoder(x)
+        x = self.decoder(x1, x2, x3, x4, x5, x6)
         logits = self.outc(x)
         logits = torch.nn.functional.softmax(logits, dim=1)
         return logits
@@ -231,9 +232,9 @@ class UNet(nn.Module):
         x5 = self.down4(x4)
         x6 = self.down5(x5)
 
-        return x1, x2, x3, x4, x5,x6
+        return x1, x2, x3, x4, x5, x6
 
-    def decoder(self, x1, x2, x3, x4, x5,x6):
+    def decoder(self, x1, x2, x3, x4, x5, x6):
 
         # x = self.up1(x5, x4)
         # x = self.up2(x, x3)

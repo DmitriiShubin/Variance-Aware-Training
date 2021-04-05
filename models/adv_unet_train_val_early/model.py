@@ -53,14 +53,14 @@ class Model:
         self.postprocessing = Post_Processing()
         self.__seed_everything(42)
 
-    def fit(self, train, valid,pretrain):
+    def fit(self, train, valid, pretrain):
 
         # setup train and val dataloaders
         train_loader = DataLoader(
             train,
             batch_size=self.hparams['batch_size'],
             shuffle=True,
-            num_workers=self.hparams['num_workers']
+            num_workers=self.hparams['num_workers'],
         )
         valid_loader = DataLoader(
             valid,
@@ -68,7 +68,6 @@ class Model:
             shuffle=False,
             num_workers=self.hparams['num_workers'],
         )
-
 
         adv_loader = DataLoader(pretrain, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=0)
 
@@ -85,14 +84,12 @@ class Model:
 
             for X_batch, y_batch, X_batch_adv, y_batch_adv in tqdm(train_loader):
 
-
                 sample = np.round(np.random.uniform(size=X_batch.shape[0]), 2)
                 X_batch_adv_train_val, _, _, _ = next(iter(adv_loader))
-                X_batch_adv_train_val = X_batch_adv_train_val[:X_batch.shape[0]]
+                X_batch_adv_train_val = X_batch_adv_train_val[: X_batch.shape[0]]
                 X_batch_adv[sample >= 0.5] = X_batch_adv_train_val[sample >= 0.5]
                 y_batch_adv[sample >= 0.5] = 1
                 y_batch_adv[sample < 0.5] = 0
-
 
                 # push the data into the GPU
                 X_batch = X_batch.float().to(self.device)
@@ -126,7 +123,7 @@ class Model:
                 avg_adv_loss += adv_loss.item() / len(train_loader)
 
                 if self.hparams['model']['flat']:
-                    train_loss = train_loss +  self.hparams['model']['alpha'] *adv_loss
+                    train_loss = train_loss + self.hparams['model']['alpha'] * adv_loss
                 else:
                     train_loss = (
                         train_loss + self.hparams['model']['alpha'] * np.log10(1 + epoch) * adv_loss / 1.3
@@ -231,9 +228,7 @@ class Model:
 
             # add data to tensorboard
             writer.add_scalars(
-                'Loss',
-                {'Train_loss': avg_loss, 'Val_loss': avg_val_loss},
-                epoch,
+                'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
             )
             writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
 
@@ -272,10 +267,7 @@ class Model:
         self.model.eval()
 
         test_loader = torch.utils.data.DataLoader(
-            X_test,
-            batch_size=self.hparams['batch_size'],
-            shuffle=False,
-            num_workers=0,
+            X_test, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=0,
         )
 
         error_samplewise = []

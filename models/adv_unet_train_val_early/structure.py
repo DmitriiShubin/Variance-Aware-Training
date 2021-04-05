@@ -250,7 +250,7 @@ class UNet(nn.Module):
 
         self.adv_fc1 = nn.Linear(n_filt, 300)
         self.adv_fc2 = nn.Linear(300, 300)
-        #self.adv_fc3 = nn.Linear(300, 300)
+        # self.adv_fc3 = nn.Linear(300, 300)
         self.adv_fc4 = nn.Linear(300, 1)
 
     def forward(self, x1, x2=None, train=False):
@@ -309,7 +309,6 @@ class UNet(nn.Module):
         x11_s = self.rever1_11(x5).std(dim=2).std(dim=2)
         x12_s = self.rever1_12(x6).std(dim=2).std(dim=2)
 
-
         x1_p = self.rever2_1(x[0]).mean(dim=2).mean(dim=2)
         x2_p = self.rever2_2(x[1]).mean(dim=2).mean(dim=2)
         x3_p = self.rever2_3(x[2]).mean(dim=2).mean(dim=2)
@@ -323,19 +322,46 @@ class UNet(nn.Module):
         x11_p = self.rever2_11(x[4]).std(dim=2).std(dim=2)
         x12_p = self.rever1_12(x[5]).std(dim=2).std(dim=2)
 
-        x = torch.cat([x1_s, x2_s, x3_s, x4_s, x5_s, x6_s, x7_s, x8_s, x9_s, x10_s, x11_s, x12_s,
-                       x1_p, x2_p, x3_p, x4_p, x5_p,x6_p, x7_p, x8_p, x9_p, x10_p, x11_p,x12_p], dim=1)
+        x = torch.cat(
+            [
+                x1_s,
+                x2_s,
+                x3_s,
+                x4_s,
+                x5_s,
+                x6_s,
+                x7_s,
+                x8_s,
+                x9_s,
+                x10_s,
+                x11_s,
+                x12_s,
+                x1_p,
+                x2_p,
+                x3_p,
+                x4_p,
+                x5_p,
+                x6_p,
+                x7_p,
+                x8_p,
+                x9_p,
+                x10_p,
+                x11_p,
+                x12_p,
+            ],
+            dim=1,
+        )
 
         x = torch.relu(self.adv_fc1(x))
-        #x = torch.relu(self.adv_fc2(x))
-        #x = torch.relu(self.adv_fc3(x))
+        # x = torch.relu(self.adv_fc2(x))
+        # x = torch.relu(self.adv_fc3(x))
         x = torch.sigmoid(self.adv_fc4(x))
 
         return x
 
     def predictive_network(self, x):
         x1, x2, x3, x4, x5, x6 = self.encoder(x)
-        x = self.decoder(x1, x2, x3, x4, x5,x6)
+        x = self.decoder(x1, x2, x3, x4, x5, x6)
         logits = self.outc(x)
         logits = torch.nn.functional.softmax(logits, dim=1)
-        return logits, [x1, x2, x3, x4, x5,x6]
+        return logits, [x1, x2, x3, x4, x5, x6]

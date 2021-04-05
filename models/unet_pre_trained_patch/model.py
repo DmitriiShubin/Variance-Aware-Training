@@ -60,7 +60,7 @@ class Model:
             train,
             batch_size=self.hparams['batch_size'],
             shuffle=True,
-            num_workers=self.hparams['num_workers']
+            num_workers=self.hparams['num_workers'],
         )
         valid_loader = DataLoader(
             valid,
@@ -96,7 +96,6 @@ class Model:
                     self.model.down3.requires_grad = False
                     self.model.down4.requires_grad = False
                     self.model.down5.requires_grad = False
-
 
             for X_batch, y_batch in tqdm(train_loader):
 
@@ -214,9 +213,7 @@ class Model:
 
             # add data to tensorboard
             writer.add_scalars(
-                'Loss',
-                {'Train_loss': avg_loss, 'Val_loss': avg_val_loss},
-                epoch,
+                'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
             )
             writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
 
@@ -255,10 +252,7 @@ class Model:
         self.model.eval()
 
         test_loader = torch.utils.data.DataLoader(
-            X_test,
-            batch_size=self.hparams['batch_size'],
-            shuffle=False,
-            num_workers=0,
+            X_test, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=0,
         )
 
         error_samplewise = []
@@ -410,4 +404,3 @@ class Model:
         random.seed(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
-
