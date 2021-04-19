@@ -19,6 +19,7 @@ class Dataset_train(Dataset):
         self.n_classes = n_classes
         self.volums_list = volums_list
         self.preprocessing = Preprocessing(aug, dataset)
+        self.dataset = dataset
 
     def __len__(self):
         return len(self.volums_list)
@@ -35,6 +36,11 @@ class Dataset_train(Dataset):
     def load_data(self, id):
 
         X = np.load(self.volums_list[id]).astype(np.float32)
+
+        if self.dataset == 'kitti':
+            i = int(np.random.uniform(960))
+            X = X[:,:,i:i+64]
+
         y = np.random.choice([0, 90, 180, 270])
 
         X = self.preprocessing.run(X=X)
@@ -54,12 +60,31 @@ class Dataset_train(Dataset):
     def rotate_image(self, image, angle):
         image = np.transpose(image.astype(np.float32), (1, 2, 0))
 
-        if angle == 90:
-            image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
-        elif angle == 180:
-            image = cv2.rotate(image, cv2.ROTATE_180)
-        elif angle == 270:
-            image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        if image.shape[0] >3:
+
+            temp_1 = image[:, :, :3]
+            temp_2 = image[:, :, 3:]
+
+            if angle == 90:
+                temp_1 = cv2.rotate(temp_1, cv2.ROTATE_90_CLOCKWISE)
+                temp_2 = cv2.rotate(temp_2, cv2.ROTATE_90_CLOCKWISE)
+
+            elif angle == 180:
+                temp_1 = cv2.rotate(temp_1, cv2.ROTATE_180)
+                temp_2 = cv2.rotate(temp_2, cv2.ROTATE_180)
+
+            elif angle == 270:
+                temp_1 = cv2.rotate(temp_1, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                temp_2 = cv2.rotate(temp_2, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+            image = np.concatenate([temp_1, temp_2], axis=2)
+        else:
+            if angle == 90:
+                image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+            elif angle == 180:
+                image = cv2.rotate(image, cv2.ROTATE_180)
+            elif angle == 270:
+                image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
         if len(image.shape) < 3:
             image = np.expand_dims(image, axis=2)
@@ -157,6 +182,16 @@ class Augmentations:
                     A.ElasticTransform(alpha=0.05, p=prob),
                     A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
                     A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ]
+            )
+        elif dataset == 'kitti':
+            prob = 0.5
+            self.augs = A.Compose(
+                [
+                    A.HorizontalFlip(p=prob),
+                    # A.VerticalFlip(p=prob),
+                    A.Rotate(limit=5, p=prob),
+                    A.RandomSizedCrop(min_max_height=(50, 50), height=64, width=64, p=prob),
                 ]
             )
 

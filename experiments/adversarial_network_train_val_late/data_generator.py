@@ -18,6 +18,7 @@ class Dataset_train(Dataset):
         self.n_classes = n_classes
         self.volums_list = volums_list
         self.preprocessing = Preprocessing(aug, dataset)
+        self.dataset = dataset
 
     def __len__(self):
         return len(self.volums_list)
@@ -37,33 +38,39 @@ class Dataset_train(Dataset):
     def load_data(self, id):
 
         X = np.load(self.volums_list[id]).astype(np.float32)
-        y = np.load(self.volums_list[id][:-10] + 'labels.npy').astype(np.float32)
+        if self.dataset == 'kitti':
+            y = np.load(self.volums_list[id][:-8] + 'label.npy').astype(np.float32)
+        else:
+            y = np.load(self.volums_list[id][:-10] + 'labels.npy').astype(np.float32)
 
         y = self.one_hot_voxel(y)
 
         X, y = self.preprocessing.run(X=X, y=y)
 
         # second head
-        # TODO:
-        sampled_patient = np.round(np.random.uniform(size=1)[0], 1)
-        if sampled_patient >= 0.5:
-            # NOT the same patient
-            images_subset = self.volums_list.copy()
-            patient_id = self.volums_list[id].split('/')[-2]
-            images_subset = [i for i in images_subset if i.find(patient_id) == -1]
+        # # TODO:
+        # sampled_patient = np.round(np.random.uniform(size=1)[0], 1)
+        # if sampled_patient >= 0.5:
+        #     # NOT the same patient
+        #     images_subset = self.volums_list.copy()
+        #     patient_id = self.volums_list[id].split('/')[-2] +'/'
+        #     images_subset = [i for i in images_subset if i.find(patient_id) == -1]
+        #
+        #     X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
+        #
+        #     y_s = [0]
+        # else:
+        #     # the same patient
+        #     images_subset = self.volums_list.copy()
+        #     patient_id = self.volums_list[id].split('/')[-2] + '/'
+        #     images_subset = [i for i in images_subset if i.find(patient_id) != -1]
+        #     images_subset.remove(self.volums_list[id])
+        #
+        #     X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
+        #     y_s = [1]
 
-            X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
-
-            y_s = [0]
-        else:
-            # the same patient
-            images_subset = self.volums_list.copy()
-            patient_id = self.volums_list[id].split('/')[-2]
-            images_subset = [i for i in images_subset if i.find(patient_id) != -1]
-            images_subset.remove(self.volums_list[id])
-
-            X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
-            y_s = [1]
+        X_s = np.load(np.random.choice(np.array(self.volums_list))).astype(np.float32)
+        y_s = [0]
 
         X_s, y_ = self.preprocessing.run(X=X_s, y=np.zeros((y.shape)))
 
@@ -179,6 +186,9 @@ class Augmentations:
                 ]
             )
         elif dataset == 'ACDC_2':
+            prob = 0.5
+            self.augs = A.Compose([A.HorizontalFlip(p=prob), A.Rotate(limit=5, p=prob),])
+        elif dataset == 'kitti':
             prob = 0.5
             self.augs = A.Compose([A.HorizontalFlip(p=prob), A.Rotate(limit=5, p=prob),])
 

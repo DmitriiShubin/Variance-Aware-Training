@@ -17,6 +17,7 @@ class Dataset_train(Dataset):
 
         self.volumes_list = volumes_list
         self.preprocessing = Preprocessing(aug, dataset)
+        self.dataset = dataset
 
         self.generate_pairs(n_pairs=int(len(self.volumes_list) * 10))
 
@@ -78,7 +79,15 @@ class Dataset_train(Dataset):
     def load_data(self, id):
 
         X = np.load(self.volumes_list[id])
+
+        if self.dataset == 'kitti':
+            i = int(np.random.uniform(960))
+            X = X[:,:,i:i+64]
+
         X_supportive = X.copy()
+
+
+
         y = [0]
         X = self.preprocessing.run(X, augs=True)
         X_supportive = self.preprocessing.run(X_supportive, augs=True)
@@ -174,6 +183,19 @@ class Augmentations:
                     # A.ElasticTransform(alpha=0.05,p=prob),
                     # A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
                     A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ]
+            )
+        elif dataset == 'kitti':
+            prob = 0.7
+            self.augs = A.Compose(
+                [
+                    A.HorizontalFlip(p=prob),
+                    A.VerticalFlip(p=prob),
+                    A.Rotate(limit=180, p=prob),
+                    #
+                    # A.ElasticTransform(alpha=0.05,p=prob),
+                    # A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    #A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
 

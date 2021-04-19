@@ -16,9 +16,9 @@ checkpoint_path: ./data/model_weights/encoder_patch_kitti/checkpoint/ # CHANGE W
 model_path: ./data/model_weights/encoder_patch_kitti/ # CHANGE WHEN CREATE A NEW MODEL
 dataset: 'kitti'
 model:
-  in_channels: 1
+  in_channels: 5
   n_classes: 1
-  emb_dim: 256
+  emb_dim: 512
   n_filters_input: 32
   n_layers: 5
   dropout_rate: 0.0

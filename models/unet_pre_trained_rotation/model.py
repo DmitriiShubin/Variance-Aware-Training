@@ -143,7 +143,7 @@ class Model:
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
             # calc train metrics
-            metric_train = self.metric.compute()
+            metric_train = self.metric.compute(dataset=self.hparams['dataset'])
 
             # evaluate the model
             print('Model evaluation')
@@ -184,7 +184,7 @@ class Model:
                     self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
             # calc val metrics
-            metric_val = self.metric.compute()
+            metric_val = self.metric.compute(dataset=self.hparams['dataset'])
 
             # early stopping for scheduler
             if self.hparams['scheduler_name'] == 'ReduceLROnPlateau':
@@ -285,7 +285,7 @@ class Model:
 
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
-        fold_score = self.metric.compute()
+        fold_score = self.metric.compute(dataset=self.hparams['dataset'])
         error_samplewise = np.array(error_samplewise)
 
         return error_samplewise, fold_score

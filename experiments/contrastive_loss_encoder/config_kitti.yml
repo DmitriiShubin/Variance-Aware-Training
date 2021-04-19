@@ -6,17 +6,17 @@ min_delta: 0.01 #min delta of improvement for early stopping
 verbose_train: true
 num_workers: 0
 n_train_samples: 1
-model_name: encoder_contrastive_ACDC # CHANGE WHEN CREATE A NEW MODEL
-split_table_path: './data/split_tables/ACDC/UB_split_table.json'
-test_split_table_path: './data/split_tables/ACDC/test_split_table.json'
+model_name: encoder_contrastive_kitti # CHANGE WHEN CREATE A NEW MODEL
+split_table_path: './data/split_tables/kitti/UB_split_table.json'
+test_split_table_path: './data/split_tables/kitti/test_split_table.json'
 image_width: 240
 image_height: 240
-debug_path: './data/CV_debug/ACDC_encoder_contrastive/'
-checkpoint_path: ./data/model_weights/encoder_contrastive_ACDC/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
-model_path: ./data/model_weights/encoder_contrastive_ACDC/ # CHANGE WHEN CREATE A NEW MODEL
-dataset: 'ACDC_8'
+debug_path: './data/CV_debug/kitti_encoder_contrastive/'
+checkpoint_path: ./data/model_weights/encoder_contrastive_kitti/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
+model_path: ./data/model_weights/encoder_contrastive_kitti/ # CHANGE WHEN CREATE A NEW MODEL
+dataset: 'kitti'
 model:
-  in_channels: 1
+  in_channels: 5
   emb_dim: 256
   n_filters_input: 32
   n_layers: 5

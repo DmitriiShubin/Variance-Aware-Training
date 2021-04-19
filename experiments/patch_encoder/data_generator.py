@@ -19,6 +19,7 @@ class Dataset_train(Dataset):
         self.n_classes = n_classes
         self.volums_list = volums_list
         self.preprocessing = Preprocessing(aug, dataset)
+        self.dataset = dataset
 
     def __len__(self):
         return len(self.volums_list)
@@ -36,6 +37,12 @@ class Dataset_train(Dataset):
     def load_data(self, id):
 
         X = np.load(self.volums_list[id]).astype(np.float32)
+
+        if self.dataset == 'kitti':
+            i = int(np.random.uniform(960))
+            X = X[:,:,i:i+64]
+
+
         X = self.preprocessing.run(X)
 
         y = np.random.choice(np.arange(8))
@@ -54,6 +61,18 @@ class Dataset_train(Dataset):
             y = [0]
 
         return X1, X2, y
+
+    def padding(self, X):
+
+
+        extension = 64
+
+        X = np.concatenate([X, np.zeros((X.shape[0], X.shape[1], extension//2))], axis=-1)
+        X = np.concatenate([np.zeros((X.shape[0], X.shape[1],extension//2)),X], axis=-1)
+        X = np.concatenate([X, np.zeros((X.shape[0], extension // 2,X.shape[2] ))], axis=1)
+        X = np.concatenate([np.zeros((X.shape[0],  extension // 2,X.shape[2])), X], axis=1)
+
+        return X
 
     def select_patch(self, X, sector):
         # optional: upsample if too much
@@ -90,6 +109,9 @@ class Dataset_train(Dataset):
             X2 = X[split_x - overlap : split_x * 2 + overlap, split_y - overlap : split_y * 2 + overlap, :]
 
         X2 = np.transpose(X2.astype(np.float32), (2, 0, 1))
+
+        if self.dataset == 'kitti':
+            X2 = self.padding(X2)
 
         return X2
 
