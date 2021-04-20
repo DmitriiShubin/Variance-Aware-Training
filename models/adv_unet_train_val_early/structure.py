@@ -257,9 +257,9 @@ class UNet(nn.Module):
 
         if train:
             # main head (predictive)
-            out, decoder_x = self.predictive_network(x1)
+            out, encoder_x = self.predictive_network(x1)
             # additional head (adversarial)
-            out_s = self.adversarial_network(decoder_x, x2)
+            out_s = self.adversarial_network(encoder_x, x2)
             return out, out_s
         else:
             # main head (predictive)

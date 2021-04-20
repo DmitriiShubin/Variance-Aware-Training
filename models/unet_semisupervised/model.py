@@ -53,7 +53,7 @@ class Model:
         self.postprocessing = Post_Processing()
         self.__seed_everything(42)
 
-    def fit(self, train, valid,pre_train):
+    def fit(self, train, valid,ssl=False):
 
         # setup train and val dataloaders
         train_loader = DataLoader(
@@ -68,6 +68,8 @@ class Model:
             shuffle=False,
             num_workers=self.hparams['num_workers'],
         )
+
+
 
         # tensorboard
         writer = SummaryWriter(f"runs/{self.hparams['model_name']}_{self.start_training}")
@@ -96,7 +98,12 @@ class Model:
                 pred = pred.permute(0, 2, 3, 1)
                 pred = pred.reshape(-1, pred.shape[-1])
                 y_batch = y_batch.reshape(-1, y_batch.shape[-1])
-                train_loss = self.loss(pred, y_batch)
+                if ssl:
+                    train_loss = self.loss(pred, y_batch)
+                    train_loss_2 = self.loss_2(pred, y_batch)
+                    train_loss += train_loss_2
+                else:
+                    train_loss = self.loss(pred, y_batch)
 
                 # remove data from GPU
                 y_batch = y_batch.float().cpu().detach()
@@ -272,6 +279,58 @@ class Model:
 
         return error_samplewise, fold_score
 
+    def predict_semi_supervised(self, X_test):
+        """
+        This function makes:
+        1. batch-wise predictions
+        2. calculation of the metric for each sample
+        3. calculation of the metric for the entire dataset
+
+        Parameters
+        ----------
+        X_test
+
+        Returns
+        -------
+
+        """
+
+        # evaluate the model
+        self.model.eval()
+
+        test_loader = torch.utils.data.DataLoader(
+            X_test, batch_size=1, shuffle=False, num_workers=0,
+        )
+
+
+
+        print('Getting predictions')
+        with torch.no_grad():
+            for i, (X_batch, y_batch,name) in enumerate(tqdm(test_loader)):
+                X_batch = X_batch.float().to(self.device)
+                y_batch = y_batch.float().to(self.device)
+
+                pred = self.model(X_batch)
+
+                # calculate main loss
+
+                pred = pred.cpu().detach().numpy()[0]
+                pred = np.argmax(pred,axis=0)
+                pred = np.expand_dims(pred,axis=0)
+                pred = X_test.one_hot_voxel(pred)
+                X_batch = X_batch.cpu().detach().numpy()
+                y_batch = y_batch.cpu().detach().numpy()
+
+                # save prediction in numpy array
+                name = name[0]
+                path = name[:-len(name.split('/')[-1])]
+                os.makedirs(path,exist_ok=True)
+                np.save(name,pred)
+
+
+
+        return True
+
     def save(self, model_path):
 
         print('Saving the model')
@@ -348,7 +407,7 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss_1 = Dice_loss()
+        self.loss = Dice_loss()
         self.loss_2 = Dice_loss() #loss for smoothed semi-supervised predictions
 
         # 2. define model metric

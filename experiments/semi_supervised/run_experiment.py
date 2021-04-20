@@ -6,9 +6,9 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.baseline.data_generator import Dataset_train
-from models.unet import Model
-from experiments.baseline.train_pipeline import TrainPipeline
+from experiments.semi_supervised.data_generator import Dataset_train,Dataset_pretrain
+from models.unet_semisupervised import Model
+from experiments.semi_supervised.train_pipeline import TrainPipeline
 
 
 def run(
@@ -17,7 +17,7 @@ def run(
     n_epochs=None,
     gpu='2,3',
     dropout=None,
-    experiment='./experiments/baseline/config_brats_2.yml',
+    experiment='./experiments/semi_supervised/config_brats_2.yml',
 ):
 
     # load hyperparameters
@@ -38,7 +38,7 @@ def run(
     logger = Logger()
 
     # run cross-val
-    cross_val = TrainPipeline(hparams=hparams, gpu=gpu, model=Model, Dataset_train=Dataset_train)
+    cross_val = TrainPipeline(hparams=hparams, gpu=gpu, model=Model, Dataset_train=Dataset_train,Dataset_pretrain=Dataset_pretrain)
     fold_scores_val, fold_scores_test, start_training = cross_val.train()
 
     # save logs

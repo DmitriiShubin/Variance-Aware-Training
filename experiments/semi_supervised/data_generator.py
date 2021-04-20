@@ -35,12 +35,11 @@ class Dataset_train(Dataset):
     def load_data(self, id):
 
         X = np.load(self.volums_list[id]).astype(np.float32)
-        if self.dataset == 'kitti':
-            y = np.load(self.volums_list[id][:-8] + 'label.npy').astype(np.float32)
-        else:
-            y = np.load(self.volums_list[id][:-10] + 'labels.npy').astype(np.float32)
 
-        y = self.one_hot_voxel(y)
+        y = np.load(self.volums_list[id][:-10] + 'labels.npy').astype(np.float32)
+
+        if y.shape[0] == 1 and self.n_classes > y.shape[0]:
+            y = self.one_hot_voxel(y)
 
         X, y = self.preprocessing.run(X=X, y=y)
 
@@ -52,6 +51,46 @@ class Dataset_train(Dataset):
         y = np.transpose(y.astype(np.float32), (2, 0, 1))
         return y
 
+
+class Dataset_pretrain(Dataset):
+    def __init__(self, volums_list, aug, n_classes, dataset):
+
+        self.n_classes = n_classes
+        self.volums_list = volums_list
+        self.dataset = dataset
+        self.preprocessing = Preprocessing(aug, dataset)
+
+    def __len__(self):
+        return len(self.volums_list)
+
+    def __getitem__(self, idx):
+
+        X, y,name = self.load_data(idx)
+
+        X = torch.tensor(X, dtype=torch.float)
+        y = torch.tensor(y, dtype=torch.float)
+
+        return X, y,name
+
+    def load_data(self, id):
+
+        X = np.load(self.volums_list[id]).astype(np.float32)
+
+        name = self.volums_list[id].replace("voxels", "labels")
+
+        y = np.load(name).astype(np.float32)
+
+
+
+        X, y = self.preprocessing.run(X=X, y=y)
+
+        return X, y,name
+
+    def one_hot_voxel(self, y):
+        y = np.transpose(y.astype(np.int32), (1, 2, 0))
+        y = np.eye(self.n_classes)[y[:, :, -1].astype(np.int32)]
+        y = np.transpose(y.astype(np.float32), (2, 0, 1))
+        return y
 
 class Preprocessing:
     def __init__(self, aug, dataset):

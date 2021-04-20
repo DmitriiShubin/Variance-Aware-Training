@@ -19,13 +19,14 @@ seed_everything(42)
 
 
 class TrainPipeline:
-    def __init__(self, hparams, gpu, model, Dataset_train):
+    def __init__(self, hparams, gpu, model, Dataset_train,Dataset_pretrain):
 
         # load the model
 
         self.hparams = hparams
         self.gpu = gpu
         self.Dataset_train = Dataset_train
+        self.Dataset_pretrain = Dataset_pretrain
 
         print('\n')
         print('Selected Learning rate:', self.hparams['optimizer_hparams']['lr'])
@@ -36,7 +37,7 @@ class TrainPipeline:
         self.splits, self.splits_test = self.load_split_table()
         self.metric = Metric(self.hparams['model']['n_classes'])
 
-        self.model = model
+        self.Model = model
 
     def load_split_table(self):
 
@@ -48,7 +49,10 @@ class TrainPipeline:
 
     def train(self):
 
-        self.model = self.model(hparams=self.hparams, gpu=self.gpu)
+
+        # run 1 iteration without labels, predict on pre-train
+
+        self.model = self.Model(hparams=self.hparams, gpu=self.gpu)
 
         train = self.Dataset_train(
             self.splits['train'].values[0],
@@ -62,6 +66,12 @@ class TrainPipeline:
             n_classes=self.hparams['model']['n_classes'],
             dataset=self.hparams['dataset'],
         )
+        pretrain = self.Dataset_pretrain(
+            self.splits['pretrain'].values[0],
+            aug=False,
+            n_classes=self.hparams['model']['n_classes'],
+            dataset=self.hparams['dataset'],
+        )
         test = self.Dataset_train(
             self.splits_test['test'].values[0],
             aug=False,
@@ -71,8 +81,23 @@ class TrainPipeline:
 
         # train model
         start_training = self.model.fit(train=train, valid=valid)
-
         # get model predictions
+        self.model.predict_semi_supervised(pretrain)
+
+        train = self.Dataset_train(
+            self.splits['train'].values[0]+self.splits['pretrain'].values[0],
+            aug=True,
+            n_classes=self.hparams['model']['n_classes'],
+            dataset=self.hparams['dataset'],
+        )
+
+        # run n iterations with pseudo-labels, predict on pre-train
+        for iteration in range(self.hparams['model']['iterations']):
+            self.model = self.Model(hparams=self.hparams, gpu=self.gpu)
+            _ = self.model.fit(train=train, valid=valid)
+            self.model.predict_semi_supervised(pretrain)
+
+
         error_val, fold_score = self.model.predict(valid)
         error_test, fold_score_test = self.model.predict(test)
 

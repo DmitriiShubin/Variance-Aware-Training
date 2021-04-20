@@ -48,26 +48,26 @@ class Dataset_train(Dataset):
         X, y = self.preprocessing.run(X=X, y=y)
 
         # second head
-        # # TODO:
-        # sampled_patient = np.round(np.random.uniform(size=1)[0], 1)
-        # if sampled_patient >= 0.5:
-        #     # NOT the same patient
-        #     images_subset = self.volums_list.copy()
-        #     patient_id = self.volums_list[id].split('/')[-2] +'/'
-        #     images_subset = [i for i in images_subset if i.find(patient_id) == -1]
-        #
-        #     X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
-        #
-        #     y_s = [0]
-        # else:
-        #     # the same patient
-        #     images_subset = self.volums_list.copy()
-        #     patient_id = self.volums_list[id].split('/')[-2] + '/'
-        #     images_subset = [i for i in images_subset if i.find(patient_id) != -1]
-        #     images_subset.remove(self.volums_list[id])
-        #
-        #     X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
-        #     y_s = [1]
+        # TODO:
+        sampled_patient = np.round(np.random.uniform(size=1)[0], 1)
+        if sampled_patient >= 0.5:
+            # NOT the same patient
+            images_subset = self.volums_list.copy()
+            patient_id = self.volums_list[id].split('/')[-2] +'/'
+            images_subset = [i for i in images_subset if i.find(patient_id) == -1]
+
+            X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
+
+            y_s = [0]
+        else:
+            # the same patient
+            images_subset = self.volums_list.copy()
+            patient_id = self.volums_list[id].split('/')[-2] + '/'
+            images_subset = [i for i in images_subset if i.find(patient_id) != -1]
+            images_subset.remove(self.volums_list[id])
+
+            X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
+            y_s = [1]
 
         X_s = np.load(np.random.choice(np.array(self.volums_list))).astype(np.float32)
         y_s = [0]

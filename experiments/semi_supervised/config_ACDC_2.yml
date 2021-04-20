@@ -23,6 +23,8 @@ model:
   dropout_rate: 0.0
   kernel_size: 3
   dilation: 3
+  alpha: 1.0
+  iterations: 3
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001
