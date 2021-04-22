@@ -53,3 +53,7 @@ def run(
     logger.kpi_logger.info(f"Dropout rate = {hparams['model']['dropout_rate']}")
     logger.kpi_logger.info(f"Model name: = {hparams['model_name']}")
     logger.kpi_logger.info('=============================================')
+
+
+if __name__=="__main__":
+    run()
