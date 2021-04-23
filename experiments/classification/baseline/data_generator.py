@@ -36,11 +36,9 @@ class Dataset_train(Dataset):
         X = np.load(self.volums_list[id]).astype(np.float32)
         y = np.load(self.volums_list[id][:-9] + 'label.npy').astype(np.float32)
 
-
         X = self.preprocessing.run(X=X)
 
         return X, y
-
 
 
 class Preprocessing:
@@ -51,16 +49,12 @@ class Preprocessing:
 
     def run(self, X):
 
-
-
         if self.aug:
             X = self.augmentations.run(X)
 
         X = self.imagenet_normalize(X)
 
         X = np.transpose(X.astype(np.float32), (2, 0, 1))
-
-
 
         return X
 
@@ -77,16 +71,15 @@ class Preprocessing:
 
         return X
 
-    def imagenet_normalize(self,X):
+    def imagenet_normalize(self, X):
 
-        X = X/ 255.0
+        X = X / 255.0
 
         mean = [0.485, 0.456, 0.406]
         std = [0.229, 0.224, 0.225]
 
         for i in range(len(mean)):
-            X[:,:,i] = (X[:,:,i] - mean[i])/std[i]
-
+            X[:, :, i] = (X[:, :, i] - mean[i]) / std[i]
 
         return X
 
@@ -100,29 +93,25 @@ class Preprocessing:
         return X
 
 
-
-
 class Augmentations:
     def __init__(self):
 
         prob = 0.5
         self.augs = A.Compose(
             [
-                #A.HorizontalFlip(p=prob),
-                #A.VerticalFlip(p=prob),
-                #A.Rotate(limit=90, p=prob),
-                #A.ElasticTransform(alpha=0.05, p=prob),
-                #A.RandomSizedCrop(min_max_height=(70, 70), height=96, width=96, p=prob),
-                #A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                # A.HorizontalFlip(p=prob),
+                # A.VerticalFlip(p=prob),
+                # A.Rotate(limit=90, p=prob),
+                # A.ElasticTransform(alpha=0.05, p=prob),
+                # A.RandomSizedCrop(min_max_height=(70, 70), height=96, width=96, p=prob),
+                # A.RandomGamma(gamma_limit=(80, 120), p=prob),
             ]
         )
 
     def run(self, image):
 
-
         # apply augs
         augmented = self.augs(image=image)
         image = augmented['image']
-
 
         return image

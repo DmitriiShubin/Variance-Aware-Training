@@ -17,11 +17,7 @@ splits = ["train", "valid", "test"]
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("./evaluate_panoptic.py")
     parser.add_argument(
-        '--dataset',
-        '-d',
-        type=str,
-        required=True,
-        help='Dataset dir. No Default',
+        '--dataset', '-d', type=str, required=True, help='Dataset dir. No Default',
     )
     parser.add_argument(
         '--predictions',

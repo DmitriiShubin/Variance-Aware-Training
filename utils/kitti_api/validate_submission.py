@@ -33,9 +33,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "zipfile",
-        type=str,
-        help='zip file that should be validated.',
+        "zipfile", type=str, help='zip file that should be validated.',
     )
 
     parser.add_argument(

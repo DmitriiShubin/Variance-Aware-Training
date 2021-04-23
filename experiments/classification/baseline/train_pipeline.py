@@ -51,19 +51,13 @@ class TrainPipeline:
         self.model = self.model(hparams=self.hparams, gpu=self.gpu)
 
         train = self.Dataset_train(
-            self.splits['train'].values[0],
-            aug=True,
-            n_classes=self.hparams['model']['n_classes']
+            self.splits['train'].values[0], aug=True, n_classes=self.hparams['model']['n_classes']
         )
         valid = self.Dataset_train(
-            self.splits['val'].values[0],
-            aug=False,
-            n_classes=self.hparams['model']['n_classes']
+            self.splits['val'].values[0], aug=False, n_classes=self.hparams['model']['n_classes']
         )
         test = self.Dataset_train(
-            self.splits_test['test'].values[0],
-            aug=False,
-            n_classes=self.hparams['model']['n_classes']
+            self.splits_test['test'].values[0], aug=False, n_classes=self.hparams['model']['n_classes']
         )
 
         # train model
@@ -90,5 +84,3 @@ class TrainPipeline:
         )
 
         return fold_score, fold_score_test, start_training
-
-

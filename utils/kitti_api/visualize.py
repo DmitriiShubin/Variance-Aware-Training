@@ -10,11 +10,7 @@ from auxiliary.laserscanvis import LaserScanVis
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("./visualize.py")
     parser.add_argument(
-        '--dataset',
-        '-d',
-        type=str,
-        required=True,
-        help='Dataset to visualize. No Default',
+        '--dataset', '-d', type=str, required=True, help='Dataset to visualize. No Default',
     )
     parser.add_argument(
         '--config',
@@ -60,11 +56,7 @@ if __name__ == '__main__':
         help='Visualize instances too. Defaults to %(default)s',
     )
     parser.add_argument(
-        '--offset',
-        type=int,
-        default=0,
-        required=False,
-        help='Sequence to start. Defaults to %(default)s',
+        '--offset', type=int, default=0, required=False, help='Sequence to start. Defaults to %(default)s',
     )
     parser.add_argument(
         '--ignore_safety',

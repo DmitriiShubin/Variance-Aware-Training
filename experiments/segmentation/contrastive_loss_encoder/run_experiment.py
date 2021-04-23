@@ -29,11 +29,7 @@ def run(
         gpu = [int(i) for i in gpu.split(",")]
 
     hparams = update_hparams(
-        hparams=hparams,
-        dropout=dropout,
-        batch_size=batch_size,
-        lr=lr,
-        n_epochs=n_epochs,
+        hparams=hparams, dropout=dropout, batch_size=batch_size, lr=lr, n_epochs=n_epochs,
     )
 
     logger = Logger()

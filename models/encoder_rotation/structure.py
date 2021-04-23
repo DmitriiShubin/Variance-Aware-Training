@@ -189,9 +189,7 @@ class Encoder_rotation(nn.Module):
         self.fc1 = nn.Linear(
             self.hparams['n_filters_input'] * (2 ** 5), self.hparams['n_filters_input'] * (2 ** 5)
         )
-        self.fc2 = nn.Linear(
-            self.hparams['n_filters_input'] * (2 ** 5), self.hparams['n_classes']
-        )
+        self.fc2 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), self.hparams['n_classes'])
         # self.fc3 = nn.Linear(self.hparams['n_filters_input'] * (2 ** 5), 128)#self.emb_dim)
 
     def forward(self, x):
@@ -201,7 +199,7 @@ class Encoder_rotation(nn.Module):
         x = torch.mean(x, dim=2)
 
         x = torch.relu(self.fc1(x))
-        x = torch.softmax(self.fc2(x),dim=1)
+        x = torch.softmax(self.fc2(x), dim=1)
         # logits = self.fc3(x)
         return x
 

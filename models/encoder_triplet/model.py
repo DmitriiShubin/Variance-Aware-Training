@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import Metric
+from metrics import Dice_score
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from utils.post_processing import Post_Processing
@@ -60,7 +60,7 @@ class Model:
             train,
             batch_size=self.hparams['batch_size'],
             shuffle=True,
-            num_workers=self.hparams['num_workers']
+            num_workers=self.hparams['num_workers'],
         )
         valid_loader = DataLoader(
             valid,
@@ -174,9 +174,7 @@ class Model:
 
             # add data to tensorboard
             writer.add_scalars(
-                'Loss',
-                {'Train_loss': avg_loss, 'Val_loss': avg_val_loss},
-                epoch,
+                'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
             )
 
             # early stopping procesudre
@@ -214,10 +212,7 @@ class Model:
         self.model.eval()
 
         test_loader = torch.utils.data.DataLoader(
-            X_test,
-            batch_size=self.hparams['batch_size'],
-            shuffle=False,
-            num_workers=0,
+            X_test, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=0,
         )
 
         avg_test_loss = 0.0

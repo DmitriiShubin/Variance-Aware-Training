@@ -36,11 +36,9 @@ class Dataset_train(Dataset):
         X = np.load(self.volums_list[id]).astype(np.float32)
         y = np.load(self.volums_list[id][:-10] + 'labels.npy').astype(np.float32)
 
-
         X = self.preprocessing.run(X=X)
 
         return X, y
-
 
 
 class Preprocessing:
@@ -81,8 +79,6 @@ class Preprocessing:
         return X
 
 
-
-
 class Augmentations:
     def __init__(self):
 
@@ -92,7 +88,7 @@ class Augmentations:
                 A.HorizontalFlip(p=prob),
                 A.VerticalFlip(p=prob),
                 A.Rotate(limit=5, p=prob),
-                #A.ElasticTransform(alpha=0.05, p=prob),
+                # A.ElasticTransform(alpha=0.05, p=prob),
                 A.RandomSizedCrop(min_max_height=(76, 76), height=96, width=96, p=prob),
                 A.RandomGamma(gamma_limit=(80, 120), p=prob),
             ]

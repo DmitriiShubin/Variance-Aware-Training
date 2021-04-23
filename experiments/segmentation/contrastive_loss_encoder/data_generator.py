@@ -49,10 +49,10 @@ class Dataset_train(Dataset):
             sample_int = int(sample_int.split('_')[0])
             records_pos_subset = self.volumes_list[np.where(labels != anchor_label)]
             records_pos_subset = records_pos_subset.tolist()
-            records_pos_subset = [record for record in records_pos_subset if record.find(sample)!=-1]
+            records_pos_subset = [record for record in records_pos_subset if record.find(sample) != -1]
             records_pos_subset = np.array(records_pos_subset)
 
-            if records_pos_subset.shape[0]==0:
+            if records_pos_subset.shape[0] == 0:
                 continue
 
             pairs['supportive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
@@ -80,8 +80,8 @@ class Dataset_train(Dataset):
         X = np.load(self.volumes_list[id])
         X_supportive = X.copy()
         y = [0]
-        X = self.preprocessing.run(X,augs=True)
-        X_supportive = self.preprocessing.run(X_supportive,augs=True)
+        X = self.preprocessing.run(X, augs=True)
+        X_supportive = self.preprocessing.run(X_supportive, augs=True)
         return X, X_supportive, y
 
 
@@ -91,7 +91,7 @@ class Preprocessing:
         self.aug = aug
         self.augmentations = Augmentations(dataset)
 
-    def run(self, X,augs):
+    def run(self, X, augs):
 
         if augs:
 
@@ -155,11 +155,11 @@ class Augmentations:
             prob = 0.5
             self.augs = A.Compose(
                 [  # A.Blur(blur_limit=3,p=prob),
-                    #A.HorizontalFlip(p=prob),
+                    # A.HorizontalFlip(p=prob),
                     A.VerticalFlip(p=prob),
                     A.Rotate(limit=10, p=prob),
                     # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    #A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
+                    # A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
                     # A.RandomGamma(gamma_limit=(80,120),p=prob)
                 ]
             )
@@ -172,13 +172,14 @@ class Augmentations:
                     A.Rotate(limit=180, p=prob),
                     #
                     # A.ElasticTransform(alpha=0.05,p=prob),
-                    #A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                    # A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
+
     def run(self, image):
 
-        image = np.transpose(image.astype(np.float32), (1, 2,0))
+        image = np.transpose(image.astype(np.float32), (1, 2, 0))
 
         # apply augs
         augmented = self.augs(image=image)

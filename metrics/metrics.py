@@ -1,8 +1,8 @@
 import numpy as np
-from sklearn.metrics import multilabel_confusion_matrix
+from sklearn.metrics import multilabel_confusion_matrix, roc_auc_score
 
 
-class Metric:
+class Dice_score:
     def __init__(self, n_classes: int = 2, exclude_class: int = 0):
 
         self.tp = np.array([0] * (n_classes))
@@ -33,10 +33,6 @@ class Metric:
             (1 + 2 ** 2) * self.tp[1:] + 2 ** 2 * self.fn[1:] + self.fp[1:] + 1e-3
         )
 
-        # f1 = ((1 + 2 ** 2) * self.tp + 1e-3) / (
-        #         (1 + 2 ** 2) * self.tp + 2 ** 2 * self.fn + self.fp + 1e-3
-        # )
-
         self.tp = np.array([0] * (self.n_classes))
         self.fp = np.array([0] * (self.n_classes))
         self.fn = np.array([0] * (self.n_classes))
@@ -62,11 +58,10 @@ class RocAuc:
         self.labels = []
         self.outputs = []
 
-    def calc_running_score(self, labels:np.array, outputs:np.array):
+    def calc_running_score(self, labels: np.array, outputs: np.array):
 
         self.labels += labels.tolist()
         self.outputs += outputs.tolist()
-
 
     def compute(self):
 
@@ -76,7 +71,6 @@ class RocAuc:
         self.outputs = []
 
         return score
-
 
     def reset(self):
         self.labels = []

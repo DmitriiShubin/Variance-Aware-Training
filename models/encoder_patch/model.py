@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import Metric
+from metrics import Dice_score
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from utils.post_processing import Post_Processing
@@ -60,7 +60,7 @@ class Model:
             train,
             batch_size=self.hparams['batch_size'],
             shuffle=True,
-            num_workers=self.hparams['num_workers']
+            num_workers=self.hparams['num_workers'],
         )
         valid_loader = DataLoader(
             valid,
@@ -79,7 +79,7 @@ class Model:
             self.model.train()
             avg_loss = 0.0
 
-            for X1_batch,X2_batch, y_batch in tqdm(train_loader):
+            for X1_batch, X2_batch, y_batch in tqdm(train_loader):
 
                 # push the data into the GPU
                 X1_batch = X1_batch.float().to(self.device)
@@ -90,7 +90,7 @@ class Model:
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred = self.model(X1_batch,X2_batch)
+                pred = self.model(X1_batch, X2_batch)
 
                 # process main loss
                 pred = pred.reshape(-1, pred.shape[-1])
@@ -128,7 +128,7 @@ class Model:
 
             with torch.no_grad():
 
-                for X1_batch,X2_batch, y_batch in tqdm(valid_loader):
+                for X1_batch, X2_batch, y_batch in tqdm(valid_loader):
 
                     # push the data into the GPU
                     X1_batch = X1_batch.float().to(self.device)
@@ -136,7 +136,7 @@ class Model:
                     y_batch = y_batch.float().to(self.device)
 
                     # get predictions
-                    pred = self.model(X1_batch,X2_batch)
+                    pred = self.model(X1_batch, X2_batch)
 
                     # calculate main loss
                     pred = pred.reshape(-1, pred.shape[-1])
@@ -173,9 +173,7 @@ class Model:
 
             # add data to tensorboard
             writer.add_scalars(
-                'Loss',
-                {'Train_loss': avg_loss, 'Val_loss': avg_val_loss},
-                epoch,
+                'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
             )
 
             # early stopping procesudre
@@ -213,22 +211,19 @@ class Model:
         self.model.eval()
 
         test_loader = torch.utils.data.DataLoader(
-            X_test,
-            batch_size=self.hparams['batch_size'],
-            shuffle=False,
-            num_workers=0,
+            X_test, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=0,
         )
 
         avg_test_loss = 0
 
         print('Getting predictions')
         with torch.no_grad():
-            for i, (X1_batch,X2_batch, y_batch) in enumerate(tqdm(test_loader)):
+            for i, (X1_batch, X2_batch, y_batch) in enumerate(tqdm(test_loader)):
                 X1_batch = X1_batch.float().to(self.device)
                 X2_batch = X2_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
-                pred = self.model(X1_batch,X2_batch)
+                pred = self.model(X1_batch, X2_batch)
 
                 # calculate main loss
                 pred = pred.reshape(-1, pred.shape[-1])
@@ -323,7 +318,7 @@ class Model:
         self.loss = nn.BCELoss()
 
         # 2. define model metric
-        self.metric = Metric(self.hparams['model']['n_classes'])
+        self.metric = Dice_score(self.hparams['model']['n_classes'])
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

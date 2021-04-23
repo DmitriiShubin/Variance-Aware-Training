@@ -93,5 +93,3 @@ class TrainPipeline:
         )
 
         return fold_score, fold_score_test, start_training
-
-

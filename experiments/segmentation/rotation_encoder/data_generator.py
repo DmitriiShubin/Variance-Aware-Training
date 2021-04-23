@@ -62,7 +62,7 @@ class Dataset_train(Dataset):
             image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
         if len(image.shape) < 3:
-            image = np.expand_dims(image,axis=2)
+            image = np.expand_dims(image, axis=2)
 
         return np.transpose(image.astype(np.float32), (2, 0, 1))
         # image_center = tuple(np.array(image.shape[1::-1]) / 2)
@@ -152,14 +152,14 @@ class Augmentations:
             self.augs = A.Compose(
                 [
                     A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
+                    # A.VerticalFlip(p=prob),
                     A.Rotate(limit=5, p=prob),
-
-                    A.ElasticTransform(alpha=0.05,p=prob),
+                    A.ElasticTransform(alpha=0.05, p=prob),
                     A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob)
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
+
     def run(self, image):
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))

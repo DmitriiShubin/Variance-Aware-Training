@@ -12,15 +12,13 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import Dice_score
+from metrics import RocAuc
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
-from utils.post_processing import Post_Processing
 from time import time
-from utils.loss_functions import f1_loss, Dice_loss
 
 # model
-from models.unet_pre_trained_rotation.structure import UNet
+from models.efficientnet.structure import EfficientNet
 
 
 class Model:
@@ -50,7 +48,6 @@ class Model:
         self.__setup_model_hparams()
 
         # declare preprocessing object
-        self.postprocessing = Post_Processing()
         self.__seed_everything(42)
 
     def fit(self, train, valid):
@@ -78,24 +75,7 @@ class Model:
             # training mode
             self.model.train()
             avg_loss = 0.0
-
-            # freeze encoder
-            if epoch >= self.hparams['model']['freeze_layers_delay']:
-                if self.gpu is not None and len(self.gpu) > 1:
-                    self.model.module.inc.requires_grad = True
-                    self.model.module.down1.requires_grad = True
-                    self.model.module.down2.requires_grad = True
-                    self.model.module.down3.requires_grad = True
-                    self.model.module.down4.requires_grad = True
-                    self.model.module.down5.requires_grad = True
-
-                else:
-                    self.model.inc.requires_grad = False
-                    self.model.down1.requires_grad = False
-                    self.model.down2.requires_grad = False
-                    self.model.down3.requires_grad = False
-                    self.model.down4.requires_grad = False
-                    self.model.down5.requires_grad = False
+            avg_adv_loss = 0.0
 
             for X_batch, y_batch in tqdm(train_loader):
 
@@ -110,19 +90,17 @@ class Model:
                 pred = self.model(X_batch)
 
                 # process main loss
-                y_batch = y_batch.permute(0, 2, 3, 1)
-                pred = pred.permute(0, 2, 3, 1)
-                pred = pred.reshape(-1, pred.shape[-1])
-                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                pred = pred.reshape(-1)
+                y_batch = y_batch.reshape(-1)
                 train_loss = self.loss(pred, y_batch)
+
+                # calc loss
+                avg_loss += train_loss.item() / len(train_loader)
 
                 # remove data from GPU
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
                 X_batch = X_batch.float().cpu().detach()
-
-                # calc loss
-                avg_loss += train_loss.item() / len(train_loader)
 
                 # gradient clipping
                 if self.apply_clipping:
@@ -135,9 +113,6 @@ class Model:
 
                 # iptimizer step
                 self.optimizer.step()
-
-                pred = self.postprocessing.run(pred.numpy())
-                y_batch = self.postprocessing.run(y_batch.numpy())
 
                 # calculate a step for metrics
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -165,10 +140,8 @@ class Model:
                     pred = self.model(X_batch)
 
                     # calculate main loss
-                    y_batch = y_batch.permute(0, 2, 3, 1)
-                    pred = pred.permute(0, 2, 3, 1)
-                    pred = pred.reshape(-1, pred.shape[-1])
-                    y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                    pred = pred.reshape(-1)
+                    y_batch = y_batch.reshape(-1)
 
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
@@ -176,9 +149,6 @@ class Model:
                     X_batch = X_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
                     y_batch = y_batch.float().cpu().detach()
-
-                    pred = self.postprocessing.run(pred.numpy())
-                    y_batch = self.postprocessing.run(y_batch.numpy())
 
                     # calculate a step for metrics
                     self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -203,6 +173,8 @@ class Model:
                     avg_loss,
                     '| Val_loss: ',
                     avg_val_loss,
+                    '| Adv_loss: ',
+                    avg_adv_loss,
                     '| Metric_train: ',
                     metric_train,
                     '| Metric_val: ',
@@ -268,27 +240,18 @@ class Model:
                 pred = self.model(X_batch)
 
                 # calculate main loss
-                y_batch = y_batch.permute(0, 2, 3, 1)
-                pred = pred.permute(0, 2, 3, 1)
-                pred = pred.reshape(-1, pred.shape[-1])
-                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                pred = pred.reshape(-1)
+                y_batch = y_batch.reshape(-1)
 
                 pred = pred.cpu().detach().numpy()
                 X_batch = X_batch.cpu().detach().numpy()
                 y_batch = y_batch.cpu().detach().numpy()
 
-                # calculate a sample-wise error
-                error_samplewise += self.metric.calc_running_score_samplewise(labels=y_batch, outputs=pred)
-
-                pred = self.postprocessing.run(pred)
-                y_batch = self.postprocessing.run(y_batch)
-
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
         fold_score = self.metric.compute()
-        error_samplewise = np.array(error_samplewise)
 
-        return error_samplewise, fold_score
+        return fold_score
 
     def save(self, model_path):
 
@@ -342,21 +305,32 @@ class Model:
         # TODO: re-write to pure DDP
         if inference or gpu is None:
             self.device = torch.device('cpu')
-            self.model = UNet(hparams=self.hparams['model']).to(self.device)
+            self.model = EfficientNet.from_pretrained(
+                self.hparams['model']['pre_trained_model'], num_classes=self.hparams['model']['n_classes']
+            ).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 1:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams['model']).to(self.device)
+                    self.model = EfficientNet.from_pretrained(
+                        self.hparams['model']['pre_trained_model'],
+                        num_classes=self.hparams['model']['n_classes'],
+                    ).to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = UNet(hparams=self.hparams['model']).to(self.device)
+                    self.model = EfficientNet.from_pretrained(
+                        self.hparams['model']['pre_trained_model'],
+                        num_classes=self.hparams['model']['n_classes'],
+                    ).to(self.device)
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                self.model = UNet(hparams=self.hparams['model']).to(self.device)
+                self.model = EfficientNet.from_pretrained(
+                    self.hparams['model']['pre_trained_model'],
+                    num_classes=self.hparams['model']['n_classes'],
+                ).to(self.device)
                 print('Only one GPU is available')
 
         print('Cuda available: ', torch.cuda.is_available())
@@ -366,10 +340,10 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = Dice_loss()
+        self.loss = nn.BCELoss()
 
         # 2. define model metric
-        self.metric = Dice_score(self.hparams['model']['n_classes'])
+        self.metric = RocAuc()
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

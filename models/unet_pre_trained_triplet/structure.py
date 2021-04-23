@@ -152,7 +152,6 @@ class UNet(Encoder_triplet):
             self.down4.requires_grad = False
             self.down5.requires_grad = False
 
-
         self.hparams = hparams
         self.n_channels = self.hparams['in_channels']
         self.n_classes = self.hparams['n_classes']
@@ -204,7 +203,7 @@ class UNet(Encoder_triplet):
         logits = torch.nn.functional.softmax(logits, dim=1)
         return logits
 
-    def decoder(self, x1, x2, x3, x4, x5,x6):
+    def decoder(self, x1, x2, x3, x4, x5, x6):
         x = self.up1(x6, x5)
         x = self.up2(x, x4)
         x = self.up3(x, x3)

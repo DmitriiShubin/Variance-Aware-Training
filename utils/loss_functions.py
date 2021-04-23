@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
+
 class f1_loss(nn.Module):
     def __init__(self):
         super(f1_loss, self).__init__()
@@ -34,15 +35,13 @@ class Dice_loss(nn.Module):
     def forward(self, y_pred, y_true):
         # y_truef = torch.flatten(y_true)
         # y_predf = torch.flatten(y_pred)
-        y_true = y_true[:, 1:] #removing background makes less stable
+        y_true = y_true[:, 1:]  # removing background makes less stable
         y_pred = y_pred[:, 1:]
         tp = torch.sum(y_true * y_pred, dim=0)
         fp = torch.sum(y_pred, dim=0) - tp
         fn = torch.sum(y_true, dim=0) - tp
 
-        f1 = torch.mean(
-            (tp + self.smoothing) / (tp + 0.5*(fn + fp) + self.smoothing)
-        )
+        f1 = torch.mean((tp + self.smoothing) / (tp + 0.5 * (fn + fp) + self.smoothing))
 
         # f1 = torch.mean(
         #     ((1 + 2 ** 2) * tp + self.smoothing) / ((1 + 2 ** 2) * tp + 2 ** 2 * fn + fp + self.smoothing)
@@ -129,7 +128,7 @@ class SimclrCriterion(nn.Module):
         loss (Tensor): NT_Xent loss between z_i and z_j
     '''
 
-    def __init__(self, batch_size, device,normalize=False, temperature=0.1):
+    def __init__(self, batch_size, device, normalize=False, temperature=0.1):
         super(SimclrCriterion, self).__init__()
 
         self.temperature = temperature
@@ -138,8 +137,7 @@ class SimclrCriterion(nn.Module):
 
         self.register_buffer('labels', torch.zeros(batch_size * 2).long().to(device))
 
-        self.register_buffer('mask', torch.ones(
-            (batch_size, batch_size), dtype=bool).fill_diagonal_(0))
+        self.register_buffer('mask', torch.ones((batch_size, batch_size), dtype=bool).fill_diagonal_(0))
 
     def forward(self, z_i, z_j):
 
@@ -175,7 +173,7 @@ class SimclrCriterion(nn.Module):
         logits_ba = torch.mm(z_j_norm, z_i_norm.t()) / self.temperature
 
         mask = torch.ones((z_i.shape[0], z_i.shape[0]), dtype=bool).fill_diagonal_(0).to(self.device)
-        labels = torch.ones(z_i.shape[0]* 2).long().to(self.device)
+        labels = torch.ones(z_i.shape[0] * 2).long().to(self.device)
 
         # Compute Postive Logits
         logits_ab_pos = logits_ab[torch.logical_not(mask)]
@@ -199,17 +197,17 @@ class SimclrCriterion(nn.Module):
         # Compute cross entropy
         logits = torch.cat((pos, neg), dim=1)
 
-        loss = F.cross_entropy(logits,labels)
+        loss = F.cross_entropy(logits, labels)
 
         return loss
 
 
 class SimCLR_2(nn.Module):
-    def __init__(self,temperature=1):
+    def __init__(self, temperature=1):
         super(SimCLR_2, self).__init__()
         self.temperature = temperature
 
-    def forward(self, out_1, out_2 , eps=1e-6):
+    def forward(self, out_1, out_2, eps=1e-6):
         """
             assume out_1 and out_2 are normalized
             out_1: [batch_size, dim]
@@ -248,6 +246,7 @@ class SimCLR_2(nn.Module):
 
         return loss
 
+
 class contrastive_loss(nn.Module):
     def __init__(self, tau=1, normalize=True):
         super(contrastive_loss, self).__init__()
@@ -256,12 +255,14 @@ class contrastive_loss(nn.Module):
 
     def forward(self, xi, xj):
 
-        #x = torch.cat((xi, xj), dim=0)
+        # x = torch.cat((xi, xj), dim=0)
 
         is_cuda = xi.is_cuda
         sim_mat = torch.mm(xi, xj.T)
         if self.normalize:
-            sim_mat_denom = torch.mm(torch.norm(xi, dim=1).unsqueeze(1), torch.norm(xj, dim=1).unsqueeze(1).T)
+            sim_mat_denom = torch.mm(
+                torch.norm(xi, dim=1).unsqueeze(1), torch.norm(xj, dim=1).unsqueeze(1).T
+            )
             sim_mat = sim_mat / sim_mat_denom.clamp(min=1e-16)
 
         sim_mat = torch.exp(sim_mat / self.tau)
@@ -286,6 +287,7 @@ class contrastive_loss(nn.Module):
         loss = torch.mean(-torch.log(sim_match / (torch.sum(sim_mat, dim=-1) - norm_sum)))
         return loss
 
+
 class local_contrastive_loss(nn.Module):
     def __init__(self, tau=10000, normalize=True):
         super(local_contrastive_loss, self).__init__()
@@ -294,7 +296,7 @@ class local_contrastive_loss(nn.Module):
 
     def forward(self, xi, xj):
 
-        #x = torch.cat((xi, xj), dim=0)
+        # x = torch.cat((xi, xj), dim=0)
 
         is_cuda = xi.is_cuda
         sim_mat = torch.mm(xi.T, xj)
