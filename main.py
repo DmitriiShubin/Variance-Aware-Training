@@ -58,7 +58,26 @@ def main():
 
 
     # Single-stage self-supervised early flat
-    run_adversarial_network_train_val_early(experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2.yml')
+    # run_adversarial_network_train_val_early(experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2.yml')
+    # run_adversarial_network_train_val_early(
+    #     experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2_1.yml')
+    # run_adversarial_network_train_val_early(
+    #     experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2_2.yml')
+    # run_adversarial_network_train_val_early(
+    #     experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2_3.yml')
+
+    run_adversarial_network_train_val_early(
+        experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2_5.yml')
+    run_adversarial_network_train_val_early(
+        experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2_6.yml')
+    run_adversarial_network_train_val_early(
+        experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2_7.yml')
+    run_adversarial_network_train_val_early(
+        experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2_8.yml')
+    run_adversarial_network_train_val_early(
+        experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2_9.yml')
+    run_adversarial_network_train_val_early(
+        experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2_10.yml')
     # run_adversarial_network_train_val_early(experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_4.yml')
     # run_adversarial_network_train_val_early(experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_8.yml')
 

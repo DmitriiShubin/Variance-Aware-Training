@@ -6,7 +6,7 @@ import torch
 import os
 
 
-from metrics import Metric
+from metrics import Dice
 
 
 def seed_everything(seed):
@@ -34,7 +34,7 @@ class TrainPipeline:
         self.exclusions = []
 
         self.splits, self.splits_test = self.load_split_table()
-        self.metric = Metric(self.hparams['model']['n_classes'])
+        self.metric = Dice(self.hparams['model']['n_classes'])
 
         self.model = model
 
@@ -64,7 +64,7 @@ class TrainPipeline:
         )
         pretrain = self.Dataset_train(
             self.splits['pretrain'].values[0],
-            aug=False,
+            aug=True,
             n_classes=self.hparams['model']['n_classes'],
             dataset=self.hparams['dataset'],
         )
@@ -76,7 +76,7 @@ class TrainPipeline:
         )
 
         # train model
-        start_training = self.model.fit(train=train, valid=valid,pretrain=pretrain)
+        start_training = self.model.fit(train=train, valid=valid, pretrain=pretrain)
 
         # get model predictions
         error_val, fold_score = self.model.predict(valid)

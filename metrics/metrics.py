@@ -54,3 +54,31 @@ class Metric:
         self.fp = np.array([0] * (self.n_classes))
         self.fn = np.array([0] * (self.n_classes))
         return True
+
+
+class RocAuc:
+    def __init__(self):
+
+        self.labels = []
+        self.outputs = []
+
+    def calc_running_score(self, labels:np.array, outputs:np.array):
+
+        self.labels += labels.tolist()
+        self.outputs += outputs.tolist()
+
+
+    def compute(self):
+
+        score = roc_auc_score(self.labels, self.outputs)
+
+        self.labels = []
+        self.outputs = []
+
+        return score
+
+
+    def reset(self):
+        self.labels = []
+        self.outputs = []
+        return True
