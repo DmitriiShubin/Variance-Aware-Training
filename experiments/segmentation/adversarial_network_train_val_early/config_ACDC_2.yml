@@ -23,7 +23,7 @@ model:
   dropout_rate: 0.0
   kernel_size: 3
   dilation: 3
-  alpha: 0.1
+  alpha: 0.05
   flat: True
 optimizer_name: Adam
 optimizer_hparams:

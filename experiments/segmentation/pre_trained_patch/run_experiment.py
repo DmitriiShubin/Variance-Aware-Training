@@ -6,9 +6,9 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.pre_trained_patch.data_generator import Dataset_train
+from experiments.segmentation.pre_trained_patch.data_generator import Dataset_train
 from models.unet_pre_trained_patch import Model
-from experiments.pre_trained_patch.train_pipeline import TrainPipeline
+from experiments.segmentation.pre_trained_patch.train_pipeline import TrainPipeline
 
 
 def run(

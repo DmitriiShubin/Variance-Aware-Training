@@ -6,9 +6,9 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.baseline.data_generator import Dataset_train
+from experiments.segmentation.baseline.data_generator import Dataset_train
 from models.unet import Model
-from experiments.baseline.train_pipeline import TrainPipeline
+from experiments.segmentation.baseline.train_pipeline import TrainPipeline
 
 
 def run(

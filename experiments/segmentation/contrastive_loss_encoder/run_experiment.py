@@ -4,8 +4,8 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.contrastive_loss_encoder.data_generator import Dataset_train
-from experiments.contrastive_loss_encoder.train_pipeline import TrainPipeline
+from experiments.segmentation.contrastive_loss_encoder.data_generator import Dataset_train
+from experiments.segmentation.contrastive_loss_encoder.train_pipeline import TrainPipeline
 from models.encoder_contrastive import Model
 
 

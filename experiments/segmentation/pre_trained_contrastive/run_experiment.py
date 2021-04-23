@@ -6,9 +6,9 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.pre_trained_contrastive.data_generator import Dataset_train
+from experiments.segmentation.pre_trained_contrastive.data_generator import Dataset_train
 from models.unet_pre_trained_contrastive import Model
-from experiments.pre_trained_contrastive.train_pipeline import TrainPipeline
+from experiments.segmentation.pre_trained_contrastive.train_pipeline import TrainPipeline
 
 
 def run(

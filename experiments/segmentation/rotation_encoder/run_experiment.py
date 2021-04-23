@@ -5,8 +5,8 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.rotation_encoder.train_pipeline import TrainPipeline
-from experiments.rotation_encoder.data_generator import Dataset_train
+from experiments.segmentation.rotation_encoder.train_pipeline import TrainPipeline
+from experiments.segmentation.rotation_encoder.data_generator import Dataset_train
 from models.encoder_rotation import Model
 
 

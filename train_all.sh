@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
-for FOLD in 1 2 3 4
-do
-  (python main.py --start_fold $FOLD --gpu $FOLD --model vgg
-  python main.py --start_fold $FOLD --gpu $FOLD --model resnet
-  python main.py --start_fold $FOLD --gpu $FOLD --model resnet_xt
-  ) &
-done
-
-
-
+python main.py --experiment ./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2.yml
+#python main.py --experiment ./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_4.yml
+#python main.py --experiment ./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_8.yml
 

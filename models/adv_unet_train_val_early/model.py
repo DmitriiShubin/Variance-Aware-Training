@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import Metric
+from metrics import Dice
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from utils.post_processing import Post_Processing
@@ -385,7 +385,7 @@ class Model:
         self.loss_adv = nn.BCELoss()
 
         # 2. define model metric
-        self.metric = Metric(self.hparams['model']['n_classes'])
+        self.metric = Dice(self.hparams['model']['n_classes'])
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

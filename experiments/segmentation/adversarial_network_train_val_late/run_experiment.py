@@ -5,8 +5,8 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.adversarial_network_train_val_late.data_generator import Dataset_train
-from experiments.adversarial_network_train_val_late.train_pipeline import TrainPipeline
+from experiments.segmentation.adversarial_network_train_val_late.data_generator import Dataset_train
+from experiments.segmentation.adversarial_network_train_val_late.train_pipeline import TrainPipeline
 from models.adv_unet_train_val_late import Model
 
 

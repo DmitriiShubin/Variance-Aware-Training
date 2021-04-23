@@ -5,8 +5,8 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.patch_encoder.train_pipeline import TrainPipeline
-from experiments.patch_encoder.data_generator import Dataset_train
+from experiments.segmentation.patch_encoder.train_pipeline import TrainPipeline
+from experiments.segmentation.patch_encoder.data_generator import Dataset_train
 from models.encoder_patch import Model
 
 
