@@ -1,4 +1,3 @@
-import click
 from utils.update_hparams import update_hparams
 
 from utils.logger import Logger
@@ -6,9 +5,9 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.pre_trained_patch.data_generator import Dataset_train
-from models.unet_pre_trained_patch import Model
-from experiments.pre_trained_patch.train_pipeline import TrainPipeline
+from experiments.segmentation.pre_trained_rotation.data_generator import Dataset_train
+from models.unet_pre_trained_rotation import Model
+from experiments.segmentation.pre_trained_rotation.train_pipeline import TrainPipeline
 
 
 def run(
@@ -17,7 +16,7 @@ def run(
     n_epochs=None,
     gpu='2,3',
     dropout=None,
-    experiment='./experiments/pre_trained_patch/config_brats_2.yml',
+    experiment='./experiments/pre_trained_contrastive/config_brats_2.yml',
 ):
 
     # load hyperparameters

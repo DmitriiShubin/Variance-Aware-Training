@@ -1,13 +1,12 @@
-import click
 from utils.update_hparams import update_hparams
 from utils.logger import Logger
 
 import yaml
 import os
 
-from experiments.rotation_encoder.train_pipeline import TrainPipeline
-from experiments.rotation_encoder.data_generator import Dataset_train
-from models.encoder_rotation import Model
+from experiments.segmentation.patch_encoder.train_pipeline import TrainPipeline
+from experiments.segmentation.patch_encoder.data_generator import Dataset_train
+from models.encoder_patch import Model
 
 
 def run(

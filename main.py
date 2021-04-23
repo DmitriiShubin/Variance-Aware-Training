@@ -1,21 +1,15 @@
 #baseline models
-from experiments.baseline.run_experiment import run as run_baseline
 
 #pre-training encoders
-from experiments.rotation_encoder.run_experiment import run as run_rotation_pre_train
-from experiments.contrastive_loss_encoder.run_experiment import run as run_contrastive_pre_train
-from experiments.patch_encoder.run_experiment import run as run_patch_pre_train
 
 #pre-trained models
-from experiments.pre_trained_rotation.run_experiment import run as run_pre_trained_rotation
-from experiments.pre_trained_contrastive.run_experiment import run as run_pre_trained_contrastive
-from experiments.pre_trained_patch.run_experiment import run as run_pre_trained_patch
+from experiments.segmentation.pre_trained_patch.run_experiment import run as run_pre_trained_patch
 
 #adversarial models
-from experiments.adversarial_network_train_val_early.run_experiment import (
+from experiments.segmentation.adversarial_network_train_val_early.run_experiment import (
     run as run_adversarial_network_train_val_early,
 )
-from experiments.adversarial_network_train_val_late.run_experiment import (
+from experiments.segmentation.adversarial_network_train_val_late.run_experiment import (
     run as run_adversarial_network_train_val_late
 )
 
@@ -58,15 +52,15 @@ def main():
     # run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_4.yml')
     # run_pre_trained_rotation(experiment='./experiments/pre_trained_rotation/config_ACDC_8.yml')
 
-    run_pre_trained_patch(experiment='./experiments/pre_trained_patch/config_ACDC_2.yml')
-    run_pre_trained_patch(experiment='./experiments/pre_trained_patch/config_ACDC_4.yml')
-    run_pre_trained_patch(experiment='./experiments/pre_trained_patch/config_ACDC_8.yml')
+    # run_pre_trained_patch(experiment='./experiments/pre_trained_patch/config_ACDC_2.yml')
+    # run_pre_trained_patch(experiment='./experiments/pre_trained_patch/config_ACDC_4.yml')
+    # run_pre_trained_patch(experiment='./experiments/pre_trained_patch/config_ACDC_8.yml')
 
 
     # Single-stage self-supervised early flat
-    #run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_2.yml')
-    #run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_4.yml')
-    #run_adversarial_network_train_val_early(experiment='./experiments/adversarial_network_train_val_early/config_ACDC_8.yml')
+    run_adversarial_network_train_val_early(experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2.yml')
+    # run_adversarial_network_train_val_early(experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_4.yml')
+    # run_adversarial_network_train_val_early(experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_8.yml')
 
 
 

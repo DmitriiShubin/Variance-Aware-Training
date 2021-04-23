@@ -1,21 +1,21 @@
-import click
 from utils.update_hparams import update_hparams
 from utils.logger import Logger
+
 import yaml
 import os
 
-from experiments.contrastive_loss_encoder.data_generator import Dataset_train
-from experiments.contrastive_loss_encoder.train_pipeline import TrainPipeline
-from models.encoder_contrastive import Model
+from experiments.segmentation.adversarial_network_train_val_early.data_generator import Dataset_train
+from experiments.segmentation.adversarial_network_train_val_early.train_pipeline import TrainPipeline
+from models.adv_unet_train_val_early import Model
 
 
 def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
-    gpu='0,1',
+    gpu='1',
     dropout=None,
-    experiment='./experiments/contrastive_loss_encoder/config_brats.yml',
+    experiment='./experiments/adversarial_network_train_val_early/config_brats_2.yml',
 ):
 
     # load hyperparameters
@@ -41,12 +41,13 @@ def run(
 
     # run cross-val
     cross_val = TrainPipeline(hparams=hparams, gpu=gpu, model=Model, Dataset_train=Dataset_train)
-    loss_val, start_training = cross_val.train()
+    fold_scores_val, fold_scores_test, start_training = cross_val.train()
 
     # save logs
     logger.kpi_logger.info('=============================================')
     logger.kpi_logger.info(f'Datetime = {start_training}')
-    logger.kpi_logger.info(f'Model loss, val = {loss_val}')
+    logger.kpi_logger.info(f'Model metric, val = {fold_scores_val}')
+    logger.kpi_logger.info(f'Model metric, test = {fold_scores_test}')
     logger.kpi_logger.info(f'Experiment = {experiment}')
     logger.kpi_logger.info(f"Batch size = {hparams['batch_size']}")
     logger.kpi_logger.info(f"Lr = {hparams['optimizer_hparams']['lr']}")

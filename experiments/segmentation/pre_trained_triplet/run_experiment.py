@@ -1,4 +1,3 @@
-import click
 from utils.update_hparams import update_hparams
 
 from utils.logger import Logger
@@ -6,16 +5,16 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.pre_trained_contrastive.data_generator import Dataset_train
-from models.unet_pre_trained_contrastive import Model
-from experiments.pre_trained_contrastive.train_pipeline import TrainPipeline
+from experiments.segmentation.pre_trained_triplet.data_generator import Dataset_train
+from models.unet_pre_trained_triplet import Model
+from experiments.segmentation.pre_trained_triplet.train_pipeline import TrainPipeline
 
 
 def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
-    gpu='7',
+    gpu='0',
     dropout=None,
     experiment='./experiments/pre_trained_contrastive/config_brats_2.yml',
 ):

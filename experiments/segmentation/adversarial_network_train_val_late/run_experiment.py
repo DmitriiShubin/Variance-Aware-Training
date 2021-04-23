@@ -1,23 +1,21 @@
-import click
 from utils.update_hparams import update_hparams
-
 from utils.logger import Logger
 
 import yaml
 import os
 
-from experiments.baseline.data_generator import Dataset_train
-from models.unet import Model
-from experiments.baseline.train_pipeline import TrainPipeline
+from experiments.segmentation.adversarial_network_train_val_late.data_generator import Dataset_train
+from experiments.segmentation.adversarial_network_train_val_late.train_pipeline import TrainPipeline
+from models.adv_unet_train_val_late import Model
 
 
 def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
-    gpu='2,3',
+    gpu='0',
     dropout=None,
-    experiment='./experiments/baseline/config_brats_2.yml',
+    experiment='./experiments/adversarial_network_train_val_early/config_brats_2.yml',
 ):
 
     # load hyperparameters
