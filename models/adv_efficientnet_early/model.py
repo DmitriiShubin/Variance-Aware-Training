@@ -12,13 +12,15 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import RocAuc
+from metrics import RocAuc, F1
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
+from utils.loss_functions import f1_loss
 
 # model
 from models.adv_efficientnet_early.structure import EfficientNet
+from utils.post_processing import Post_Processing
 
 
 class Model:
@@ -43,6 +45,7 @@ class Model:
 
         # ininialize model architecture
         self.__setup_model(inference=inference, gpu=gpu)
+        self.postprocessing = Post_Processing()
 
         # define model parameters
         self.__setup_model_hparams()
@@ -101,8 +104,6 @@ class Model:
                 pred, pred_adv = self.model(X_batch, X_batch_adv, train=True)
 
                 # process main loss
-                pred = pred.reshape(-1)
-                y_batch = y_batch.reshape(-1)
                 train_loss = self.loss(pred, y_batch)
 
                 # process loss_2
@@ -110,27 +111,19 @@ class Model:
                 y_batch_adv = y_batch_adv.reshape(-1)
                 adv_loss = self.loss_adv(pred_adv, y_batch_adv)
 
-                a = self.hparams['model']['alpha'] * np.log10(1 + epoch) * adv_loss / 1.3
-                a1 = self.hparams['model']['alpha'] * adv_loss
-
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
                 avg_adv_loss += adv_loss.item() / len(train_loader)
 
-                if self.hparams['model']['flat']:
-                    train_loss = train_loss + self.hparams['model']['alpha'] * adv_loss
-                else:
-                    train_loss = (
-                        train_loss + self.hparams['model']['alpha'] * np.log10(1 + epoch) * adv_loss / 1.3
-                    )
+                train_loss = train_loss + self.hparams['model']['alpha'] * adv_loss
 
                 # remove data from GPU
-                y_batch = y_batch.float().cpu().detach()
-                pred = pred.float().cpu().detach()
-                X_batch = X_batch.float().cpu().detach()
-                X_batch_adv = X_batch_adv.float().cpu().detach()
-                y_batch_adv = y_batch_adv.cpu().detach()
-                pred_adv = pred_adv.cpu().detach()
+                y_batch = y_batch.float().cpu().detach().numpy()
+                pred = pred.float().cpu().detach().numpy()
+                X_batch = X_batch.float().cpu().detach().numpy()
+                X_batch_adv = X_batch_adv.float().cpu().detach().numpy()
+                y_batch_adv = y_batch_adv.cpu().detach().numpy()
+                pred_adv = pred_adv.cpu().detach().numpy()
 
                 # gradient clipping
                 if self.apply_clipping:
@@ -143,6 +136,9 @@ class Model:
 
                 # iptimizer step
                 self.optimizer.step()
+
+                y_batch = self.postprocessing.run(y_batch)
+                pred = self.postprocessing.run(pred)
 
                 # calculate a step for metrics
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -169,16 +165,15 @@ class Model:
                     # get predictions
                     pred = self.model(X_batch)
 
-                    # calculate main loss
-                    pred = pred.reshape(-1)
-                    y_batch = y_batch.reshape(-1)
-
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
                     # remove data from GPU
-                    X_batch = X_batch.float().cpu().detach()
-                    pred = pred.float().cpu().detach()
-                    y_batch = y_batch.float().cpu().detach()
+                    X_batch = X_batch.float().cpu().detach().numpy()
+                    pred = pred.float().cpu().detach().numpy()
+                    y_batch = y_batch.float().cpu().detach().numpy()
+
+                    y_batch = self.postprocessing.run(y_batch)
+                    pred = self.postprocessing.run(pred)
 
                     # calculate a step for metrics
                     self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -267,13 +262,12 @@ class Model:
 
                 pred = self.model(X_batch)
 
-                # calculate main loss
-                pred = pred.reshape(-1)
-                y_batch = y_batch.reshape(-1)
-
                 pred = pred.cpu().detach().numpy()
                 X_batch = X_batch.cpu().detach().numpy()
                 y_batch = y_batch.cpu().detach().numpy()
+
+                y_batch = self.postprocessing.run(y_batch)
+                pred = self.postprocessing.run(pred)
 
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
@@ -335,7 +329,9 @@ class Model:
             self.device = torch.device('cpu')
             self.model = EfficientNet.from_pretrained(
                 self.hparams['model']['pre_trained_model'], num_classes=self.hparams['model']['n_classes']
-            ).to(self.device)
+            )
+            self.model.build_adv_model()
+            self.model = self.model.to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 1:
@@ -344,7 +340,9 @@ class Model:
                     self.model = EfficientNet.from_pretrained(
                         self.hparams['model']['pre_trained_model'],
                         num_classes=self.hparams['model']['n_classes'],
-                    ).to(self.device)
+                    )
+                    self.model.build_adv_model()
+                    self.model = self.model.to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Only one GPU will be used")
@@ -352,13 +350,17 @@ class Model:
                     self.model = EfficientNet.from_pretrained(
                         self.hparams['model']['pre_trained_model'],
                         num_classes=self.hparams['model']['n_classes'],
-                    ).to(self.device)
+                    )
+                    self.model.build_adv_model()
+                    self.model = self.model.to(self.device)
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
                 self.model = EfficientNet.from_pretrained(
                     self.hparams['model']['pre_trained_model'],
                     num_classes=self.hparams['model']['n_classes'],
-                ).to(self.device)
+                )
+                self.model.build_adv_model()
+                self.model = self.model.to(self.device)
                 print('Only one GPU is available')
 
         print('Cuda available: ', torch.cuda.is_available())
@@ -368,11 +370,11 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = nn.BCELoss()
+        self.loss = f1_loss()
         self.loss_adv = nn.BCELoss()
 
         # 2. define model metric
-        self.metric = RocAuc()
+        self.metric = F1(n_classes=self.hparams['model']['n_classes'])
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

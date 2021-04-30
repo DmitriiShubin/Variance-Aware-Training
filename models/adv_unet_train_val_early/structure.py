@@ -314,13 +314,13 @@ class UNet(nn.Module):
         x3_p = self.rever2_3(x[2]).mean(dim=2).mean(dim=2)
         x4_p = self.rever2_4(x[3]).mean(dim=2).mean(dim=2)
         x5_p = self.rever2_5(x[4]).mean(dim=2).mean(dim=2)
-        x6_p = self.rever1_6(x[5]).mean(dim=2).mean(dim=2)
+        x6_p = self.rever2_6(x[5]).mean(dim=2).mean(dim=2)
         x7_p = self.rever2_7(x[0]).std(dim=2).std(dim=2)
         x8_p = self.rever2_8(x[1]).std(dim=2).std(dim=2)
         x9_p = self.rever2_9(x[2]).std(dim=2).std(dim=2)
         x10_p = self.rever2_10(x[3]).std(dim=2).std(dim=2)
         x11_p = self.rever2_11(x[4]).std(dim=2).std(dim=2)
-        x12_p = self.rever1_12(x[5]).std(dim=2).std(dim=2)
+        x12_p = self.rever2_12(x[5]).std(dim=2).std(dim=2)
 
         x = torch.cat(
             [

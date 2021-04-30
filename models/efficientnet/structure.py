@@ -24,6 +24,5 @@ class EfficientNet(effnet):
         if self._global_params.include_top:
             x = x.flatten(start_dim=1)
             x = self._dropout(x)
-            x = torch.sigmoid(self._fc(x))
-
+            x = torch.softmax(self._fc(x), dim=1)
         return x

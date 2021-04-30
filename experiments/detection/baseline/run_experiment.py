@@ -5,9 +5,9 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.classification.baseline.data_generator import Dataset_train
-from models.unet import Model
-from experiments.classification.baseline.train_pipeline import TrainPipeline
+from experiments.detection.baseline.data_generator import Dataset_train
+from models.YoloV4 import Model
+from experiments.detection.baseline.train_pipeline import TrainPipeline
 
 
 def run(

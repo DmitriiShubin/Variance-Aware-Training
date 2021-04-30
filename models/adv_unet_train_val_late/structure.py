@@ -275,8 +275,8 @@ class UNet(nn.Module):
         x6_s = self.rever1_6(x6).mean(dim=2).mean(dim=2)
         x7_s = self.rever1_6(x6).std(dim=2).std(dim=2)
 
-        x6_p = self.rever1_6(x[5]).mean(dim=2).mean(dim=2)
-        x7_p = self.rever1_6(x[5]).std(dim=(2)).std(dim=2)
+        x6_p = self.rever2_6(x[5]).mean(dim=2).mean(dim=2)
+        x7_p = self.rever2_6(x[5]).std(dim=(2)).std(dim=2)
 
         x = torch.cat([x6_s, x7_s, x6_p, x7_p], dim=1)
 

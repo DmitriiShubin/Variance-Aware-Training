@@ -13,11 +13,11 @@ np.random.seed(42)
 
 
 class Dataset_train(Dataset):
-    def __init__(self, volums_list, aug, n_classes, dataset):
+    def __init__(self, volums_list, aug, n_classes):
 
         self.n_classes = n_classes
         self.volums_list = volums_list
-        self.preprocessing = Preprocessing(aug, dataset)
+        self.preprocessing = Preprocessing(aug)
 
     def __len__(self):
         return len(self.volums_list)
@@ -28,7 +28,6 @@ class Dataset_train(Dataset):
 
         X = torch.tensor(X, dtype=torch.float)
         y = torch.tensor(y, dtype=torch.float)
-
         X_s = torch.tensor(X_s, dtype=torch.float)
         y_s = torch.tensor(y_s, dtype=torch.float)
 
@@ -37,60 +36,40 @@ class Dataset_train(Dataset):
     def load_data(self, id):
 
         X = np.load(self.volums_list[id]).astype(np.float32)
-        y = np.load(self.volums_list[id][:-10] + 'labels.npy').astype(np.float32)
+        y = np.load(self.volums_list[id][:-4] + '_label.npy').astype(np.float32)
+        y1 = np.zeros((2))
+        y1[int(y)] = 1
+        y = y1
 
-        y = self.one_hot_voxel(y)
-
-        X, y = self.preprocessing.run(X=X, y=y)
+        X = self.preprocessing.run(X=X)
 
         # second head
-        # TODO:
-        sampled_patient = np.round(np.random.uniform(size=1)[0], 1)
-        if sampled_patient >= 0.5:
-            # NOT the same patient
-            images_subset = self.volums_list.copy()
-            patient_id = self.volums_list[id].split('/')[-2]
-            images_subset = [i for i in images_subset if i.find(patient_id) == -1]
+        images_subset = self.volums_list.copy()
+        images_subset.remove(self.volums_list[id])
+        X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
 
-            X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
-
-            y_s = [0]
-        else:
-            # the same patient
-            images_subset = self.volums_list.copy()
-            patient_id = self.volums_list[id].split('/')[-2]
-            images_subset = [i for i in images_subset if i.find(patient_id) != -1]
-            images_subset.remove(self.volums_list[id])
-
-            X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
-            y_s = [1]
-
-        X_s, y_ = self.preprocessing.run(X=X_s, y=np.zeros((y.shape)))
+        y_s = [0]
+        X_s = self.preprocessing.run(X=X_s)
 
         return X, y, X_s, y_s
 
-    def one_hot_voxel(self, y):
-        y = np.transpose(y.astype(np.int32), (1, 2, 0))
-        y = np.eye(self.n_classes)[y[:, :, -1].astype(np.int32)]
-        y = np.transpose(y.astype(np.float32), (2, 0, 1))
-        return y
-
 
 class Preprocessing:
-    def __init__(self, aug, dataset):
+    def __init__(self, aug):
 
         self.aug = aug
-        self.augmentations = Augmentations(dataset)
+        self.augmentations = Augmentations()
 
-    def run(self, X, y):
+    def run(self, X):
 
         if self.aug:
+            X = self.augmentations.run(X)
 
-            X, y = self.augmentations.run(X, y)
+        X = self.imagenet_normalize(X)
 
-        X = self.standard_scaling(X)
+        X = np.transpose(X.astype(np.float32), (2, 0, 1))
 
-        return X, y
+        return X
 
     def standard_scaling(self, X):
         X = X.astype(np.float32)
@@ -105,6 +84,18 @@ class Preprocessing:
 
         return X
 
+    def imagenet_normalize(self, X):
+
+        X = X / 255.0
+
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
+
+        for i in range(len(mean)):
+            X[:, :, i] = (X[:, :, i] - mean[i]) / std[i]
+
+        return X
+
     def minmax_scaling(self, X):
         min = np.min(X)
         max = np.max(X)
@@ -114,86 +105,29 @@ class Preprocessing:
             X = X - np.mean(X)
         return X
 
-    def padding(self, X, y):
-        max_shape = 256  # np.max(X.shape)
-
-        X = np.concatenate([X, np.zeros((X.shape[0], X.shape[1], X.shape[2], X.shape[3] // 2))], axis=-1)
-        X = np.concatenate(
-            [np.zeros((X.shape[0], X.shape[1], X.shape[2], max_shape - X.shape[3])), X], axis=-1
-        )
-
-        y = np.concatenate([y, np.zeros((y.shape[0], y.shape[1], y.shape[2], y.shape[3] // 2))], axis=-1)
-        y = np.concatenate(
-            [np.zeros((y.shape[0], y.shape[1], y.shape[2], max_shape - y.shape[3])), y], axis=-1
-        )
-
-        return X, y
-
-    def crop(self, X, y, cropsize=128):
-        X_pos = np.random.choice(X.shape[1] - cropsize)
-        Y_pos = np.random.choice(X.shape[2] - cropsize)
-        Z_pos = np.random.choice(X.shape[3] - cropsize)
-
-        X = X[:, X_pos : X_pos + cropsize, Y_pos : Y_pos + cropsize, Z_pos : Z_pos + cropsize]
-        y = y[:, X_pos : X_pos + cropsize, Y_pos : Y_pos + cropsize, Z_pos : Z_pos + cropsize]
-        return X, y
-
 
 class Augmentations:
-    def __init__(self, dataset):
+    def __init__(self):
 
-        if dataset == 'brats':
-            prob = 0.5
-            self.augs = A.Compose(
-                [  # A.Blur(blur_limit=3,p=prob),
-                    A.HorizontalFlip(p=prob),
-                    A.VerticalFlip(p=prob),
-                    A.Rotate(limit=10, p=prob),
-                    # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    A.RandomSizedCrop(min_max_height=(210, 210), height=240, width=240, p=prob),
-                    # A.RandomGamma(gamma_limit=(80,120),p=prob)
-                ]
-            )
-        elif dataset == 'ACDC_4':
-            prob = 0.5
-            self.augs = A.Compose(
-                [
-                    A.HorizontalFlip(p=prob),
-                    # A.VerticalFlip(p=prob),
-                    A.Rotate(limit=5, p=prob),
-                    A.ElasticTransform(alpha=0.05, p=prob),
-                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                ]
-            )
-        elif dataset == 'ACDC_8':
-            prob = 0.5
-            self.augs = A.Compose(
-                [
-                    A.HorizontalFlip(p=prob),
-                    # A.VerticalFlip(p=prob),
-                    A.Rotate(limit=5, p=prob),
-                    A.ElasticTransform(alpha=0.05, p=prob),
-                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                ]
-            )
-        elif dataset == 'ACDC_2':
-            prob = 0.5
-            self.augs = A.Compose([A.HorizontalFlip(p=prob), A.Rotate(limit=5, p=prob),])
+        prob = 0.5
+        self.augs = A.Compose(
+            [
+                # A.HorizontalFlip(p=prob),
+                # A.VerticalFlip(p=prob),
+                # A.Rotate(limit=90, p=prob),
+                # A.GlassBlur(sigma=1),
+                # A.GridDistortion(distort_limit=0.3),
+                # A.ElasticTransform(alpha=0.05, p=prob),
+                # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
+                # A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                # A.RandomBrightness(limit=0.2, p=prob)
+            ]
+        )
 
-    def run(self, image, mask):
-
-        image = np.transpose(image.astype(np.float32), (1, 2, 0))
-        mask = np.transpose(mask.astype(np.float32), (1, 2, 0))
+    def run(self, image):
 
         # apply augs
-        augmented = self.augs(image=image, mask=mask)
-
+        augmented = self.augs(image=image)
         image = augmented['image']
-        mask = augmented['mask']
 
-        image = np.transpose(image.astype(np.float32), (2, 0, 1))
-        mask = np.transpose(mask.astype(np.float32), (2, 0, 1))
-
-        return image, mask
+        return image

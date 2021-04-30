@@ -18,12 +18,12 @@ class f1_loss(nn.Module):
         fp = torch.sum(y_pred, dim=0) - tp
         fn = torch.sum(y_true, dim=0) - tp
 
-        f1 = torch.mean(
+        f1 = (
             # ((1 + 2 ** 2) * tp + self.smoothing) / ((1 + 2 ** 2) * tp + 2 ** 2 * fn + fp + self.smoothing)
             tp
             / (tp + 0.5 * (fp + fn) + self.smoothing)
         )
-        return -1 * f1
+        return -1 * f1[1]
 
 
 class Dice_loss(nn.Module):
@@ -71,6 +71,28 @@ class FocalLoss(nn.Module):
             return x.sum()
         else:
             return x
+
+
+class YoloLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.focal_loss = FocalLoss()
+
+    def forward(self, obj, obj_target):
+
+        #Objectiveness loss
+        obj1,obj2,obj3 = obj
+        obj_target1,obj_target2,obj_target3 = obj_target
+
+        loss_obj1 = self.focal_loss(obj1, obj_target1)
+        loss_obj2 = self.focal_loss(obj2, obj_target2)
+        loss_obj3 = self.focal_loss(obj3, obj_target3)
+
+        #resulting loss
+        loss = loss_obj1 + loss_obj2 + loss_obj3
+
+        return loss
 
 
 class TripletLoss(nn.Module):

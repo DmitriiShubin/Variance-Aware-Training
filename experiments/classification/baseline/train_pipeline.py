@@ -6,7 +6,7 @@ import torch
 import os
 
 
-from metrics import Dice
+from metrics import RocAuc
 
 
 def seed_everything(seed):
@@ -34,7 +34,7 @@ class TrainPipeline:
         self.exclusions = []
 
         self.splits, self.splits_test = self.load_split_table()
-        self.metric = Dice(self.hparams['model']['n_classes'])
+        self.metric = RocAuc()
 
         self.model = model
 

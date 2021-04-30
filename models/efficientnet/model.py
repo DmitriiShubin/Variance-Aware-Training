@@ -12,13 +12,15 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import RocAuc
+from metrics import RocAuc, F1
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
+from utils.loss_functions import f1_loss
 
 # model
-from models.efficientnet.structure import EfficientNet
+from models.YoloV4.structure import EfficientNet
+from utils.post_processing import Post_Processing
 
 
 class Model:
@@ -40,6 +42,7 @@ class Model:
         self.inference = inference
 
         self.start_training = time()
+        self.postprocessing = Post_Processing()
 
         # ininialize model architecture
         self.__setup_model(inference=inference, gpu=gpu)
@@ -90,17 +93,17 @@ class Model:
                 pred = self.model(X_batch)
 
                 # process main loss
-                pred = pred.reshape(-1)
-                y_batch = y_batch.reshape(-1)
+                # pred = pred.reshape(-1)
+                # y_batch = y_batch.reshape(-1)
                 train_loss = self.loss(pred, y_batch)
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
 
                 # remove data from GPU
-                y_batch = y_batch.float().cpu().detach()
-                pred = pred.float().cpu().detach()
-                X_batch = X_batch.float().cpu().detach()
+                y_batch = y_batch.float().cpu().detach().numpy()
+                pred = pred.float().cpu().detach().numpy()
+                X_batch = X_batch.float().cpu().detach().numpy()
 
                 # gradient clipping
                 if self.apply_clipping:
@@ -113,6 +116,9 @@ class Model:
 
                 # iptimizer step
                 self.optimizer.step()
+
+                y_batch = self.postprocessing.run(y_batch)
+                pred = self.postprocessing.run(pred)
 
                 # calculate a step for metrics
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -140,15 +146,18 @@ class Model:
                     pred = self.model(X_batch)
 
                     # calculate main loss
-                    pred = pred.reshape(-1)
-                    y_batch = y_batch.reshape(-1)
+                    # pred = pred.reshape(-1)
+                    # y_batch = y_batch.reshape(-1)
 
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
                     # remove data from GPU
-                    X_batch = X_batch.float().cpu().detach()
-                    pred = pred.float().cpu().detach()
-                    y_batch = y_batch.float().cpu().detach()
+                    X_batch = X_batch.float().cpu().detach().numpy()
+                    pred = pred.float().cpu().detach().numpy()
+                    y_batch = y_batch.float().cpu().detach().numpy()
+
+                    y_batch = self.postprocessing.run(y_batch)
+                    pred = self.postprocessing.run(pred)
 
                     # calculate a step for metrics
                     self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -240,12 +249,15 @@ class Model:
                 pred = self.model(X_batch)
 
                 # calculate main loss
-                pred = pred.reshape(-1)
-                y_batch = y_batch.reshape(-1)
+                # pred = pred.reshape(-1)
+                # y_batch = y_batch.reshape(-1)
 
                 pred = pred.cpu().detach().numpy()
                 X_batch = X_batch.cpu().detach().numpy()
                 y_batch = y_batch.cpu().detach().numpy()
+
+                y_batch = self.postprocessing.run(y_batch)
+                pred = self.postprocessing.run(pred)
 
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
@@ -340,10 +352,10 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = nn.BCELoss()
+        self.loss = f1_loss()  #
 
         # 2. define model metric
-        self.metric = RocAuc()
+        self.metric = F1(n_classes=self.hparams['model']['n_classes'])  #
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

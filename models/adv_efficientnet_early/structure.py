@@ -10,6 +10,33 @@ class EfficientNet(effnet):
 
         super(EfficientNet, self).__init__(blocks_args=blocks_args, global_params=global_params)
 
+    def forward(self, x1, x2=None, train=False):
+
+        if train:
+            # main head (predictive)
+            out, endpoints = self.predictive_network(x1)
+            # additional head (adversarial)
+            out_s = self.adversarial_network(endpoints, x2)
+            return out, out_s
+        else:
+            # main head (predictive)
+            out, _ = self.predictive_network(x1)
+            return out
+
+    def build_adv_model(self):
+
+        dummy = torch.rand(1, 3, 96, 96)
+        endpoints = self.extract_endpoints(dummy)
+
+        n_filt = 0
+        for i in endpoints.keys():
+            n_filt += endpoints[i].shape[1]
+
+        self.adv_fc1 = nn.Linear(n_filt * 4, 300)
+        self.adv_fc2 = nn.Linear(300, 300)
+        # self.adv_fc3 = nn.Linear(300, 300)
+        self.adv_fc4 = nn.Linear(300, 1)
+
         # gradient reversal layer
         self.rever1_1 = RevGrad()
         self.rever1_2 = RevGrad()
@@ -37,18 +64,7 @@ class EfficientNet(effnet):
         self.rever2_11 = RevGrad()
         self.rever2_12 = RevGrad()
 
-    def forward(self, x1, x2=None, train=False):
-
-        if train:
-            # main head (predictive)
-            out, endpoints = self.predictive_network(x1)
-            # additional head (adversarial)
-            out_s = self.adversarial_network(endpoints, x2)
-            return out, out_s
-        else:
-            # main head (predictive)
-            out, _ = self.predictive_network(x1)
-            return out
+        return True
 
     def predictive_network(self, inputs):
 
@@ -59,7 +75,7 @@ class EfficientNet(effnet):
         if self._global_params.include_top:
             x = x.flatten(start_dim=1)
             x = self._dropout(x)
-            x = torch.sigmoid(self._fc(x))
+            x = torch.softmax(self._fc(x), dim=1)
 
         return x, endpoints
 
@@ -86,13 +102,13 @@ class EfficientNet(effnet):
         x3_p = self.rever2_3(endpoints_s['reduction_3']).mean(dim=2).mean(dim=2)
         x4_p = self.rever2_4(endpoints_s['reduction_4']).mean(dim=2).mean(dim=2)
         x5_p = self.rever2_5(endpoints_s['reduction_5']).mean(dim=2).mean(dim=2)
-        x6_p = self.rever1_6(endpoints_s['reduction_6']).mean(dim=2).mean(dim=2)
+        x6_p = self.rever2_6(endpoints_s['reduction_6']).mean(dim=2).mean(dim=2)
         x7_p = self.rever2_7(endpoints_s['reduction_1']).std(dim=2).std(dim=2)
         x8_p = self.rever2_8(endpoints_s['reduction_2']).std(dim=2).std(dim=2)
         x9_p = self.rever2_9(endpoints_s['reduction_3']).std(dim=2).std(dim=2)
         x10_p = self.rever2_10(endpoints_s['reduction_4']).std(dim=2).std(dim=2)
         x11_p = self.rever2_11(endpoints_s['reduction_5']).std(dim=2).std(dim=2)
-        x12_p = self.rever1_12(endpoints_s['reduction_6']).std(dim=2).std(dim=2)
+        x12_p = self.rever2_12(endpoints_s['reduction_6']).std(dim=2).std(dim=2)
 
         x = torch.cat(
             [
@@ -129,4 +145,4 @@ class EfficientNet(effnet):
         # x = torch.relu(self.adv_fc3(x))
         x = torch.sigmoid(self.adv_fc4(x))
 
-        return x, endpoints
+        return x

@@ -1,1 +1,1 @@
-from metrics.metrics import Dice_score, RocAuc  # pyflakes.ignore
+from metrics.metrics import Dice_score, RocAuc, F1  # pyflakes.ignore

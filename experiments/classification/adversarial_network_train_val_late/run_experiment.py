@@ -4,16 +4,16 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.segmentation.adversarial_network_train_val_late.data_generator import Dataset_train
-from experiments.segmentation.adversarial_network_train_val_late.train_pipeline import TrainPipeline
-from models.adv_unet_train_val_late import Model
+from experiments.classification.adversarial_network_train_val_early.data_generator import Dataset_train
+from experiments.classification.adversarial_network_train_val_early.train_pipeline import TrainPipeline
+from models.adv_efficientnet_early import Model
 
 
 def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
-    gpu='0',
+    gpu='1',
     dropout=None,
     experiment='./experiments/adversarial_network_train_val_early/config_brats_2.yml',
 ):
@@ -49,6 +49,9 @@ def run(
     logger.kpi_logger.info(f"Lr = {hparams['optimizer_hparams']['lr']}")
     logger.kpi_logger.info(f"N epochs = {hparams['n_epochs']}")
     logger.kpi_logger.info(f'GPU = {gpu}')
-    logger.kpi_logger.info(f"Dropout rate = {hparams['model']['dropout_rate']}")
     logger.kpi_logger.info(f"Model name: = {hparams['model_name']}")
     logger.kpi_logger.info('=============================================')
+
+
+if __name__ == "__main__":
+    run()
