@@ -17,10 +17,10 @@ from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from utils.post_processing import Post_Processing
 from time import time
-from utils.loss_functions import SimCLR_2
+from utils.loss_functions import f1_loss, Dice_loss
 
 # model
-from models.encoder_contrastive_classification.structure import EfficientNet
+from models.encoder_patch_classification.structure import EfficientNet
 
 
 class Model:
@@ -65,7 +65,7 @@ class Model:
         valid_loader = DataLoader(
             valid,
             batch_size=self.hparams['batch_size'],
-            shuffle=True,
+            shuffle=False,
             num_workers=self.hparams['num_workers'],
         )
 
@@ -79,28 +79,29 @@ class Model:
             self.model.train()
             avg_loss = 0.0
 
-            for X_anchor, X_supportive, y_batch in tqdm(train_loader):
+            for X1_batch, X2_batch, y_batch in tqdm(train_loader):
 
                 # push the data into the GPU
-                X_anchor = X_anchor.float().to(self.device)
-                X_supportive = X_supportive.float().to(self.device)
+                X1_batch = X1_batch.float().to(self.device)
+                X2_batch = X2_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred_anchor = self.model(X_anchor)
-                pred_supportive = self.model(X_supportive)
+                pred = self.model(X1_batch, X2_batch)
 
-                train_loss = self.loss(pred_anchor, pred_supportive)
+                # process main loss
+                pred = pred.reshape(-1, pred.shape[-1])
+                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                train_loss = self.loss(pred, y_batch)
 
                 # remove data from GPU
-                X_anchor = X_anchor.float().cpu().detach()
-                X_supportive = X_supportive.float().cpu().detach()
-                pred_anchor = pred_anchor.float().cpu().detach()
-                pred_supportive = pred_supportive.float().cpu().detach()
                 y_batch = y_batch.float().cpu().detach()
+                pred = pred.float().cpu().detach()
+                X1_batch = X1_batch.float().cpu().detach()
+                X2_batch = X2_batch.float().cpu().detach()
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
@@ -117,35 +118,36 @@ class Model:
                 # iptimizer step
                 self.optimizer.step()
 
-                # evaluate the model
+            # evaluate the model
             print('Model evaluation')
 
             # val mode
             self.model.eval()
+            self.optimizer.zero_grad()
             avg_val_loss = 0.0
 
             with torch.no_grad():
 
-                for X_anchor, X_supportive, y_batch in tqdm(valid_loader):
+                for X1_batch, X2_batch, y_batch in tqdm(valid_loader):
+
                     # push the data into the GPU
-                    X_anchor = X_anchor.float().to(self.device)
-                    X_supportive = X_supportive.float().to(self.device)
+                    X1_batch = X1_batch.float().to(self.device)
+                    X2_batch = X2_batch.float().to(self.device)
                     y_batch = y_batch.float().to(self.device)
 
-                    # clean gradients from the previous step
-                    self.optimizer.zero_grad()
+                    # get predictions
+                    pred = self.model(X1_batch, X2_batch)
 
-                    # get model predictions
-                    pred_anchor = self.model(X_anchor)
-                    pred_supportive = self.model(X_supportive)
+                    # calculate main loss
+                    pred = pred.reshape(-1, pred.shape[-1])
+                    y_batch = y_batch.reshape(-1, y_batch.shape[-1])
 
-                    avg_val_loss += self.loss(pred_anchor, pred_supportive).item() / len(valid_loader)
+                    avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
                     # remove data from GPU
-                    X_anchor = X_anchor.float().cpu().detach()
-                    X_supportive = X_supportive.float().cpu().detach()
-                    pred_anchor = pred_anchor.float().cpu().detach()
-                    pred_supportive = pred_supportive.float().cpu().detach()
+                    X1_batch = X1_batch.float().cpu().detach()
+                    X2_batch = X2_batch.float().cpu().detach()
+                    pred = pred.float().cpu().detach()
                     y_batch = y_batch.float().cpu().detach()
 
             # early stopping for scheduler
@@ -212,31 +214,28 @@ class Model:
             X_test, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=0,
         )
 
-        avg_test_loss = 0.0
+        avg_test_loss = 0
 
         print('Getting predictions')
         with torch.no_grad():
-            for X_anchor, X_supportive, y_batch in tqdm(test_loader):
-                # push the data into the GPU
-                X_anchor = X_anchor.float().to(self.device)
-                X_supportive = X_supportive.float().to(self.device)
+            for i, (X1_batch, X2_batch, y_batch) in enumerate(tqdm(test_loader)):
+                X1_batch = X1_batch.float().to(self.device)
+                X2_batch = X2_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
-                # clean gradients from the previous step
-                self.optimizer.zero_grad()
+                pred = self.model(X1_batch, X2_batch)
 
-                # get model predictions
-                pred_anchor = self.model(X_anchor)
-                pred_supportive = self.model(X_supportive)
+                # calculate main loss
+                pred = pred.reshape(-1, pred.shape[-1])
+                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
 
-                avg_test_loss += self.loss(pred_anchor, pred_supportive).item() / len(test_loader)
+                # calculate a sample-wise error
+                avg_test_loss += self.loss(pred, y_batch).item() / len(test_loader)
 
-                # remove data from GPU
-                X_anchor = X_anchor.float().cpu().detach()
-                X_supportive = X_supportive.float().cpu().detach()
-                pred_anchor = pred_anchor.float().cpu().detach()
-                pred_supportive = pred_supportive.float().cpu().detach()
-                y_batch = y_batch.float().cpu().detach()
+                pred = pred.cpu().detach().numpy()
+                X1_batch = X1_batch.cpu().detach().numpy()
+                X2_batch = X2_batch.cpu().detach().numpy()
+                y_batch = y_batch.cpu().detach().numpy()
 
         return avg_test_loss
 
@@ -292,32 +291,33 @@ class Model:
         # TODO: re-write to pure DDP
         if inference or gpu is None:
             self.device = torch.device('cpu')
-            self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
-                self.device
-            )
+            self.model = EfficientNet.from_pretrained(
+                self.hparams['model']['pre_trained_model'], num_classes=self.hparams['model']['n_classes']
+            ).to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 1:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
-                        self.device
-                    )
+                    self.model = EfficientNet.from_pretrained(
+                        self.hparams['model']['pre_trained_model'],
+                        num_classes=self.hparams['model']['n_classes'],
+                    ).to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
-                        self.device
-                    )
+                    self.model = EfficientNet.from_pretrained(
+                        self.hparams['model']['pre_trained_model'],
+                        num_classes=self.hparams['model']['n_classes'],
+                    ).to(self.device)
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
-                    self.device
-                )
+                self.model = EfficientNet.from_pretrained(
+                    self.hparams['model']['pre_trained_model'],
+                    num_classes=self.hparams['model']['n_classes'],
+                ).to(self.device)
                 print('Only one GPU is available')
-
-        self.model.module.build_projection_network(self.hparams['model']['emb_dim'], device=self.device)
 
         print('Cuda available: ', torch.cuda.is_available())
 
@@ -326,21 +326,22 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = SimCLR_2(
-            temperature=100
-        )  # SimclrCriterion(batch_size=self.hparams['batch_size'],device=self.device)
+        self.loss = nn.BCELoss()
 
-        # 2. define optimizer
+        # 2. define model metric
+        self.metric = Dice_score(self.hparams['model']['n_classes'])
+
+        # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(
             params=self.model.parameters(), **self.hparams['optimizer_hparams']
         )
 
-        # 3. define scheduler
+        # 4. define scheduler
         self.scheduler = eval(f"torch.optim.lr_scheduler.{self.hparams['scheduler_name']}")(
             optimizer=self.optimizer, **self.hparams['scheduler_hparams']
         )
 
-        # 4. define early stopping
+        # 5. define early stopping
         self.early_stopping = EarlyStopping(
             checkpoint_path=self.hparams['checkpoint_path'] + f'/checkpoint_{self.start_training}' + '.pt',
             patience=self.hparams['patience'],
@@ -348,10 +349,10 @@ class Model:
             is_maximize=False,
         )
 
-        # 5. set gradient clipping
+        # 6. set gradient clipping
         self.apply_clipping = self.hparams['clipping']  # clipping of gradients
 
-        # 6. Set scaler for optimizer
+        # 7. Set scaler for optimizer
         self.scaler = torch.cuda.amp.GradScaler()
 
         return True

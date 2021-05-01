@@ -1,5 +1,5 @@
 batch_size: 32
-n_epochs: 2
+n_epochs: 3000
 patience: 100 #number of epochs wait until improvement
 clipping: false #apply gradient clipping
 min_delta: 0.005 #min delta of improvement for early stopping
@@ -19,7 +19,7 @@ model:
   pre_trained_model: 'efficientnet-b3'
 #'efficientnet-b0', 'efficientnet-b1', 'efficientnet-b2', 'efficientnet-b3',
 #'efficientnet-b4', 'efficientnet-b5', 'efficientnet-b6', 'efficientnet-b7',
-  alpha: 0.001
+  alpha: 0.01
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001

@@ -19,7 +19,7 @@ from time import time
 from utils.loss_functions import f1_loss
 
 # model
-from models.YoloV4.structure import EfficientNet
+from models.efficientnet.structure import EfficientNet
 from utils.post_processing import Post_Processing
 
 
@@ -320,6 +320,7 @@ class Model:
             self.model = EfficientNet.from_pretrained(
                 self.hparams['model']['pre_trained_model'], num_classes=self.hparams['model']['n_classes']
             ).to(self.device)
+            # self.model.freeze_layers()
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 1:
@@ -330,6 +331,7 @@ class Model:
                         num_classes=self.hparams['model']['n_classes'],
                     ).to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
+                    # self.model.module.freeze_layers()
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
@@ -337,12 +339,14 @@ class Model:
                         self.hparams['model']['pre_trained_model'],
                         num_classes=self.hparams['model']['n_classes'],
                     ).to(self.device)
+                    # self.model.freeze_layers()
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
                 self.model = EfficientNet.from_pretrained(
                     self.hparams['model']['pre_trained_model'],
                     num_classes=self.hparams['model']['n_classes'],
                 ).to(self.device)
+                # self.model.freeze_layers()
                 print('Only one GPU is available')
 
         print('Cuda available: ', torch.cuda.is_available())

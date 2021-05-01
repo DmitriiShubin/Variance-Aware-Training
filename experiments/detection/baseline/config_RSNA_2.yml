@@ -17,6 +17,8 @@ model_path: ./data/model_weights/effnet_2_baseline_RSNA/ # CHANGE WHEN CREATE A 
 model:
   n_classes: 1
   pre_trained_model: 'efficientnet-b0'
+  alpha_obj: 1.0
+  alpha_pos: 1.0
 #'efficientnet-b0', 'efficientnet-b1', 'efficientnet-b2', 'efficientnet-b3',
 #'efficientnet-b4', 'efficientnet-b5', 'efficientnet-b6', 'efficientnet-b7',
 #'efficientnet-b8'

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
+from torch.nn import MSELoss
 
 
 class f1_loss(nn.Module):
@@ -74,23 +75,88 @@ class FocalLoss(nn.Module):
 
 
 class YoloLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, alpha_obj, alpha_pos):
         super().__init__()
 
         self.focal_loss = FocalLoss()
+        self.mse_loss = MSELoss()
+        self.alpha_obj = alpha_obj
+        self.alpha_pos = alpha_pos
 
-    def forward(self, obj, obj_target):
+    def forward(
+        self,
+        pred_obj,
+        pred_h,
+        pred_w,
+        pred_cx,
+        pred_cy,
+        target_obj,
+        target_h,
+        target_w,
+        target_cx,
+        target_cy,
+    ):
 
-        #Objectiveness loss
-        obj1,obj2,obj3 = obj
-        obj_target1,obj_target2,obj_target3 = obj_target
+        # Objectiveness loss
+        pred_obj1, pred_obj2, pred_obj3 = pred_obj
+        pred_h1, pred_h2, pred_h3 = pred_h
+        pred_w1, pred_w2, pred_w3 = pred_w
+        pred_cx1, pred_cx2, pred_cx3 = pred_cx
+        pred_cy1, pred_cy2, pred_cy3 = pred_cy
 
-        loss_obj1 = self.focal_loss(obj1, obj_target1)
-        loss_obj2 = self.focal_loss(obj2, obj_target2)
-        loss_obj3 = self.focal_loss(obj3, obj_target3)
+        target_obj1, target_obj2, target_obj3 = target_obj
+        target_h1, target_h2, target_h3 = target_h
+        target_w1, target_w2, target_w3 = target_w
+        target_cx1, target_cx2, target_cx3 = target_cx
+        target_cy1, target_cy2, target_cy3 = target_cy
 
-        #resulting loss
-        loss = loss_obj1 + loss_obj2 + loss_obj3
+        # focal loss to calculate objectiveness
+        loss_obj1 = self.focal_loss(pred_obj1, target_obj1)
+        loss_obj2 = self.focal_loss(pred_obj2, target_obj2)
+        loss_obj3 = self.focal_loss(pred_obj3, target_obj3)
+
+        # select only anchors where abjects are present
+        pred_h1 = pred_h1[torch.where(target_h1 != 0)]
+        pred_w1 = pred_w1[torch.where(target_h1 != 0)]
+        pred_cx1 = pred_cx1[torch.where(target_h1 != 0)]
+        pred_cy1 = pred_cy1[torch.where(target_h1 != 0)]
+
+        target_w1 = target_w1[torch.where(target_h1 != 0)]
+        target_cx1 = target_cx1[torch.where(target_h1 != 0)]
+        target_cy1 = target_cy1[torch.where(target_h1 != 0)]
+        target_h1 = target_h1[torch.where(target_h1 != 0)]
+
+        pred_h2 = pred_h2[torch.where(target_h2 != 0)]
+        pred_w2 = pred_w2[torch.where(target_h2 != 0)]
+        pred_cx2 = pred_cx2[torch.where(target_h2 != 0)]
+        pred_cy2 = pred_cy2[torch.where(target_h2 != 0)]
+
+        target_w2 = target_w2[torch.where(target_h2 != 0)]
+        target_cx2 = target_cx2[torch.where(target_h2 != 0)]
+        target_cy2 = target_cy2[torch.where(target_h2 != 0)]
+        target_h2 = target_h2[torch.where(target_h2 != 0)]
+
+        pred_h3 = pred_h3[torch.where(target_h3 != 0)]
+        pred_w3 = pred_w3[torch.where(target_h3 != 0)]
+        pred_cx3 = pred_cx3[torch.where(target_h3 != 0)]
+        pred_cy3 = pred_cy3[torch.where(target_h3 != 0)]
+
+        target_w3 = target_w3[torch.where(target_h3 != 0)]
+        target_cx3 = target_cx3[torch.where(target_h3 != 0)]
+        target_cy3 = target_cy3[torch.where(target_h3 != 0)]
+        target_h3 = target_h3[torch.where(target_h3 != 0)]
+
+        # position
+        loss_position = self.mse_loss(target_cx1, pred_cx1) + self.mse_loss(target_cy1, pred_cy1)
+        loss_position += self.mse_loss(target_cx2, pred_cx2) + self.mse_loss(target_cy2, pred_cy2)
+        loss_position += self.mse_loss(target_cx3, pred_cx3) + self.mse_loss(target_cy3, pred_cy3)
+
+        loss_position += self.mse_loss(target_h1, pred_h1) + self.mse_loss(target_w1, pred_w1)
+        loss_position += self.mse_loss(target_h2, pred_h2) + self.mse_loss(target_w2, pred_w2)
+        loss_position += self.mse_loss(target_h3, pred_h3) + self.mse_loss(target_w3, pred_w3)
+
+        # resulting loss
+        loss = self.alpha_obj * (loss_obj1 + loss_obj2 + loss_obj3) + self.alpha_pos * loss_position
 
         return loss
 

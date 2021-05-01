@@ -18,8 +18,6 @@ class Dataset_train(Dataset):
         self.volumes_list = volumes_list
         self.preprocessing = Preprocessing(aug)
 
-        self.generate_pairs(n_pairs=int(len(self.volumes_list) * 10))
-
     # TODO
     def generate_pairs(self, n_pairs: int):
 
@@ -167,12 +165,12 @@ class Augmentations:
         prob = 0.5
         self.augs = A.Compose(
             [
-                A.Blur(blur_limit=3, p=prob),
+                # A.Blur(blur_limit=3, p=prob),
                 A.HorizontalFlip(p=prob),
                 A.VerticalFlip(p=prob),
                 A.Rotate(limit=90, p=prob),
-                # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                A.RandomSizedCrop(min_max_height=(48, 48), height=96, width=96, p=prob),
+                A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
+                # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
                 A.RandomGamma(gamma_limit=(80, 120), p=prob),
             ]
         )

@@ -10,14 +10,14 @@ class EfficientNet(effnet):
 
         super(EfficientNet, self).__init__(blocks_args=blocks_args, global_params=global_params)
 
-    def build_projection_network(self, emb_dim):
+    def build_projection_network(self, emb_dim, device):
 
-        dummy = torch.rand(1, 3, 96, 96)
-        n_filt = self.extract_endpoints(dummy).shape[1]
+        dummy = torch.rand(1, 3, 96, 96).to(device)
+        n_filt = self.extract_features(dummy).shape[1]
 
-        self.fc1 = nn.Linear(n_filt, n_filt)
-        self.fc2 = nn.Linear(n_filt, n_filt)
-        self.fc3 = nn.Linear(n_filt, emb_dim)
+        self.fc1 = nn.Linear(n_filt, n_filt).to(device)
+        self.fc2 = nn.Linear(n_filt, n_filt).to(device)
+        self.fc3 = nn.Linear(n_filt, emb_dim).to(device)
 
         return True
 

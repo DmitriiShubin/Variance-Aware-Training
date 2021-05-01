@@ -1,17 +1,27 @@
-#ACDC experiments:
+# ACDC experiments:
 
 # baseline models
 from experiments.segmentation.baseline.run_experiment import run as run_baseline_segmentation
 
 # pre-training encoders
-from experiments.segmentation.patch_encoder.run_experiment import run as run_pre_trained_patch_segmentation
-from experiments.segmentation.contrastive_loss_encoder.run_experiment import run as run_pre_trained_contrastive_segmentation
-from experiments.segmentation.rotation_encoder.run_experiment import run as run_pre_trained_rotation_segmentation
+from experiments.segmentation.patch_encoder.run_experiment import run as run_pre_training_patch_segmentation
+from experiments.segmentation.contrastive_loss_encoder.run_experiment import (
+    run as run_pre_training_contrastive_segmentation,
+)
+from experiments.segmentation.rotation_encoder.run_experiment import (
+    run as run_pre_training_rotation_segmentation,
+)
 
 # pre-trained models
-from experiments.segmentation.pre_trained_patch.run_experiment import run as run_pre_trained_patch_segmentation
-from experiments.segmentation.pre_trained_contrastive.run_experiment import run as run_pre_trained_contrastive_segmentation
-from experiments.segmentation.pre_trained_rotation.run_experiment import run as run_pre_trained_rotation_segmentation
+from experiments.segmentation.pre_trained_patch.run_experiment import (
+    run as run_pre_trained_patch_segmentation,
+)
+from experiments.segmentation.pre_trained_contrastive.run_experiment import (
+    run as run_pre_trained_contrastive_segmentation,
+)
+from experiments.segmentation.pre_trained_rotation.run_experiment import (
+    run as run_pre_trained_rotation_segmentation,
+)
 
 # adversarial models
 from experiments.segmentation.adversarial_network_train_val_early.run_experiment import (
@@ -22,11 +32,21 @@ from experiments.segmentation.adversarial_network_train_val_late.run_experiment 
 )
 
 
+# APTOS experiments:
 
-#APTOS experiments:
-
-#baseline models
+# baseline models
 from experiments.classification.baseline.run_experiment import run as run_efficientnet_baseline
+
+# pre-training models
+from experiments.classification.contrastive_loss_encoder.run_experiment import (
+    run as run_pre_training_contrastive_classification,
+)
+from experiments.classification.patch_encoder.run_experiment import (
+    run as run_pre_training_patch_classification,
+)
+from experiments.classification.rotation_encoder.run_experiment import (
+    run as run_pre_training_rotation_classification,
+)
 
 # adversarial models
 from experiments.classification.adversarial_network_train_val_early.run_experiment import (
@@ -34,11 +54,11 @@ from experiments.classification.adversarial_network_train_val_early.run_experime
 )
 
 
+# RSNA experiments:
 
-#RSNA experiments:
-
-#baseline models
+# baseline models
 from experiments.detection.baseline.run_experiment import run as run_yolov4_baseline
+
 
 def main():
 
@@ -85,20 +105,28 @@ def main():
     ###########################################################################
     # APTOS
 
-    # run_efficientnet_baseline(experiment='./experiments/classification/baseline/config_aptos_8.yml', gpu='7')
-    # run_efficientnet_baseline(experiment='./experiments/classification/baseline/config_aptos_4.yml',gpu='7')
+    # baseline models
     # run_efficientnet_baseline(experiment='./experiments/classification/baseline/config_aptos_2.yml', gpu='7')
+    # run_efficientnet_baseline(experiment='./experiments/classification/baseline/config_aptos_4.yml',gpu='7')
+    # run_efficientnet_baseline(experiment='./experiments/classification/baseline/config_aptos_8.yml', gpu='7')
+
+    # adversarial models early
     # for i in range(1,11):
-    #     run_efficientnet_adv_early(experiment=f'./experiments/classification/adversarial_network_train_val_early/config_aptos_8_{i}.yml', gpu='6,7')
+    #     run_efficientnet_adv_early(experiment=f'./experiments/classification/adversarial_network_train_val_early/config_aptos_2_{i}.yml', gpu='6,7')
     # for i in range(1,11):
     #     run_efficientnet_adv_early(experiment=f'./experiments/classification/adversarial_network_train_val_early/config_aptos_4_{i}.yml', gpu='6,7')
     # for i in range(1,11):
-    #     run_efficientnet_adv_early(experiment=f'./experiments/classification/adversarial_network_train_val_early/config_aptos_2_{i}.yml', gpu='6,7')
+    #     run_efficientnet_adv_early(experiment=f'./experiments/classification/adversarial_network_train_val_early/config_aptos_8_{i}.yml', gpu='6,7')
+    #
 
+    # pre-training models
+    # run_pre_training_contrastive_classification(experiment=f'./experiments/classification/contrastive_loss_encoder/config_aptos.yml', gpu='6,7')
+    # run_pre_training_patch_classification(experiment=f'./experiments/classification/patch_encoder/config_aptos.yml', gpu='6,7')
+    # run_pre_training_rotation_classification(experiment=f'./experiments/classification/rotation_encoder/config_aptos.yml', gpu='6,7')
     ###########################################################################
     # RSNA
 
-    #run_yolov4_baseline(experiment='./experiments/detection/baseline/config_RSNA_2.yml', gpu='0,1')
+    run_yolov4_baseline(experiment='./experiments/detection/baseline/config_RSNA_2.yml', gpu='0,1')
 
     return None
 

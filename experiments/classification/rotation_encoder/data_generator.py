@@ -147,15 +147,16 @@ class Augmentations:
                     A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
-        elif dataset == 'ACDC_8':
+        elif dataset == 'APTOS':
             prob = 0.5
             self.augs = A.Compose(
                 [
+                    # A.Blur(blur_limit=3, p=prob),
                     # A.HorizontalFlip(p=prob),
                     # A.VerticalFlip(p=prob),
                     A.Rotate(limit=5, p=prob),
-                    A.ElasticTransform(alpha=0.05, p=prob),
-                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
+                    # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
                     A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )

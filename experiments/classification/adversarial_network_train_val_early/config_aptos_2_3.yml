@@ -1,5 +1,5 @@
 batch_size: 32
-n_epochs: 2
+n_epochs: 3000
 patience: 100 #number of epochs wait until improvement
 clipping: false #apply gradient clipping
 min_delta: 0.005 #min delta of improvement for early stopping

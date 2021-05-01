@@ -71,15 +71,7 @@ class EfficientNet(effnet):
         x6_p = self.rever2_6(endpoints_s['reduction_6']).mean(dim=2).mean(dim=2)
         x12_p = self.rever2_12(endpoints_s['reduction_6']).std(dim=2).std(dim=2)
 
-        x = torch.cat(
-            [
-                x6_s,
-                x12_s,
-                x6_p,
-                x12_p,
-            ],
-            dim=1,
-        )
+        x = torch.cat([x6_s, x12_s, x6_p, x12_p,], dim=1,)
 
         x = torch.relu(self.adv_fc1(x))
         # x = torch.relu(self.adv_fc2(x))

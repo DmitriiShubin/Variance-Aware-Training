@@ -5,7 +5,7 @@ import os
 
 from experiments.classification.contrastive_loss_encoder.data_generator import Dataset_train
 from experiments.classification.contrastive_loss_encoder.train_pipeline import TrainPipeline
-from models.encoder_contrastive_classification import Model
+from models.encoder_patch_classification import Model
 
 
 def run(

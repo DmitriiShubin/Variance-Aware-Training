@@ -25,51 +25,73 @@ class Dataset_train(Dataset):
 
     def __getitem__(self, idx):
 
-        X, y = self.load_data(idx)
+        X1, X2, y = self.load_data(idx)
 
-        X = torch.tensor(X, dtype=torch.float)
+        X1 = torch.tensor(X1, dtype=torch.float)
+        X2 = torch.tensor(X2, dtype=torch.float)
         y = torch.tensor(y, dtype=torch.float)
 
-        return X, y
+        return X1, X2, y
 
     def load_data(self, id):
 
         X = np.load(self.volums_list[id]).astype(np.float32)
-        y = np.random.choice([0, 90, 180, 270])
+        X = self.preprocessing.run(X)
 
-        X = self.preprocessing.run(X=X)
+        y = np.random.choice(np.arange(8))
+        y2 = np.random.choice(np.arange(8))
 
-        X = self.rotate_image(X, y)
-        y_one_hot = np.zeros((4))
-        y_one_hot[[0, 90, 180, 270] == y] = 1
+        X1 = self.select_patch(X, y)
+        X2 = self.select_patch(X, y2)
 
-        return X, y_one_hot
+        if y2 == 8 or y == 8:
+            y = [1]
+        elif abs(y2 - y) == 1:
+            y = [1]
+        elif (y2 == 7 and y == 0) or (y == 7 and y2 == 0):
+            y = [1]
+        else:
+            y = [0]
 
-    def one_hot_voxel(self, y):
-        y = np.transpose(y.astype(np.int32), (1, 2, 0))
-        y = np.eye(self.n_classes)[y[:, :, -1].astype(np.int32)]
-        y = np.transpose(y.astype(np.float32), (2, 0, 1))
-        return y
+        return X1, X2, y
 
-    def rotate_image(self, image, angle):
-        image = np.transpose(image.astype(np.float32), (1, 2, 0))
+    def select_patch(self, X, sector):
+        # optional: upsample if too much
 
-        if angle == 90:
-            image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
-        elif angle == 180:
-            image = cv2.rotate(image, cv2.ROTATE_180)
-        elif angle == 270:
-            image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        X = np.transpose(X.astype(np.float32), (1, 2, 0))
 
-        if len(image.shape) < 3:
-            image = np.expand_dims(image, axis=2)
+        # X = cv2.resize(X, (X.shape[0] * 3, X.shape[1] * 3))
 
-        return np.transpose(image.astype(np.float32), (2, 0, 1))
-        # image_center = tuple(np.array(image.shape[1::-1]) / 2)
-        # rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
-        # result = cv2.warpAffine(image, rot_mat, image.shape)#[1::-1], flags=cv2.INTER_LINEAR)
-        # result = np.transpose(result.astype(np.float32), (2, 0, 1))
-        # return result
+        if len(X.shape) < 3:
+            X = np.expand_dims(X, axis=2)
+
+        split_x = X.shape[0] // 3
+        split_y = X.shape[1] // 3
+
+        overlap = split_x // 4
+
+        if sector == 0:
+            X2 = X[0 : split_x + overlap * 2, 0 : split_y + overlap * 2, :]
+        elif sector == 1:
+            X2 = X[split_x - overlap : split_x * 2 + overlap, 0 : split_y + overlap * 2, :]
+        elif sector == 2:
+            X2 = X[split_x * 2 - overlap * 2 : split_x * 3, 0 : split_y + overlap * 2, :]
+        elif sector == 3:
+            X2 = X[split_x * 2 - overlap * 2 : split_x * 3, split_y - overlap : split_y * 2 + overlap, :]
+        elif sector == 4:
+            X2 = X[split_x * 2 - overlap * 2 : split_x * 3, split_y * 2 - overlap * 2 : split_y * 3, :]
+        elif sector == 5:
+            X2 = X[split_x - overlap : split_x * 2 + overlap, split_y * 2 - overlap * 2 : split_y * 3, :]
+        elif sector == 6:
+            X2 = X[0 : split_x + overlap * 2, split_y * 2 - overlap * 2 : split_y * 3, :]
+        elif sector == 7:
+            X2 = X[0 : split_x + overlap * 2, split_y - overlap : split_y * 2 + overlap, :]
+        elif sector == 8:
+            X2 = X[split_x - overlap : split_x * 2 + overlap, split_y - overlap : split_y * 2 + overlap, :]
+
+        X2 = np.transpose(X2.astype(np.float32), (2, 0, 1))
+
+        return X2
 
 
 class Preprocessing:
@@ -81,7 +103,6 @@ class Preprocessing:
     def run(self, X):
 
         if self.aug:
-
             X = self.augmentations.run(X)
 
         X = self.standard_scaling(X)
@@ -147,15 +168,16 @@ class Augmentations:
                     A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
-        elif dataset == 'ACDC_8':
+        elif dataset == 'APTOS':
             prob = 0.5
             self.augs = A.Compose(
                 [
-                    # A.HorizontalFlip(p=prob),
-                    # A.VerticalFlip(p=prob),
-                    A.Rotate(limit=5, p=prob),
-                    A.ElasticTransform(alpha=0.05, p=prob),
-                    A.RandomSizedCrop(min_max_height=(140, 140), height=154, width=154, p=prob),
+                    A.Blur(blur_limit=3, p=prob),
+                    A.HorizontalFlip(p=prob),
+                    A.VerticalFlip(p=prob),
+                    A.Rotate(limit=90, p=prob),
+                    A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
+                    A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
                     A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )

@@ -20,17 +20,18 @@ class PredictionHead(nn.Module):
             [142, 110],
             [192, 243],
             [459, 401],
-        ]
+        ]  # w and h of anchors
+
         self.anchors = torch.Tensor(self.anchors)
         self.anchr_masks = [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
-        self.scale_factors = [8,16,32]
+        self.scale_factors = [8, 16, 32]
         self.grids = []
         self.n_classes = n_classes
         self.image_size = image_size
 
         # normalize anchors based on scaling factors
         for scale in self.scale_factors:
-            self.grids.append(int(image_size/scale))
+            self.grids.append(int(image_size / scale))
 
         # calculate cx, cy for each grid cell
         self.create_cell_coordinates_grid()
@@ -39,9 +40,9 @@ class PredictionHead(nn.Module):
 
         # 15×32×32+15×16×16+15×8×8 = 20160 predictions in total (4032 bounding boxes)
 
-        self.conv_1 = nn.Conv2d(in_ch_1, output_ch, kernel_size=1,stride=1)
-        self.conv_2 = nn.Conv2d(in_ch_1, output_ch, kernel_size=1,stride=1)
-        self.conv_3 = nn.Conv2d(in_ch_1, output_ch, kernel_size=1,stride=1)
+        self.conv_1 = nn.Conv2d(in_ch_1, output_ch, kernel_size=1, stride=1)
+        self.conv_2 = nn.Conv2d(in_ch_1, output_ch, kernel_size=1, stride=1)
+        self.conv_3 = nn.Conv2d(in_ch_1, output_ch, kernel_size=1, stride=1)
 
     def create_cell_coordinates_grid(self):
         self.channel_1_c = np.zeros((self.grids[0], self.grids[0], 2))  # X x Y x number of coordinates
@@ -117,9 +118,9 @@ class PredictionHead(nn.Module):
                     torch.exp(bb_H_channel_3) * self.anchors[6:9, 1],
                 ],
                 [
-                    bb_cx_channel_1 * self.scale_factors[0] + self.self.channel_1_c[:,:,0],
-                    bb_cx_channel_2 * self.scale_factors[1] + self.self.channel_2_c[:,:,0],
-                    bb_cx_channel_3 * self.scale_factors[2] + self.self.channel_3_c[:,:,0],
+                    bb_cx_channel_1 * self.scale_factors[0] + self.self.channel_1_c[:, :, 0],
+                    bb_cx_channel_2 * self.scale_factors[1] + self.self.channel_2_c[:, :, 0],
+                    bb_cx_channel_3 * self.scale_factors[2] + self.self.channel_3_c[:, :, 0],
                 ],
                 [
                     bb_cy_channel_1 * self.scale_factors[0] + self.self.channel_1_c[:, :, 1],
@@ -128,15 +129,57 @@ class PredictionHead(nn.Module):
                 ],
             )
 
-    def build_target(self, targets):
+    def build_target(self, targets:dict):
 
-        objectness_1 = torch.tensor(np.zeros((len(targets), len(self.anchr_masks[0]), self.grids[0], self.grids[0])))
-        objectness_2 = torch.tensor(np.zeros((len(targets), len(self.anchr_masks[1]), self.grids[1], self.grids[1])))
-        objectness_3 = torch.tensor(np.zeros((len(targets), len(self.anchr_masks[2]), self.grids[2], self.grids[2])))
+        objectness_1 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[0]), self.grids[0], self.grids[0]))
+        )
+        objectness_2 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[1]), self.grids[1], self.grids[1]))
+        )
+        objectness_3 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[2]), self.grids[2], self.grids[2]))
+        )
 
-        bb_cx_channel_1 = torch.tensor(np.zeros((len(targets), len(self.anchr_masks[0]), self.grids[0], self.grids[0])))
-        bb_cx_channel_2 = torch.tensor(np.zeros((len(targets), len(self.anchr_masks[1]), self.grids[1], self.grids[1])))
-        bb_cx_channel_3 = torch.tensor(np.zeros((len(targets), len(self.anchr_masks[2]), self.grids[2], self.grids[2])))
+        bb_cx_channel_1 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[0]), self.grids[0], self.grids[0]))
+        )
+        bb_cx_channel_2 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[1]), self.grids[1], self.grids[1]))
+        )
+        bb_cx_channel_3 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[2]), self.grids[2], self.grids[2]))
+        )
+
+        bb_cy_channel_1 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[0]), self.grids[0], self.grids[0]))
+        )
+        bb_cy_channel_2 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[1]), self.grids[1], self.grids[1]))
+        )
+        bb_cy_channel_3 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[2]), self.grids[2], self.grids[2]))
+        )
+
+        bb_H_channel_1 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[0]), self.grids[0], self.grids[0]))
+        )
+        bb_H_channel_2 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[1]), self.grids[1], self.grids[1]))
+        )
+        bb_H_channel_3 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[2]), self.grids[2], self.grids[2]))
+        )
+
+        bb_W_channel_1 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[0]), self.grids[0], self.grids[0]))
+        )
+        bb_W_channel_2 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[1]), self.grids[1], self.grids[1]))
+        )
+        bb_W_channel_3 = torch.tensor(
+            np.zeros((len(targets), len(self.anchr_masks[2]), self.grids[2], self.grids[2]))
+        )
 
         for sample in range(len(targets)):  # iterate over the batch
 
@@ -148,7 +191,7 @@ class PredictionHead(nn.Module):
             for key in target.keys():
                 object = target[key]
 
-                #mark grid cells when the object is present
+                # mark grid cells when the object is present
                 objectness_1[
                     sample,
                     :,
@@ -168,84 +211,189 @@ class PredictionHead(nn.Module):
                     int(object['cy'] / self.scale_factors[2]),
                 ] = 1
 
-                #calculate center cizes
-                bb_cx_channel_1[sample,
-                :,
-                int(object['cx'] / self.scale_factors[0]),
-                int(object['cy'] / self.scale_factors[0]),
+                # select the best fitting anchor
+                iou1 = []
+                iou2 = []
+                iou3 = []
+
+                # channel 1
+                for anchor in self.anchr_masks[0]:
+
+                    object_temp = object.copy()
+                    object_temp['cx'] = object['cx'] / self.scale_factors[0] - int(
+                        object['cx'] / self.scale_factors[0]
+                    )
+                    object_temp['cy'] = object['cy'] / self.scale_factors[0] - int(
+                        object['cy'] / self.scale_factors[0]
+                    )
+                    target_converted = self.convert_bbox_coordinates(object_temp)
+
+                    anchor = self.anchors[anchor]
+                    anchor = {'cx': 0.5, 'cy': 0.5, 'w': anchor.numpy()[0], 'h': anchor.numpy()[1]}
+                    anchor = self.convert_bbox_coordinates(anchor)
+                    iou1.append(self.get_iou(target_converted, anchor))
+
+                # channel 2
+                for anchor in self.anchr_masks[1]:
+                    object_temp = object.copy()
+                    object_temp['cx'] = object['cx'] / self.scale_factors[1] - int(
+                        object['cx'] / self.scale_factors[1]
+                    )
+                    object_temp['cy'] = object['cy'] / self.scale_factors[1] - int(
+                        object['cy'] / self.scale_factors[1]
+                    )
+                    target_converted = self.convert_bbox_coordinates(object_temp)
+
+                    anchor = self.anchors[anchor]
+                    anchor = {'cx': 0.5, 'cy': 0.5, 'w': anchor.numpy()[0], 'h': anchor.numpy()[1]}
+                    anchor = self.convert_bbox_coordinates(anchor)
+                    iou2.append(self.get_iou(target_converted, anchor))
+
+                # channel 3
+                for anchor in self.anchr_masks[2]:
+                    object_temp = object.copy()
+                    object_temp['cx'] = object['cx'] / self.scale_factors[2] - int(
+                        object['cx'] / self.scale_factors[2]
+                    )
+                    object_temp['cy'] = object['cy'] / self.scale_factors[2] - int(
+                        object['cy'] / self.scale_factors[2]
+                    )
+                    target_converted = self.convert_bbox_coordinates(object_temp)
+
+                    anchor = self.anchors[anchor]
+                    anchor = {'cx': 0.5, 'cy': 0.5, 'w': anchor.numpy()[0], 'h': anchor.numpy()[1]}
+                    anchor = self.convert_bbox_coordinates(anchor)
+                    iou3.append(self.get_iou(target_converted, anchor))
+
+                # TODO: repeat for all channels
+
+                iou1 = np.array(iou1)
+                iou3 = np.array(iou2)
+                iou3 = np.array(iou3)
+
+                # calculate centers
+                bb_cx_channel_1[
+                    sample,
+                    np.where(iou1 == np.max(iou1)),
+                    int(object['cx'] / self.scale_factors[0]),
+                    int(object['cy'] / self.scale_factors[0]),
                 ] = object['cx'] / self.scale_factors[0] - int(object['cx'] / self.scale_factors[0])
 
-                bb_cx_channel_2[sample,
-                :,
-                int(object['cx'] / self.scale_factors[1]),
-                int(object['cy'] / self.scale_factors[1]),
+                bb_cx_channel_2[
+                    sample,
+                    np.where(iou2 == np.max(iou2)),
+                    int(object['cx'] / self.scale_factors[1]),
+                    int(object['cy'] / self.scale_factors[1]),
                 ] = object['cx'] / self.scale_factors[1] - int(object['cx'] / self.scale_factors[1])
 
-
-                bb_cx_channel_3[sample,
-                    :,
+                bb_cx_channel_3[
+                    sample,
+                    np.where(iou3 == np.max(iou3)),
                     int(object['cx'] / self.scale_factors[2]),
                     int(object['cy'] / self.scale_factors[2]),
                 ] = object['cx'] / self.scale_factors[2] - int(object['cx'] / self.scale_factors[2])
 
-                #select the best fitting anchor
-                iou1 = []
-                iou2 = []
-                iou3 = []
-                target_converted = self.convert_bbox_coordinates(target)
+                bb_cy_channel_1[
+                    sample,
+                    np.where(iou1 == np.max(iou1)),
+                    int(object['cx'] / self.scale_factors[0]),
+                    int(object['cy'] / self.scale_factors[0]),
+                ] = object['cy'] / self.scale_factors[0] - int(object['cy'] / self.scale_factors[0])
 
-                #channel 1
-                for anchor in self.anchr_masks[0]:
-                    target_converted = self.convert_bbox_coordinates(target)
-                    anchor = self.anchors[anchor]
-                    #TODO: convert each anchor into dict, figure out what's the center coordinates for ahchor
-                    anchor = {}
-                    iou1.append(self.get_iou(target_converted,anchor))
+                bb_cy_channel_2[
+                    sample,
+                    np.where(iou2 == np.max(iou2)),
+                    int(object['cx'] / self.scale_factors[1]),
+                    int(object['cy'] / self.scale_factors[1]),
+                ] = object['cy'] / self.scale_factors[1] - int(object['cy'] / self.scale_factors[1])
 
-                #TODO: repeat for all channels
+                bb_cy_channel_3[
+                    sample,
+                    np.where(iou3 == np.max(iou3)),
+                    int(object['cx'] / self.scale_factors[2]),
+                    int(object['cy'] / self.scale_factors[2]),
+                ] = object['cy'] / self.scale_factors[2] - int(object['cy'] / self.scale_factors[2])
 
                 # calculate height and width
-                bb_cx_channel_1[sample,
-                :,
-                int(object['cx'] / self.scale_factors[0]),
-                int(object['cy'] / self.scale_factors[0]),
-                ] = object['cx'] / self.scale_factors[0] - int(object['cx'] / self.scale_factors[0])
+                bb_H_channel_1[
+                    sample,
+                    np.where(iou1 == np.max(iou1)),
+                    int(object['cx'] / self.scale_factors[0]),
+                    int(object['cy'] / self.scale_factors[0]),
+                ] = np.log(
+                    object['h']
+                    / self.anchors[self.anchr_masks[0]].numpy()[np.where(iou1 == np.max(iou1))][0, 0]
+                )
 
-                bb_cx_channel_2[sample,
-                :,
-                int(object['cx'] / self.scale_factors[1]),
-                int(object['cy'] / self.scale_factors[1]),
-                ] = object['cx'] / self.scale_factors[1] - int(object['cx'] / self.scale_factors[1])
+                bb_W_channel_1[
+                    sample,
+                    np.where(iou1 == np.max(iou1)),
+                    int(object['cx'] / self.scale_factors[0]),
+                    int(object['cy'] / self.scale_factors[0]),
+                ] = np.log(
+                    object['w']
+                    / self.anchors[self.anchr_masks[0]].numpy()[np.where(iou1 == np.max(iou1))][0, 1]
+                )
 
-                bb_cx_channel_3[sample,
-                :,
-                int(object['cx'] / self.scale_factors[2]),
-                int(object['cy'] / self.scale_factors[2]),
-                ] = object['cx'] / self.scale_factors[2] - int(object['cx'] / self.scale_factors[2])
+                bb_H_channel_2[
+                    sample,
+                    np.where(iou2 == np.max(iou2)),
+                    int(object['cx'] / self.scale_factors[1]),
+                    int(object['cy'] / self.scale_factors[1]),
+                ] = np.log(
+                    object['h']
+                    / self.anchors[self.anchr_masks[1]].numpy()[np.where(iou2 == np.max(iou2))][0, 0]
+                )
 
-            # scale the prediction by image size
-            # object['h'] /= self.image_size
-            # object['w'] /= self.image_size
+                bb_W_channel_2[
+                    sample,
+                    np.where(iou2 == np.max(iou2)),
+                    int(object['cx'] / self.scale_factors[1]),
+                    int(object['cy'] / self.scale_factors[1]),
+                ] = np.log(
+                    object['w']
+                    / self.anchors[self.anchr_masks[1]].numpy()[np.where(iou2 == np.max(iou2))][0, 1]
+                )
 
-            # math.log(
+                bb_H_channel_3[
+                    sample,
+                    np.where(iou3 == np.max(iou3)),
+                    int(object['cx'] / self.scale_factors[2]),
+                    int(object['cy'] / self.scale_factors[2]),
+                ] = np.log(
+                    object['h']
+                    / self.anchors[self.anchr_masks[2]].numpy()[np.where(iou3 == np.max(iou3))][0, 0]
+                )
 
-            # understand the grid cells when the target is present
+                bb_W_channel_3[
+                    sample,
+                    np.where(iou3 == np.max(iou3)),
+                    int(object['cx'] / self.scale_factors[2]),
+                    int(object['cy'] / self.scale_factors[2]),
+                ] = np.log(
+                    object['w']
+                    / self.anchors[self.anchr_masks[2]].numpy()[np.where(iou3 == np.max(iou3))][0, 1]
+                )
 
-            # for each cell when the target exists, calculate a log transworm of h,w and calculate the tx,ty
+        return (
+            objectness_1,
+            objectness_2,
+            objectness_3,
+            bb_H_channel_1,
+            bb_H_channel_2,
+            bb_H_channel_3,
+            bb_W_channel_1,
+            bb_W_channel_2,
+            bb_W_channel_3,
+            bb_cx_channel_1,
+            bb_cx_channel_2,
+            bb_cx_channel_3,
+            bb_cy_channel_1,
+            bb_cy_channel_2,
+            bb_cy_channel_3,
+        )
 
-        # {0: {'patientId': '48030d29-2d30-47a4-b978-7f231637b436',
-        #      'Target': 0.0,
-        #      'cx': 0.0,
-        #      'cy': 0.0,
-        #      'h': 0.0,
-        #      'w': 0.0}}
-
-        # bb_HW_channel_1, bb_HW_channel_2, bb_HW_channel_3
-        # bb_c_channel_1, bb_c_channel_2, bb_c_channel_3
-
-        return [objectness_1, objectness_2, objectness_3]
-
-    def convert_bbox_coordinates(self,bbox:dict):
+    def convert_bbox_coordinates(self, bbox: dict):
         """
         Converts input center coordinates to bbox coordinates
         Args:
@@ -263,7 +411,7 @@ class PredictionHead(nn.Module):
 
         return bbox_converted
 
-    def get_iou(self,bb1, bb2):
+    def get_iou(self, bb1, bb2):
         """
         Calculate the Intersection over Union (IoU) of two bounding boxes.
 
@@ -313,7 +461,8 @@ class PredictionHead(nn.Module):
         assert iou <= 1.0
         return iou
 
-class EfficientDet(nn.Module):
+
+class YoloV4(nn.Module):
     """
     https://github.com/Tianxiaomo/pytorch-YOLOv4/tree/4ccef0ec8fe984e059378813e33b3740929e0c19
     """
@@ -333,8 +482,7 @@ class EfficientDet(nn.Module):
         self.neek = FPN(
             endpoints['reduction_3'].shape[1],
             endpoints['reduction_4'].shape[1],
-            endpoints['reduction_5'].shape[1]
-
+            endpoints['reduction_5'].shape[1],
         )
 
         self.head = PredictionHead(
@@ -346,7 +494,7 @@ class EfficientDet(nn.Module):
         endpoints = self.backbone.extract_endpoints(input)
 
         neck1, neck2, neck3 = self.neek(
-            endpoints['reduction_3'], endpoints['reduction_4'],endpoints['reduction_5'],
+            endpoints['reduction_3'], endpoints['reduction_4'], endpoints['reduction_5'],
         )
 
         output = self.head(neck1, neck2, neck3, train=train)
