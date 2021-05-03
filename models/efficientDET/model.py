@@ -12,15 +12,15 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import AP
+from metrics import RocAuc, F1
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
+from utils.loss_functions import f1_loss
 
 # model
-from models.YoloV4.structure import YoloV4
-from utils.loss_functions import YoloLoss
-from utils.post_processing_detection import Post_Processing
+from models.efficientDET.structure import EfficientDet
+from utils.post_processing import Post_Processing
 
 
 class Model:
@@ -42,6 +42,7 @@ class Model:
         self.inference = inference
 
         self.start_training = time()
+        self.postprocessing = Post_Processing()
 
         # ininialize model architecture
         self.__setup_model(inference=inference, gpu=gpu)
@@ -52,8 +53,6 @@ class Model:
         # declare preprocessing object
         self.__seed_everything(42)
 
-        self.post_processing = Post_Processing(threshold=self.hparams['model']['objectness_threshold'])
-
     def fit(self, train, valid):
 
         # setup train and val dataloaders
@@ -62,14 +61,12 @@ class Model:
             batch_size=self.hparams['batch_size'],
             shuffle=True,
             num_workers=self.hparams['num_workers'],
-            collate_fn=self.my_collate,
         )
         valid_loader = DataLoader(
             valid,
             batch_size=self.hparams['batch_size'],
             shuffle=False,
             num_workers=self.hparams['num_workers'],
-            collate_fn=self.my_collate,
         )
 
         # tensorboard
@@ -83,90 +80,23 @@ class Model:
             avg_loss = 0.0
             avg_adv_loss = 0.0
 
-            for X_batch, y_batch in tqdm(train_loader):
-
-                # push the data into the GPU
-                X_batch = X_batch.float().to(self.device)
-                # y_batch = y_batch.float().to(self.device)
+            for data in tqdm(train_loader):
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred_obj, pred_h, pred_w, pred_cx, pred_cy = self.model(X_batch, train=True)
-                (
-                    target_obj1,
-                    target_obj2,
-                    target_obj3,
-                    target_H1,
-                    target_H2,
-                    target_H3,
-                    target_W1,
-                    target_W2,
-                    target_W3,
-                    target_cx1,
-                    target_cx2,
-                    target_cx3,
-                    target_cy1,
-                    target_cy2,
-                    target_cy3,
-                ) = self.model.module.head.build_target(targets=y_batch)
-
-                target_obj1 = target_obj1.float().to(self.device)
-                target_obj2 = target_obj2.float().to(self.device)
-                target_obj3 = target_obj3.float().to(self.device)
-
-                target_H1 = target_H1.float().to(self.device)
-                target_H2 = target_H2.float().to(self.device)
-                target_H3 = target_H3.float().to(self.device)
-
-                target_W1 = target_W1.float().to(self.device)
-                target_W2 = target_W2.float().to(self.device)
-                target_W3 = target_W3.float().to(self.device)
-
-                target_cx1 = target_cx1.float().to(self.device)
-                target_cx2 = target_cx2.float().to(self.device)
-                target_cx3 = target_cx3.float().to(self.device)
-
-                target_cy1 = target_cy1.float().to(self.device)
-                target_cy2 = target_cy2.float().to(self.device)
-                target_cy3 = target_cy3.float().to(self.device)
-
-                # process objectness losses
-                train_loss = self.loss(
-                    pred_obj,
-                    pred_h,
-                    pred_w,
-                    pred_cx,
-                    pred_cy,
-                    [target_obj1, target_obj2, target_obj3],
-                    [target_H1, target_H2, target_H3],
-                    [target_W1, target_W2, target_W3],
-                    [target_cx1, target_cx2, target_cx3],
-                    [target_cy1, target_cy2, target_cy3],
+                classification_loss, regression_loss = self.model(
+                    [data['img'].float().to(self.device), data['annot']], training=True
                 )
+
+                # process main loss
+                classification_loss = classification_loss.mean()
+                regression_loss = regression_loss.mean()
+                train_loss = classification_loss + regression_loss
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
-
-                # remove data from GPU
-                X_batch = X_batch.float().cpu().detach()
-
-                pred_obj, pred_h, pred_w, pred_cx, pred_cy = (
-                    self.remove_from_gpu(pred_obj),
-                    self.remove_from_gpu(pred_h),
-                    self.remove_from_gpu(pred_w),
-                    self.remove_from_gpu(pred_cx),
-                    self.remove_from_gpu(pred_cy),
-                )
-
-                target_obj, target_h, target_w, target_cx, target_cy = (
-                    self.remove_from_gpu([target_obj1, target_obj2, target_obj3]),
-                    self.remove_from_gpu([target_H1, target_H2, target_H3]),
-                    self.remove_from_gpu([target_W1, target_W2, target_W3]),
-                    self.remove_from_gpu([target_cx1, target_cx2, target_cx3]),
-                    self.remove_from_gpu([target_cy1, target_cy2, target_cy3]),
-                )
 
                 # gradient clipping
                 if self.apply_clipping:
@@ -180,35 +110,14 @@ class Model:
                 # iptimizer step
                 self.optimizer.step()
 
-                self.model.eval()
-                with torch.no_grad():
-                    pred_obj, pred_h, pred_w, pred_cx, pred_cy = self.model(X_batch, train=False)
-
-                    pred_obj, pred_h, pred_w, pred_cx, pred_cy = (
-                        self.remove_from_gpu(pred_obj),
-                        self.remove_from_gpu(pred_h),
-                        self.remove_from_gpu(pred_w),
-                        self.remove_from_gpu(pred_cx),
-                        self.remove_from_gpu(pred_cy),
-                    )
-                self.model.train()
-
-                target, predictions_batch = self.post_processing.run(
-                    target=y_batch,
-                    pred_obj=pred_obj,
-                    pred_h=pred_h,
-                    pred_w=pred_w,
-                    pred_cx=pred_cx,
-                    pred_cy=pred_cy,
-                )
-
-                # target_obj, target_h, target_w, target_cx, target_cy
+                del classification_loss
+                del regression_loss
 
                 # calculate a step for metrics
-                self.metric.calc_running_score(labels=y_batch, outputs=predictions_batch)
+                # self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
             # calc train metrics
-            metric_train = self.metric.compute()
+            # metric_train = self.metric.compute()
 
             # evaluate the model
             print('Model evaluation')
@@ -221,97 +130,30 @@ class Model:
             with torch.no_grad():
 
                 for X_batch, y_batch in tqdm(valid_loader):
+
                     # push the data into the GPU
                     X_batch = X_batch.float().to(self.device)
-                    # y_batch = y_batch.float().to(self.device)
+                    y_batch = y_batch.float().to(self.device)
 
-                    # clean gradients from the previous step
-                    self.optimizer.zero_grad()
+                    # get predictions
+                    pred = self.model(X_batch)
 
-                    # get model predictions
-                    pred_obj, pred_h, pred_w, pred_cx, pred_cy = self.model(X_batch, train=True)
-                    (
-                        target_obj1,
-                        target_obj2,
-                        target_obj3,
-                        target_H1,
-                        target_H2,
-                        target_H3,
-                        target_W1,
-                        target_W2,
-                        target_W3,
-                        target_cx1,
-                        target_cx2,
-                        target_cx3,
-                        target_cy1,
-                        target_cy2,
-                        target_cy3,
-                    ) = self.model.module.head.build_target(targets=y_batch)
+                    # calculate main loss
+                    # pred = pred.reshape(-1)
+                    # y_batch = y_batch.reshape(-1)
 
-                    target_obj1 = target_obj1.float().to(self.device)
-                    target_obj2 = target_obj2.float().to(self.device)
-                    target_obj3 = target_obj3.float().to(self.device)
-
-                    target_H1 = target_H1.float().to(self.device)
-                    target_H2 = target_H2.float().to(self.device)
-                    target_H3 = target_H3.float().to(self.device)
-
-                    target_W1 = target_W1.float().to(self.device)
-                    target_W2 = target_W2.float().to(self.device)
-                    target_W3 = target_W3.float().to(self.device)
-
-                    target_cx1 = target_cx1.float().to(self.device)
-                    target_cx2 = target_cx2.float().to(self.device)
-                    target_cx3 = target_cx3.float().to(self.device)
-
-                    target_cy1 = target_cy1.float().to(self.device)
-                    target_cy2 = target_cy2.float().to(self.device)
-                    target_cy3 = target_cy3.float().to(self.device)
-
-                    avg_val_loss += self.loss(
-                        pred_obj,
-                        pred_h,
-                        pred_w,
-                        pred_cx,
-                        pred_cy,
-                        [target_obj1, target_obj2, target_obj3],
-                        [target_H1, target_H2, target_H3],
-                        [target_W1, target_W2, target_W3],
-                        [target_cx1, target_cx2, target_cx3],
-                        [target_cy1, target_cy2, target_cy3],
-                    ).item() / len(valid_loader)
+                    avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
                     # remove data from GPU
-                    X_batch = X_batch.float().cpu().detach()
+                    X_batch = X_batch.float().cpu().detach().numpy()
+                    pred = pred.float().cpu().detach().numpy()
+                    y_batch = y_batch.float().cpu().detach().numpy()
 
-                    pred_obj, pred_h, pred_w, pred_cx, pred_cy = (
-                        self.remove_from_gpu(pred_obj),
-                        self.remove_from_gpu(pred_h),
-                        self.remove_from_gpu(pred_w),
-                        self.remove_from_gpu(pred_cx),
-                        self.remove_from_gpu(pred_cy),
-                    )
-
-                    target_obj, target_h, target_w, target_cx, target_cy = (
-                        self.remove_from_gpu([target_obj1, target_obj2, target_obj3]),
-                        self.remove_from_gpu([target_H1, target_H2, target_H3]),
-                        self.remove_from_gpu([target_W1, target_W2, target_W3]),
-                        self.remove_from_gpu([target_cx1, target_cx2, target_cx3]),
-                        self.remove_from_gpu([target_cy1, target_cy2, target_cy3]),
-                    )
+                    y_batch = self.postprocessing.run(y_batch)
+                    pred = self.postprocessing.run(pred)
 
                     # calculate a step for metrics
-                    target, predictions_batch = self.post_processing.run(
-                        target=y_batch,
-                        pred_obj=pred_obj,
-                        pred_h=pred_h,
-                        pred_w=pred_w,
-                        pred_cx=pred_cx,
-                        pred_cy=pred_cy,
-                    )
-
-                    # calculate a step for metrics
-                    self.metric.calc_running_score(labels=y_batch, outputs=predictions_batch)
+                    self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
             # calc val metrics
             metric_val = self.metric.compute()
@@ -333,8 +175,8 @@ class Model:
                     avg_loss,
                     '| Val_loss: ',
                     avg_val_loss,
-                    # '| Adv_loss: ',
-                    # avg_adv_loss,
+                    '| Adv_loss: ',
+                    avg_adv_loss,
                     '| Metric_train: ',
                     metric_train,
                     '| Metric_val: ',
@@ -363,18 +205,6 @@ class Model:
         self.model = self.early_stopping.load_best_weights()
 
         return self.start_training
-
-    def remove_from_gpu(self, X: list):
-
-        X = [x.float().cpu().detach() for x in X]
-
-        return X
-
-    def my_collate(self, batch):
-        data = [item[0] for item in batch]
-        target = [item[1] for item in batch]
-        data = torch.Tensor(np.stack(data, axis=0))
-        return [data, target]
 
     def predict(self, X_test):
         """
@@ -407,17 +237,20 @@ class Model:
         with torch.no_grad():
             for i, (X_batch, y_batch) in enumerate(tqdm(test_loader)):
                 X_batch = X_batch.float().to(self.device)
-                # y_batch = y_batch.float().to(self.device)
+                y_batch = y_batch.float().to(self.device)
 
                 pred = self.model(X_batch)
 
                 # calculate main loss
-                pred = pred.reshape(-1)
-                y_batch = y_batch.reshape(-1)
+                # pred = pred.reshape(-1)
+                # y_batch = y_batch.reshape(-1)
 
                 pred = pred.cpu().detach().numpy()
                 X_batch = X_batch.cpu().detach().numpy()
                 y_batch = y_batch.cpu().detach().numpy()
+
+                y_batch = self.postprocessing.run(y_batch)
+                pred = self.postprocessing.run(pred)
 
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
@@ -477,21 +310,25 @@ class Model:
         # TODO: re-write to pure DDP
         if inference or gpu is None:
             self.device = torch.device('cpu')
-            self.model = YoloV4(hparams=self.hparams['model']).to(self.device)
+            self.model = EfficientDet(self.hparams['model']).to(self.device)
+            # self.model.freeze_layers()
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 1:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = YoloV4(hparams=self.hparams['model']).to(self.device)
+                    self.model = EfficientDet(self.hparams['model']).to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
+                    # self.model.module.freeze_layers()
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = YoloV4(hparams=self.hparams['model']).to(self.device)
+                    self.model = EfficientDet(self.hparams['model']).to(self.device)
+                    # self.model.freeze_layers()
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                self.model = YoloV4(hparams=self.hparams['model']).to(self.device)
+                self.model = EfficientDet(self.hparams['model']).to(self.device)
+                # self.model.freeze_layers()
                 print('Only one GPU is available')
 
         print('Cuda available: ', torch.cuda.is_available())
@@ -501,12 +338,10 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = YoloLoss(
-            alpha_obj=self.hparams['model']['alpha_obj'], alpha_pos=self.hparams['model']['alpha_pos']
-        )
+        self.loss = f1_loss()  #
 
         # 2. define model metric
-        self.metric = AP()
+        self.metric = F1(n_classes=self.hparams['model']['n_classes'])  #
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

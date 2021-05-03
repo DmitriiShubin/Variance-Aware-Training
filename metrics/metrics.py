@@ -104,14 +104,14 @@ class F1:
         self.fp = self.fp + fp
         self.fn = self.fn + fn
 
+        return True
+
     def compute(self):
 
         # dice macro
         f1 = self.tp / (self.tp + 0.5 * (self.fp + self.fn))
 
-        self.tp = np.array([0] * (self.n_classes))
-        self.fp = np.array([0] * (self.n_classes))
-        self.fn = np.array([0] * (self.n_classes))
+        self.reset()
 
         return np.mean(f1)
 
@@ -171,3 +171,63 @@ def get_iou(bb1, bb2):
     assert iou >= 0.0
     assert iou <= 1.0
     return iou
+
+
+class AP:
+    def __init__(self, uou_thresholds=[0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]):
+
+        self.uou_thresholds = uou_thresholds
+
+        self.AP_scores = []
+
+    def calc_running_score(self, labels: list, outputs: list):
+
+        for index, label_sample in enumerate(labels):
+
+            for gt_object in label_sample.keys():
+                gt_object = label_sample[gt_object]
+
+                precision = 0
+
+                for threshold in self.uou_thresholds:
+
+                    tp = 0
+                    fp = 0
+
+                    # if any bb was predicted for image where where is not bb, it counts as FP
+                    if gt_object['Target'] == 0.0:
+                        for pred_object in outputs[index].keys():
+                            fp += 1
+                        continue
+
+                    # FP - when bb is predicted, but overlaps with target with IOU < threshold
+                    # TP - gt_bb and predicted bb overlaps with IOU >= threshold
+                    for pred_object in outputs[index].keys():
+                        pred_object = outputs[index][pred_object]
+                        iou = get_iou(pred_object, gt_object)
+                        if iou < threshold:
+                            fp += 1
+                        else:
+                            tp += 1
+
+                    if tp == 0 and fp == 0:
+                        continue
+                    precision += tp / (tp + fp)
+
+                precision /= len(self.uou_thresholds)
+
+                self.AP_scores.append(precision)
+
+        return True
+
+    def compute(self):
+
+        AP = np.mean(self.AP_scores)
+
+        self.reset()
+
+        return AP
+
+    def reset(self):
+        self.AP_scores = []
+        return True
