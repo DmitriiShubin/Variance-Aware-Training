@@ -20,7 +20,7 @@ from utils.loss_functions import f1_loss
 
 # model
 from models.efficientDET.structure import EfficientDet
-from utils.post_processing import Post_Processing
+from utils.post_processing_detection import Post_Processing
 
 
 class Model:
@@ -42,7 +42,6 @@ class Model:
         self.inference = inference
 
         self.start_training = time()
-        self.postprocessing = Post_Processing()
 
         # ininialize model architecture
         self.__setup_model(inference=inference, gpu=gpu)
@@ -61,12 +60,14 @@ class Model:
             batch_size=self.hparams['batch_size'],
             shuffle=True,
             num_workers=self.hparams['num_workers'],
+            collate_fn=self.collater
         )
         valid_loader = DataLoader(
             valid,
             batch_size=self.hparams['batch_size'],
             shuffle=False,
             num_workers=self.hparams['num_workers'],
+            collate_fn=self.collater
         )
 
         # tensorboard
@@ -85,9 +86,12 @@ class Model:
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
+                data['img'] = data['img'].float().to(self.device)
+                data['annot'] = data['annot'].float().to(self.device)
+
                 # get model predictions
                 classification_loss, regression_loss = self.model(
-                    [data['img'].float().to(self.device), data['annot']], training=True
+                    img_batch=data['img'] , annotations=data['annot'], training=True
                 )
 
                 # process main loss
@@ -113,8 +117,31 @@ class Model:
                 del classification_loss
                 del regression_loss
 
+                self.model.eval()
+                with torch.no_grad():
+
+                    scores, labels, boxes = self.model(
+                        img_batch=data['img'])
+
+                    pred_scores = []
+                    pred_labels = []
+                    pred_boxes = []
+                    for sample in range(data['img'].shape[0]):
+
+                        scores = scores.cpu()
+                        labels = labels.cpu()
+                        boxes = boxes.cpu()
+                        pred_scores.append(scores)
+                        pred_labels.append(labels)
+                        pred_boxes.append(boxes)
+                self.model.train()
+
+
+
+
+
                 # calculate a step for metrics
-                # self.metric.calc_running_score(labels=y_batch, outputs=pred)
+                #self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
             # calc train metrics
             # metric_train = self.metric.compute()
@@ -129,42 +156,46 @@ class Model:
 
             with torch.no_grad():
 
-                for X_batch, y_batch in tqdm(valid_loader):
+                for data in tqdm(valid_loader):
+                    # clean gradients from the previous step
+                    self.optimizer.zero_grad()
 
-                    # push the data into the GPU
-                    X_batch = X_batch.float().to(self.device)
-                    y_batch = y_batch.float().to(self.device)
+                    data['img'] = data['img'].float().to(self.device)
+                    data['annot'] = data['annot'].float().to(self.device)
 
-                    # get predictions
-                    pred = self.model(X_batch)
+                    #get loss
+                    classification_loss, regression_loss = self.model(
+                        img_batch=data['img'], annotations=data['annot'], training=True
+                    )
 
-                    # calculate main loss
-                    # pred = pred.reshape(-1)
-                    # y_batch = y_batch.reshape(-1)
+                    val_loss = classification_loss + regression_loss
 
-                    avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
+                    # calc loss
+                    avg_val_loss += val_loss.item() / len(valid_loader)
 
-                    # remove data from GPU
-                    X_batch = X_batch.float().cpu().detach().numpy()
-                    pred = pred.float().cpu().detach().numpy()
-                    y_batch = y_batch.float().cpu().detach().numpy()
+                    pred_scores = []
+                    pred_labels = []
+                    pred_boxes = []
+                    for sample in range(data['img'].shape[0]):
+                        scores, labels, boxes = self.model(
+                            img_batch=data['img'][sample].unsqueeze(dim=0))
+                        scores = scores.cpu()
+                        labels = labels.cpu()
+                        boxes = boxes.cpu()
+                        pred_scores.append(scores)
+                        pred_labels.append(labels)
+                        pred_boxes.append(boxes)
 
-                    y_batch = self.postprocessing.run(y_batch)
-                    pred = self.postprocessing.run(pred)
-
-                    # calculate a step for metrics
-                    self.metric.calc_running_score(labels=y_batch, outputs=pred)
-
-            # calc val metrics
-            metric_val = self.metric.compute()
-
-            # early stopping for scheduler
-            if self.hparams['scheduler_name'] == 'ReduceLROnPlateau':
-                self.scheduler.step(metric_val)
-            else:
-                self.scheduler.step()
-
-            es_result = self.early_stopping(score=metric_val, model=self.model, threshold=None)
+            # # calc val metrics
+            # metric_val = self.metric.compute()
+            #
+            # # early stopping for scheduler
+            # if self.hparams['scheduler_name'] == 'ReduceLROnPlateau':
+            #     self.scheduler.step(metric_val)
+            # else:
+            #     self.scheduler.step()
+            #
+            # es_result = self.early_stopping(score=metric_val, model=self.model, threshold=None)
 
             # print statistics
             if self.hparams['verbose_train']:
@@ -178,9 +209,9 @@ class Model:
                     '| Adv_loss: ',
                     avg_adv_loss,
                     '| Metric_train: ',
-                    metric_train,
+                    #metric_train,
                     '| Metric_val: ',
-                    metric_val,
+                    #metric_val,
                     '| Current LR: ',
                     self.__get_lr(self.optimizer),
                 )
@@ -189,15 +220,15 @@ class Model:
             writer.add_scalars(
                 'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
             )
-            writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            #writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
 
-            # early stopping procesudre
-            if es_result == 2:
-                print("Early Stopping")
-                print(f'global best val_loss model score {self.early_stopping.best_score}')
-                break
-            elif es_result == 1:
-                print(f'save global val_loss model score {metric_val}')
+            # # early stopping procesudre
+            # if es_result == 2:
+            #     print("Early Stopping")
+            #     print(f'global best val_loss model score {self.early_stopping.best_score}')
+            #     break
+            # elif es_result == 1:
+            #     print(f'save global val_loss model score {metric_val}')
 
         writer.close()
 
@@ -310,24 +341,24 @@ class Model:
         # TODO: re-write to pure DDP
         if inference or gpu is None:
             self.device = torch.device('cpu')
-            self.model = EfficientDet(self.hparams['model']).to(self.device)
+            self.model = EfficientDet(self.hparams['model'],device=self.device).to(self.device)
             # self.model.freeze_layers()
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 1:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = EfficientDet(self.hparams['model']).to(self.device)
+                    self.model = EfficientDet(self.hparams['model'],device=self.device).to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                     # self.model.module.freeze_layers()
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = EfficientDet(self.hparams['model']).to(self.device)
+                    self.model = EfficientDet(self.hparams['model'],device=self.device).to(self.device)
                     # self.model.freeze_layers()
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                self.model = EfficientDet(self.hparams['model']).to(self.device)
+                self.model = EfficientDet(self.hparams['model'],device=self.device).to(self.device)
                 # self.model.freeze_layers()
                 print('Only one GPU is available')
 
@@ -376,3 +407,39 @@ class Model:
         random.seed(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
+    def collater(self,data):
+
+        imgs = [s['img'] for s in data]
+        annots = [s['annot'] for s in data]
+        scales = [s['scale'] for s in data]
+
+        widths = [int(s.shape[1]) for s in imgs]
+        heights = [int(s.shape[2]) for s in imgs]
+        batch_size = len(imgs)
+
+        max_width = np.array(widths).max()
+        max_height = np.array(heights).max()
+
+        padded_imgs = torch.zeros(batch_size, 3,max_width, max_height)
+
+        for i in range(batch_size):
+            img = imgs[i]
+            padded_imgs[i,:, :int(img.shape[1]), :int(img.shape[2])] = img
+
+        max_num_annots = max(annot.shape[0] for annot in annots)
+
+        if max_num_annots > 0:
+
+            annot_padded = torch.ones((len(annots), max_num_annots, 5)) * -1
+
+            if max_num_annots > 0:
+                for idx, annot in enumerate(annots):
+                    # print(annot.shape)
+                    if annot.shape[0] > 0:
+                        annot_padded[idx, :annot.shape[0], :] = annot
+        else:
+            annot_padded = torch.ones((len(annots), 1, 5)) * -1
+
+
+        return {'img': padded_imgs, 'annot': annot_padded, 'scale': scales}

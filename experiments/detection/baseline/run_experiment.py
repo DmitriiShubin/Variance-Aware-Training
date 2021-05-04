@@ -6,7 +6,7 @@ import yaml
 import os
 
 from experiments.detection.baseline.data_generator import Dataset_train
-from models.YoloV4 import Model
+from models.efficientDET import Model
 from experiments.detection.baseline.train_pipeline import TrainPipeline
 
 

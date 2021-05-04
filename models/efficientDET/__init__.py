@@ -1,1 +1,1 @@
-from models.efficientnet.model import Model  # pyflakes.ignore
+from models.efficientDET.model import Model  # pyflakes.ignore

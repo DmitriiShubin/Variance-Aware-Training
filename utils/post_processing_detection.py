@@ -6,7 +6,15 @@ class Post_Processing:
     def __init__(self, threshold=0.4):
         self.threshold = threshold
 
-    def run(self, target: list, pred_obj: list, pred_h: list, pred_w: list, pred_cx: list, pred_cy: list):
+    def run(self, target: list, scores: torch.Tensor,):
+
+        #TODO: add thresholding
+
+        anchors_nms_idx = nms(transformed_anchors[0], scores[0], self.hparams['nms_threshold'])
+
+        nms_scores, nms_class = classification[0, anchors_nms_idx, :].max(dim=1)
+
+        a = [nms_scores, nms_class, transformed_anchors[0, anchors_nms_idx, :]]
 
         # upback predictions
         pred_obj1_batch, pred_obj2_batch, pred_obj3_batch = pred_obj

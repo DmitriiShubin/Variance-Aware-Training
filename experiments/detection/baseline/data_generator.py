@@ -24,12 +24,12 @@ class Dataset_train(Dataset):
 
     def __getitem__(self, idx):
 
-        X, y = self.load_data(idx)
+        sample = self.load_data(idx)
 
-        X = torch.tensor(X, dtype=torch.float)
+        #X = torch.tensor(X, dtype=torch.float)
         # y = torch.tensor(y, dtype=torch.float)
 
-        return X, y
+        return sample
 
     def load_data(self, id):
 
@@ -38,7 +38,41 @@ class Dataset_train(Dataset):
 
         X = self.preprocessing.run(X=X)
 
-        return X, y
+        annot = self.get_annotations(y)
+
+        sample = {'img': torch.from_numpy(X), 'annot': torch.from_numpy(annot),'scale':1}
+
+        return sample
+
+    def get_annotations(self,y):
+
+        # get ground truth annotations
+        annotations = np.zeros((0, 5))
+
+        # some images appear to miss annotations (like image with id 257034)
+        if y['0']['Target'] == 0:
+            return annotations
+
+        # parse annotations
+        for object in y.keys():
+            object = y[object]
+            # some annotations have basically no width / height, skip them
+            if object['w'] < 1 or object['h'] < 1:
+                continue
+
+            annotation = np.zeros((1, 5))
+            annotation[0, 0] = object['cx']
+            annotation[0, 1] = object['cy']
+            annotation[0, 2] = object['w']
+            annotation[0, 3] = object['h']
+            annotation[0, 4] = object['Target']
+            annotations = np.append(annotations, annotation, axis=0)
+
+        # transform from [x, y, w, h] to [x1, y1, x2, y2]
+        annotations[:, 2] = annotations[:, 0] + annotations[:, 2]
+        annotations[:, 3] = annotations[:, 1] + annotations[:, 3]
+
+        return annotations
 
 
 class Preprocessing:

@@ -74,9 +74,10 @@ class EfficientDet(nn.Module):
     original repo: https://github.com/tristandb/EfficientDet-PyTorch/
     """
 
-    def __init__(self, hparams):
+    def __init__(self, hparams,device):
 
         self.hparams = hparams
+        self.device = device
         num_classes = self.hparams['n_classes']
         phi = 0
         w_bifpn = [64, 88, 112, 160, 224, 288, 384, 384]
@@ -111,7 +112,7 @@ class EfficientDet(nn.Module):
 
         self.clipBoxes = ClipBoxes()
 
-        self.focalLoss = losses.FocalLoss().cuda()
+        self.focalLoss = losses.FocalLoss(device=self.device)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -179,19 +180,22 @@ class EfficientDet(nn.Module):
             transformed_anchors = self.regressBoxes(anchors, regression)
             transformed_anchors = self.clipBoxes(transformed_anchors, img_batch)
 
+            device = transformed_anchors.device
             scores = torch.max(classification, dim=2, keepdim=True)[0]
 
-            scores_over_thresh = (scores > 0.05)[0, :, 0]
+            scores_over_thresh = (scores > self.hparams['objectness_threshold'])[0, :, 0]
 
             if scores_over_thresh.sum() == 0:
                 # no boxes to NMS, just return
-                return [torch.zeros(0), torch.zeros(0), torch.zeros(0, 4)]
+                return [torch.zeros(0).to(device), torch.zeros(0).to(device), torch.zeros(0, 4).to(device)]
 
             classification = classification[:, scores_over_thresh, :]
             transformed_anchors = transformed_anchors[:, scores_over_thresh, :]
             scores = scores[:, scores_over_thresh, :]
 
-            anchors_nms_idx = nms(transformed_anchors, scores, 0.5)
+
+
+            anchors_nms_idx = nms(transformed_anchors, scores, self.hparams['nms_threshold'])
 
             nms_scores, nms_class = classification[0, anchors_nms_idx, :].max(dim=1)
 
