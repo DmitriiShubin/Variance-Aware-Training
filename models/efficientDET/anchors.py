@@ -20,6 +20,8 @@ class Anchors(nn.Module):
 
     def forward(self, image):
 
+        device = image.device
+
         image_shape = image.shape[2:]
         image_shape = np.array(image_shape)
         image_shapes = [(image_shape + 2 ** x - 1) // (2 ** x) for x in self.pyramid_levels]
@@ -34,7 +36,7 @@ class Anchors(nn.Module):
 
         all_anchors = np.expand_dims(all_anchors, axis=0)
 
-        return torch.from_numpy(all_anchors.astype(np.float32)).cuda()
+        return torch.from_numpy(all_anchors.astype(np.float32)).to(device)
 
 
 def generate_anchors(base_size=16, ratios=None, scales=None):

@@ -50,7 +50,7 @@ class Dataset_train(Dataset):
         annotations = np.zeros((0, 5))
 
         # some images appear to miss annotations (like image with id 257034)
-        if y['0']['Target'] == 0:
+        if y['0']['Target'] == -1:
             return annotations
 
         # parse annotations
@@ -61,16 +61,18 @@ class Dataset_train(Dataset):
                 continue
 
             annotation = np.zeros((1, 5))
-            annotation[0, 0] = object['cx']
-            annotation[0, 1] = object['cy']
-            annotation[0, 2] = object['w']
-            annotation[0, 3] = object['h']
-            annotation[0, 4] = object['Target']
+            annotation[0, 0] = object['x']
+            annotation[0, 1] = object['y']
+            annotation[0, 2] = object['x'] + object['w']
+            annotation[0, 3] = object['y'] + object['h']
+            annotation[0, 4] = 0
             annotations = np.append(annotations, annotation, axis=0)
 
         # transform from [x, y, w, h] to [x1, y1, x2, y2]
-        annotations[:, 2] = annotations[:, 0] + annotations[:, 2]
-        annotations[:, 3] = annotations[:, 1] + annotations[:, 3]
+        # annotations[:, 0] = annotations[:, 0] - annotations[:, 2] / 2
+        # annotations[:, 1] = annotations[:, 1] - annotations[:, 3] / 2
+        # annotations[:, 2] = annotations[:, 0] + annotations[:, 2] / 2
+        # annotations[:, 3] = annotations[:, 1] + annotations[:, 3] / 2
 
         return annotations
 
@@ -100,6 +102,18 @@ class Preprocessing:
                 X[i, :, :] = (X[i, :, :] - mean) / std
             else:
                 X[i, :, :] = X[i, :, :] - mean
+
+        return X
+
+    def imagenet_normalize(self, X):
+
+        X = X / 255.0
+
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
+
+        for i in range(len(mean)):
+            X[:, :, i] = (X[:, :, i] - mean[i]) / std[i]
 
         return X
 

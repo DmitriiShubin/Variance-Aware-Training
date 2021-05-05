@@ -12,9 +12,10 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import RocAuc, F1
+from metrics import RocAuc, F1,AP
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
+from torch.nn.parallel import DistributedDataParallel as DDP
 from time import time
 from utils.loss_functions import f1_loss
 
@@ -48,6 +49,9 @@ class Model:
 
         # define model parameters
         self.__setup_model_hparams()
+        self.postpocessing = Post_Processing(objectness_threshold=self.hparams['model']['objectness_threshold'],
+                                             nms_threshold=self.hparams['model']['nms_threshold'],
+                                             )
 
         # declare preprocessing object
         self.__seed_everything(42)
@@ -97,7 +101,7 @@ class Model:
                 # process main loss
                 classification_loss = classification_loss.mean()
                 regression_loss = regression_loss.mean()
-                train_loss = classification_loss + regression_loss
+                train_loss = self.hparams['model']['classification_loss_weight']*classification_loss + self.hparams['model']['regression_loss_weight']*regression_loss
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
@@ -109,7 +113,8 @@ class Model:
                     torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.5)
 
                 # backprop
-                train_loss.backward()
+                if float(train_loss) != 0.0:
+                    train_loss.backward()
 
                 # iptimizer step
                 self.optimizer.step()
@@ -119,32 +124,24 @@ class Model:
 
                 self.model.eval()
                 with torch.no_grad():
-
-                    scores, labels, boxes = self.model(
-                        img_batch=data['img'])
-
-                    pred_scores = []
-                    pred_labels = []
-                    pred_boxes = []
-                    for sample in range(data['img'].shape[0]):
-
-                        scores = scores.cpu()
-                        labels = labels.cpu()
-                        boxes = boxes.cpu()
-                        pred_scores.append(scores)
-                        pred_labels.append(labels)
-                        pred_boxes.append(boxes)
+                    classification,bboxes = self.model(
+                                img_batch=data['img'])
                 self.model.train()
 
+                classification = classification.cpu().detach()
+                bboxes = bboxes.cpu().detach()
+                data['img'] = data['img'].cpu().detach()
+                data['annot'] = data['annot'].cpu().detach()
 
+                target,predictions = self.postpocessing.run(target=data['annot_raw'],classification=classification,bboxes=bboxes)
 
 
 
                 # calculate a step for metrics
-                #self.metric.calc_running_score(labels=y_batch, outputs=pred)
+                self.metric.calc_running_score(labels=target, outputs=predictions)
 
             # calc train metrics
-            # metric_train = self.metric.compute()
+            metric_train = self.metric.compute()
 
             # evaluate the model
             print('Model evaluation')
@@ -167,27 +164,28 @@ class Model:
                     classification_loss, regression_loss = self.model(
                         img_batch=data['img'], annotations=data['annot'], training=True
                     )
+                    classification_loss = classification_loss.mean()
+                    regression_loss = regression_loss.mean()
+                    val_loss = self.hparams['model']['classification_loss_weight']*classification_loss + self.hparams['model']['regression_loss_weight']*regression_loss
 
-                    val_loss = classification_loss + regression_loss
 
                     # calc loss
                     avg_val_loss += val_loss.item() / len(valid_loader)
 
-                    pred_scores = []
-                    pred_labels = []
-                    pred_boxes = []
-                    for sample in range(data['img'].shape[0]):
-                        scores, labels, boxes = self.model(
-                            img_batch=data['img'][sample].unsqueeze(dim=0))
-                        scores = scores.cpu()
-                        labels = labels.cpu()
-                        boxes = boxes.cpu()
-                        pred_scores.append(scores)
-                        pred_labels.append(labels)
-                        pred_boxes.append(boxes)
+                    classificatioon, bboxes = self.model(img_batch=data['img'])
+
+                    classification = classificatioon.cpu().detach()
+                    bboxes = bboxes.cpu().detach()
+                    data['img'] = data['img'].cpu().detach()
+                    data['annot'] = data['annot'].cpu().detach()
+
+                    target,predictions = self.postpocessing.run(target=data['annot_raw'],classification=classification,bboxes=bboxes)
+
+                    #calculate a step for metrics
+                    self.metric.calc_running_score(labels=target, outputs=predictions)
 
             # # calc val metrics
-            # metric_val = self.metric.compute()
+            metric_val = self.metric.compute()
             #
             # # early stopping for scheduler
             # if self.hparams['scheduler_name'] == 'ReduceLROnPlateau':
@@ -209,9 +207,9 @@ class Model:
                     '| Adv_loss: ',
                     avg_adv_loss,
                     '| Metric_train: ',
-                    #metric_train,
+                    metric_train,
                     '| Metric_val: ',
-                    #metric_val,
+                    metric_val,
                     '| Current LR: ',
                     self.__get_lr(self.optimizer),
                 )
@@ -372,7 +370,7 @@ class Model:
         self.loss = f1_loss()  #
 
         # 2. define model metric
-        self.metric = F1(n_classes=self.hparams['model']['n_classes'])  #
+        self.metric = AP()  #
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(
@@ -442,4 +440,4 @@ class Model:
             annot_padded = torch.ones((len(annots), 1, 5)) * -1
 
 
-        return {'img': padded_imgs, 'annot': annot_padded, 'scale': scales}
+        return {'img': padded_imgs, 'annot': annot_padded, 'scale': scales,'annot_raw': annots}

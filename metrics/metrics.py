@@ -142,10 +142,11 @@ def get_iou(bb1, bb2):
     float
         in [0, 1]
     """
-    assert bb1['x1'] < bb1['x2']
-    assert bb1['y1'] < bb1['y2']
-    assert bb2['x1'] < bb2['x2']
-    assert bb2['y1'] < bb2['y2']
+
+    assert bb1['x1'] <= bb1['x2'], f"bb1: {bb1['x1']}| bb1: {bb1['x2']}"
+    assert bb1['y1'] <= bb1['y2'], f"bb1: {bb1['y1']}| bb1: {bb1['y2']}"
+    assert bb2['x1'] <= bb2['x2'], f"bb1: {bb2['x1']}| bb1: {bb2['x2']}"
+    assert bb2['y1'] <= bb2['y2'], f"bb1: {bb2['y1']}| bb1: {bb2['y2']}"
 
     # determine the coordinates of the intersection rectangle
     x_left = max(bb1['x1'], bb2['x1'])
@@ -174,7 +175,7 @@ def get_iou(bb1, bb2):
 
 
 class AP:
-    def __init__(self, uou_thresholds=[0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]):
+    def __init__(self, uou_thresholds=[0.5, 0.6, 0.7, 0.8]):
 
         self.uou_thresholds = uou_thresholds
 
@@ -193,9 +194,9 @@ class AP:
 
                     tp = 0
                     fp = 0
-
+                    fn = 0
                     # if any bb was predicted for image where where is not bb, it counts as FP
-                    if gt_object['Target'] == 0.0:
+                    if gt_object['Obj_score'] == -1:
                         for pred_object in outputs[index].keys():
                             fp += 1
                         continue
@@ -204,6 +205,9 @@ class AP:
                     # TP - gt_bb and predicted bb overlaps with IOU >= threshold
                     for pred_object in outputs[index].keys():
                         pred_object = outputs[index][pred_object]
+                        if pred_object['Obj_score'] == -1:
+                            fn+=1
+                            continue
                         iou = get_iou(pred_object, gt_object)
                         if iou < threshold:
                             fp += 1
@@ -212,7 +216,7 @@ class AP:
 
                     if tp == 0 and fp == 0:
                         continue
-                    precision += tp / (tp + fp)
+                    precision += tp / (tp + fp + fn)
 
                 precision /= len(self.uou_thresholds)
 
