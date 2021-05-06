@@ -26,7 +26,7 @@ class Dataset_train(Dataset):
 
         sample = self.load_data(idx)
 
-        #X = torch.tensor(X, dtype=torch.float)
+        # X = torch.tensor(X, dtype=torch.float)
         # y = torch.tensor(y, dtype=torch.float)
 
         return sample
@@ -36,15 +36,15 @@ class Dataset_train(Dataset):
         X = np.load(self.volums_list[id]).astype(np.float32)
         y = json.load(open(self.volums_list[id].replace('image.npy', 'label.json')))
 
-        X = self.preprocessing.run(X=X)
-
         annot = self.get_annotations(y)
 
-        sample = {'img': torch.from_numpy(X), 'annot': torch.from_numpy(annot),'scale':1}
+        X, annot = self.preprocessing.run(X=X, bboxes=annot)
+
+        sample = {'img': torch.from_numpy(X), 'annot': torch.from_numpy(annot), 'scale': 1}
 
         return sample
 
-    def get_annotations(self,y):
+    def get_annotations(self, y):
 
         # get ground truth annotations
         annotations = np.zeros((0, 5))
@@ -83,14 +83,14 @@ class Preprocessing:
         self.aug = aug
         self.augmentations = Augmentations()
 
-    def run(self, X):
+    def run(self, X, bboxes):
 
         if self.aug:
-            X = self.augmentations.run(X)
+            X, bboxes = self.augmentations.run(X, bboxes)
 
         X = self.standard_scaling(X)
 
-        return X
+        return X, bboxes
 
     def standard_scaling(self, X):
         X = X.astype(np.float32)
@@ -133,21 +133,35 @@ class Augmentations:
         prob = 0.5
         self.augs = A.Compose(
             [
-                # A.HorizontalFlip(p=prob),
-                # A.VerticalFlip(p=prob),
-                # A.Rotate(limit=5, p=prob),
-                # # A.ElasticTransform(alpha=0.05, p=prob),
-                # A.RandomSizedCrop(min_max_height=(76, 76), height=96, width=96, p=prob),
-                # A.RandomGamma(gamma_limit=(80, 120), p=prob),
-            ]
+                A.HorizontalFlip(p=prob),
+                A.VerticalFlip(p=prob),
+                A.Rotate(limit=15, p=prob),
+                # # # # A.ElasticTransform(alpha=0.05, p=prob),
+                A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                A.RandomGamma(gamma_limit=(80, 120), p=prob),
+            ],
+            bbox_params=A.BboxParams(format='coco'),
         )
 
-    def run(self, image):
+    def run(self, image, bboxes):
+
+        shape = image.shape[1]
+
+        bboxes = bboxes / shape
+
+        bboxes = bboxes.tolist()
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))
         # apply augs
-        augmented = self.augs(image=image)
+        augmented = self.augs(image=image, bboxes=bboxes)
         image = augmented['image']
+        bboxes = augmented['bboxes']
+        if len(bboxes) == 0:
+            bboxes = np.zeros((0, 5))
+        else:
+            bboxes = np.array(bboxes)
+            bboxes = bboxes * shape
+
         image = np.transpose(image.astype(np.float32), (2, 0, 1))
 
-        return image
+        return image, bboxes

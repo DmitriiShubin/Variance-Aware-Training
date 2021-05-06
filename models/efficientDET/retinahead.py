@@ -13,7 +13,6 @@ def multi_apply(func, *args, **kwargs):
     return tuple(map(list, zip(*map_results)))
 
 
-
 class RetinaHead(nn.Module):
     """
     An anchor-based head used in [1]_.
@@ -33,19 +32,21 @@ class RetinaHead(nn.Module):
         >>> assert box_per_anchor == 4
     """
 
-    def __init__(self,
-                 num_classes,
-                 in_channels,
-                 feat_channels=256,
-                 anchor_scales=[8, 16, 32],
-                 anchor_ratios=[0.5, 1.0, 2.0],
-                 anchor_strides=[4, 8, 16, 32, 64],
-                 stacked_convs=4,
-                 octave_base_scale=4,
-                 scales_per_octave=3,
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 **kwargs):
+    def __init__(
+        self,
+        num_classes,
+        in_channels,
+        feat_channels=256,
+        anchor_scales=[8, 16, 32],
+        anchor_ratios=[0.5, 1.0, 2.0],
+        anchor_strides=[4, 8, 16, 32, 64],
+        stacked_convs=4,
+        octave_base_scale=4,
+        scales_per_octave=3,
+        conv_cfg=None,
+        norm_cfg=None,
+        **kwargs
+    ):
         super(RetinaHead, self).__init__()
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -58,8 +59,7 @@ class RetinaHead(nn.Module):
         self.scales_per_octave = scales_per_octave
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        octave_scales = np.array(
-            [2**(i / scales_per_octave) for i in range(scales_per_octave)])
+        octave_scales = np.array([2 ** (i / scales_per_octave) for i in range(scales_per_octave)])
         anchor_scales = octave_scales * octave_base_scale
         self.cls_out_channels = num_classes
         self.num_anchors = len(self.anchor_ratios) * len(self.anchor_scales)
@@ -79,7 +79,9 @@ class RetinaHead(nn.Module):
                     stride=1,
                     padding=1,
                     conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg))
+                    norm_cfg=self.norm_cfg,
+                )
+            )
             self.reg_convs.append(
                 ConvModule(
                     chn,
@@ -88,15 +90,16 @@ class RetinaHead(nn.Module):
                     stride=1,
                     padding=1,
                     conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg))
+                    norm_cfg=self.norm_cfg,
+                )
+            )
         self.retina_cls = nn.Conv2d(
-            self.feat_channels,
-            self.num_anchors * self.cls_out_channels,
-            3,
-            padding=1)
-        self.retina_reg = nn.Conv2d(
-            self.feat_channels, self.num_anchors * 4, 3, padding=1)
+            self.feat_channels, self.num_anchors * self.cls_out_channels, 3, padding=1
+        )
+        self.retina_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 3, padding=1)
         self.output_act = nn.Sigmoid()
+
+        self.init_weights()
 
     def init_weights(self):
         for m in self.cls_convs:
@@ -110,6 +113,7 @@ class RetinaHead(nn.Module):
     def forward_single(self, x):
         cls_feat = x
         reg_feat = x
+
         for cls_conv in self.cls_convs:
             cls_feat = cls_conv(cls_feat)
         for reg_conv in self.reg_convs:
@@ -120,13 +124,13 @@ class RetinaHead(nn.Module):
         # out is B x C x W x H, with C = n_classes + n_anchors
         cls_score = cls_score.permute(0, 2, 3, 1)
         batch_size, width, height, channels = cls_score.shape
-        cls_score = cls_score.view(
-            batch_size, width, height, self.num_anchors, self.num_classes)
+        cls_score = cls_score.view(batch_size, width, height, self.num_anchors, self.num_classes)
         cls_score = cls_score.contiguous().view(x.size(0), -1, self.num_classes)
 
         bbox_pred = self.retina_reg(reg_feat)
         bbox_pred = bbox_pred.permute(0, 2, 3, 1)
         bbox_pred = bbox_pred.contiguous().view(bbox_pred.size(0), -1, 4)
+        # print(bbox_pred[0, 26:52, :])
         return cls_score, bbox_pred
 
     def forward(self, feats):

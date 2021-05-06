@@ -1,1 +1,2 @@
-from models.efficientDET.model import Model  # pyflakes.ignore
+from .efficientdet import EfficientDet
+from .model import Model

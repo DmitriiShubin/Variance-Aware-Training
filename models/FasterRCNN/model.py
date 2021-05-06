@@ -12,17 +12,15 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import RocAuc, F1, AP
+from metrics import RocAuc, F1
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
-from torch.nn.parallel import DistributedDataParallel as DDP
 from time import time
 from utils.loss_functions import f1_loss
 
 # model
-from models.efficientDET.efficientdet import EfficientDet
-from utils.post_processing_detection import Post_Processing
-from mean_average_precision import MetricBuilder
+from models.efficientnet.structure import EfficientNet
+from utils.post_processing import Post_Processing
 
 
 class Model:
@@ -44,16 +42,13 @@ class Model:
         self.inference = inference
 
         self.start_training = time()
+        self.postprocessing = Post_Processing()
 
         # ininialize model architecture
         self.__setup_model(inference=inference, gpu=gpu)
 
         # define model parameters
         self.__setup_model_hparams()
-        self.postpocessing = Post_Processing(
-            objectness_threshold=self.hparams['model']['objectness_threshold'],
-            nms_threshold=self.hparams['model']['nms_threshold'],
-        )
 
         # declare preprocessing object
         self.__seed_everything(42)
@@ -66,23 +61,16 @@ class Model:
             batch_size=self.hparams['batch_size'],
             shuffle=True,
             num_workers=self.hparams['num_workers'],
-            collate_fn=self.collater,
         )
         valid_loader = DataLoader(
             valid,
             batch_size=self.hparams['batch_size'],
             shuffle=False,
             num_workers=self.hparams['num_workers'],
-            collate_fn=self.collater,
         )
 
         # tensorboard
         writer = SummaryWriter(f"runs/{self.hparams['model_name']}_{self.start_training}")
-
-        if len(self.gpu) > 1:
-            self.model.module.is_training = True
-        else:
-            self.model.is_training = True
 
         print('Start training the model')
         for epoch in range(self.hparams['n_epochs']):
@@ -91,31 +79,31 @@ class Model:
             self.model.train()
             avg_loss = 0.0
             avg_adv_loss = 0.0
-            avg_val_loss = 0.0
 
             for data in tqdm(train_loader):
+
+                # push the data into the GPU
+                X_batch = X_batch.float().to(self.device)
+                y_batch = y_batch.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
-                data['img'] = data['img'].float().to(self.device)
-                data['annot'] = data['annot'].float().to(self.device)
-
-                # print(data['img'].shape)
-
                 # get model predictions
-                classification_loss, regression_loss = self.model([data['img'], data['annot']])
+                pred = self.model(X_batch)
 
                 # process main loss
-                classification_loss = classification_loss.mean()
-                regression_loss = regression_loss.mean()
-                train_loss = (
-                    self.hparams['model']['classification_loss_weight'] * classification_loss
-                    + self.hparams['model']['regression_loss_weight'] * regression_loss
-                )
+                # pred = pred.reshape(-1)
+                # y_batch = y_batch.reshape(-1)
+                train_loss = self.loss(pred, y_batch)
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
+
+                # remove data from GPU
+                y_batch = y_batch.float().cpu().detach().numpy()
+                pred = pred.float().cpu().detach().numpy()
+                X_batch = X_batch.float().cpu().detach().numpy()
 
                 # gradient clipping
                 if self.apply_clipping:
@@ -124,14 +112,19 @@ class Model:
                     torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.5)
 
                 # backprop
-                if float(train_loss) != 0.0:
-                    train_loss.backward()
+                train_loss.backward()
 
                 # iptimizer step
                 self.optimizer.step()
 
-                classification_loss = classification_loss.cpu().detach()
-                regression_loss = regression_loss.cpu().detach()
+                y_batch = self.postprocessing.run(y_batch)
+                pred = self.postprocessing.run(pred)
+
+                # calculate a step for metrics
+                self.metric.calc_running_score(labels=y_batch, outputs=pred)
+
+            # calc train metrics
+            metric_train = self.metric.compute()
 
             # evaluate the model
             print('Model evaluation')
@@ -139,38 +132,46 @@ class Model:
             # val mode
             self.model.eval()
             self.optimizer.zero_grad()
+            avg_val_loss = 0.0
 
             with torch.no_grad():
+
                 for data in tqdm(valid_loader):
-                    # clean gradients from the previous step
 
-                    data['img'] = data['img'].float().to(self.device)
-                    data['annot'] = data['annot'].float().to(self.device)
+                    # push the data into the GPU
+                    X_batch = X_batch.float().to(self.device)
+                    y_batch = y_batch.float().to(self.device)
 
-                    # get loss
-                    classification_loss, regression_loss = self.model([data['img'], data['annot']])
-                    classification_loss = classification_loss.mean()
-                    regression_loss = regression_loss.mean()
-                    val_loss = (
-                        self.hparams['model']['classification_loss_weight'] * classification_loss
-                        + self.hparams['model']['regression_loss_weight'] * regression_loss
-                    )
+                    # get predictions
+                    pred = self.model(X_batch)
 
-                    # calc loss
-                    avg_val_loss += val_loss.item() / len(valid_loader)
+                    # calculate main loss
+                    # pred = pred.reshape(-1)
+                    # y_batch = y_batch.reshape(-1)
 
-                    data['annot'] = data['annot'].cpu().detach().numpy()
+                    avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
-                    del classification_loss
-                    del regression_loss
+                    # remove data from GPU
+                    X_batch = X_batch.float().cpu().detach().numpy()
+                    pred = pred.float().cpu().detach().numpy()
+                    y_batch = y_batch.float().cpu().detach().numpy()
+
+                    y_batch = self.postprocessing.run(y_batch)
+                    pred = self.postprocessing.run(pred)
+
+                    # calculate a step for metrics
+                    self.metric.calc_running_score(labels=y_batch, outputs=pred)
+
+            # calc val metrics
+            metric_val = self.metric.compute()
 
             # early stopping for scheduler
             if self.hparams['scheduler_name'] == 'ReduceLROnPlateau':
-                self.scheduler.step(avg_val_loss)
+                self.scheduler.step(metric_val)
             else:
                 self.scheduler.step()
 
-            es_result = self.early_stopping(score=avg_val_loss, model=self.model, threshold=None)
+            es_result = self.early_stopping(score=metric_val, model=self.model, threshold=None)
 
             # print statistics
             if self.hparams['verbose_train']:
@@ -183,6 +184,10 @@ class Model:
                     avg_val_loss,
                     '| Adv_loss: ',
                     avg_adv_loss,
+                    '| Metric_train: ',
+                    metric_train,
+                    '| Metric_val: ',
+                    metric_val,
                     '| Current LR: ',
                     self.__get_lr(self.optimizer),
                 )
@@ -191,6 +196,7 @@ class Model:
             writer.add_scalars(
                 'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
             )
+            writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
 
             # early stopping procesudre
             if es_result == 2:
@@ -198,7 +204,7 @@ class Model:
                 print(f'global best val_loss model score {self.early_stopping.best_score}')
                 break
             elif es_result == 1:
-                print(f'save global val_loss model score {avg_val_loss}')
+                print(f'save global val_loss model score {metric_val}')
 
         writer.close()
 
@@ -227,52 +233,37 @@ class Model:
         self.model.eval()
 
         test_loader = torch.utils.data.DataLoader(
-            X_test,
-            batch_size=self.hparams['batch_size'],
-            shuffle=False,
-            num_workers=0,
-            collate_fn=self.collater,
+            X_test, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=0,
         )
 
-        avg_loss = 0
-        self.metric.reset()
+        error_samplewise = []
 
-        if len(self.gpu) > 1:
-            self.model.module.is_training = True
-        else:
-            self.model.is_training = True
+        self.metric.reset()
 
         print('Getting predictions')
         with torch.no_grad():
-            for data in tqdm(test_loader):
+            for i, (data) in enumerate(tqdm(test_loader)):
+                X_batch = X_batch.float().to(self.device)
+                y_batch = y_batch.float().to(self.device)
 
-                data['img'] = data['img'].float().to(self.device)
-                data['annot'] = data['annot'].float().to(self.device)
+                pred = self.model(X_batch)
 
-                # get model predictions
-                classification_loss, regression_loss = self.model([data['img'], data['annot']])
+                # calculate main loss
+                # pred = pred.reshape(-1)
+                # y_batch = y_batch.reshape(-1)
 
-                # process main loss
-                classification_loss = classification_loss.mean()
-                regression_loss = regression_loss.mean()
-                train_loss = (
-                    self.hparams['model']['classification_loss_weight'] * classification_loss
-                    + self.hparams['model']['regression_loss_weight'] * regression_loss
-                )
+                pred = pred.cpu().detach().numpy()
+                X_batch = X_batch.cpu().detach().numpy()
+                y_batch = y_batch.cpu().detach().numpy()
 
-                # calc loss
-                avg_loss += train_loss.item() / len(test_loader)
+                y_batch = self.postprocessing.run(y_batch)
+                pred = self.postprocessing.run(pred)
 
-                # gradient clipping
-                if self.apply_clipping:
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
-                    torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.5)
+                self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
-                classification_loss = classification_loss.cpu().detach()
-                regression_loss = regression_loss.cpu().detach()
+        fold_score = self.metric.compute()
 
-        return avg_loss
+        return fold_score
 
     def save(self, model_path):
 
@@ -326,13 +317,8 @@ class Model:
         # TODO: re-write to pure DDP
         if inference or gpu is None:
             self.device = torch.device('cpu')
-            self.model = EfficientDet(
-                num_classes=self.hparams['model']['n_classes'],
-                network=self.hparams['model']['pre_trained_model'],
-                W_bifpn=self.hparams['model']['W_bifpn'],
-                D_bifpn=self.hparams['model']['D_bifpn'],
-                threshold=self.hparams['model']['objectness_threshold'],
-                iou_threshold=self.hparams['model']['nms_threshold'],
+            self.model = EfficientNet.from_pretrained(
+                self.hparams['model']['pre_trained_model'], num_classes=self.hparams['model']['n_classes']
             ).to(self.device)
             # self.model.freeze_layers()
         else:
@@ -340,37 +326,25 @@ class Model:
                 if len(gpu) > 1:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = EfficientDet(
+                    self.model = EfficientNet.from_pretrained(
+                        self.hparams['model']['pre_trained_model'],
                         num_classes=self.hparams['model']['n_classes'],
-                        network=self.hparams['model']['pre_trained_model'],
-                        W_bifpn=self.hparams['model']['W_bifpn'],
-                        D_bifpn=self.hparams['model']['D_bifpn'],
-                        threshold=self.hparams['model']['objectness_threshold'],
-                        iou_threshold=self.hparams['model']['nms_threshold'],
                     ).to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                     # self.model.module.freeze_layers()
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = EfficientDet(
+                    self.model = EfficientNet.from_pretrained(
+                        self.hparams['model']['pre_trained_model'],
                         num_classes=self.hparams['model']['n_classes'],
-                        network=self.hparams['model']['pre_trained_model'],
-                        W_bifpn=self.hparams['model']['W_bifpn'],
-                        D_bifpn=self.hparams['model']['D_bifpn'],
-                        threshold=self.hparams['model']['objectness_threshold'],
-                        iou_threshold=self.hparams['model']['nms_threshold'],
                     ).to(self.device)
                     # self.model.freeze_layers()
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                self.model = EfficientDet(
+                self.model = EfficientNet.from_pretrained(
+                    self.hparams['model']['pre_trained_model'],
                     num_classes=self.hparams['model']['n_classes'],
-                    network=self.hparams['model']['pre_trained_model'],
-                    W_bifpn=self.hparams['model']['W_bifpn'],
-                    D_bifpn=self.hparams['model']['D_bifpn'],
-                    threshold=self.hparams['model']['objectness_threshold'],
-                    iou_threshold=self.hparams['model']['nms_threshold'],
                 ).to(self.device)
                 # self.model.freeze_layers()
                 print('Only one GPU is available')
@@ -385,8 +359,7 @@ class Model:
         self.loss = f1_loss()  #
 
         # 2. define model metric
-        self.metric = MetricBuilder.build_evaluation_metric("map_2d", async_mode=True, num_classes=1)
-        self.iou_thresholds = [0.5, 0.6, 0.7, 0.8]
+        self.metric = F1(n_classes=self.hparams['model']['n_classes'])  #
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(
@@ -403,7 +376,7 @@ class Model:
             checkpoint_path=self.hparams['checkpoint_path'] + f'/checkpoint_{self.start_training}' + '.pt',
             patience=self.hparams['patience'],
             delta=self.hparams['min_delta'],
-            is_maximize=False,
+            is_maximize=True,
         )
 
         # 6. set gradient clipping
@@ -421,38 +394,3 @@ class Model:
         random.seed(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
-
-    def collater(self, data):
-
-        imgs = [s['img'] for s in data]
-        annots = [s['annot'] for s in data]
-        scales = [s['scale'] for s in data]
-
-        widths = [int(s.shape[1]) for s in imgs]
-        heights = [int(s.shape[2]) for s in imgs]
-        batch_size = len(imgs)
-
-        max_width = np.array(widths).max()
-        max_height = np.array(heights).max()
-
-        padded_imgs = torch.zeros(batch_size, 3, max_width, max_height)
-
-        for i in range(batch_size):
-            img = imgs[i]
-            padded_imgs[i, :, : int(img.shape[1]), : int(img.shape[2])] = img
-
-        max_num_annots = max(annot.shape[0] for annot in annots)
-
-        if max_num_annots > 0:
-
-            annot_padded = torch.ones((len(annots), max_num_annots, 5)) * -1
-
-            if max_num_annots > 0:
-                for idx, annot in enumerate(annots):
-                    # print(annot.shape)
-                    if annot.shape[0] > 0:
-                        annot_padded[idx, : annot.shape[0], :] = annot
-        else:
-            annot_padded = torch.ones((len(annots), 1, 5)) * -1
-
-        return {'img': padded_imgs, 'annot': annot_padded, 'scale': scales, 'annot_raw': annots}

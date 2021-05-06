@@ -59,8 +59,13 @@ from experiments.classification.adversarial_network_train_val_early.run_experime
 # baseline models
 from experiments.detection.baseline.run_experiment import run as run_yolov4_baseline
 
+import click
 
-def main():
+
+@click.command()
+@click.option('--experiment', default='./experiments/detection/baseline/config_RSNA_2.yml', help='')
+@click.option('--gpu', default='5', help='')
+def main(experiment, gpu):
 
     # ACDC
 
@@ -126,7 +131,9 @@ def main():
     ###########################################################################
     # RSNA
 
-    run_yolov4_baseline(experiment='./experiments/detection/baseline/config_RSNA_2.yml', gpu='0,1')
+    # run_yolov4_baseline(experiment='./experiments/detection/baseline/config_RSNA_2.yml', gpu='0')
+
+    run_yolov4_baseline(experiment=experiment, gpu=gpu)
 
     return None
 

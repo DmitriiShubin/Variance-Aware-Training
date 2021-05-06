@@ -206,7 +206,7 @@ class AP:
                     for pred_object in outputs[index].keys():
                         pred_object = outputs[index][pred_object]
                         if pred_object['Obj_score'] == -1:
-                            fn+=1
+                            fn += 1
                             continue
                         iou = get_iou(pred_object, gt_object)
                         if iou < threshold:

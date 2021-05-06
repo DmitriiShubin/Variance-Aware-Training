@@ -1,4 +1,3 @@
-
 import numpy as np
 import torch
 import warnings
@@ -7,17 +6,14 @@ import torch.nn.functional as F
 
 
 class BBoxTransform(nn.Module):
-
     def __init__(self, mean=None, std=None):
         super(BBoxTransform, self).__init__()
         if mean is None:
-            self.mean = torch.from_numpy(
-                np.array([0, 0, 0, 0]).astype(np.float32))
+            self.mean = torch.from_numpy(np.array([0, 0, 0, 0]).astype(np.float32))
         else:
             self.mean = mean
         if std is None:
-            self.std = torch.from_numpy(
-                np.array([0.1, 0.1, 0.2, 0.2]).astype(np.float32))
+            self.std = torch.from_numpy(np.array([0.1, 0.1, 0.2, 0.2]).astype(np.float32))
         else:
             self.std = std
 
@@ -43,14 +39,12 @@ class BBoxTransform(nn.Module):
         pred_boxes_x2 = pred_ctr_x + 0.5 * pred_w
         pred_boxes_y2 = pred_ctr_y + 0.5 * pred_h
 
-        pred_boxes = torch.stack(
-            [pred_boxes_x1, pred_boxes_y1, pred_boxes_x2, pred_boxes_y2], dim=2)
+        pred_boxes = torch.stack([pred_boxes_x1, pred_boxes_y1, pred_boxes_x2, pred_boxes_y2], dim=2)
 
         return pred_boxes
 
 
 class ClipBoxes(nn.Module):
-
     def __init__(self, width=None, height=None):
         super(ClipBoxes, self).__init__()
 
@@ -58,11 +52,11 @@ class ClipBoxes(nn.Module):
 
         batch_size, num_channels, height, width = img.shape
 
-        boxes[:, :, 0] = torch.clamp(boxes[:, :, 0], min=0)
-        boxes[:, :, 1] = torch.clamp(boxes[:, :, 1], min=0)
+        boxes[:, :, 0] = torch.clamp(boxes[:, :, 0], min=0, max=width)
+        boxes[:, :, 1] = torch.clamp(boxes[:, :, 1], min=0, max=height)
 
-        boxes[:, :, 2] = torch.clamp(boxes[:, :, 2], max=width)
-        boxes[:, :, 3] = torch.clamp(boxes[:, :, 3], max=height)
+        boxes[:, :, 2] = torch.clamp(boxes[:, :, 2], min=0, max=width)
+        boxes[:, :, 3] = torch.clamp(boxes[:, :, 3], min=0, max=height)
 
         return boxes
 
@@ -71,20 +65,15 @@ class RegressionModel(nn.Module):
     def __init__(self, num_features_in, num_anchors=9, feature_size=256):
         super(RegressionModel, self).__init__()
 
-        self.conv1 = nn.Conv2d(
-            num_features_in, feature_size, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(num_features_in, feature_size, kernel_size=3, padding=1)
         self.act1 = nn.ReLU()
-        self.conv2 = nn.Conv2d(feature_size, feature_size,
-                               kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(feature_size, feature_size, kernel_size=3, padding=1)
         self.act2 = nn.ReLU()
-        self.conv3 = nn.Conv2d(feature_size, feature_size,
-                               kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(feature_size, feature_size, kernel_size=3, padding=1)
         self.act3 = nn.ReLU()
-        self.conv4 = nn.Conv2d(feature_size, feature_size,
-                               kernel_size=3, padding=1)
+        self.conv4 = nn.Conv2d(feature_size, feature_size, kernel_size=3, padding=1)
         self.act4 = nn.ReLU()
-        self.output = nn.Conv2d(
-            feature_size, num_anchors*4, kernel_size=3, padding=1)
+        self.output = nn.Conv2d(feature_size, num_anchors * 4, kernel_size=3, padding=1)
 
     def forward(self, x):
         out = self.conv1(x)
@@ -107,20 +96,15 @@ class ClassificationModel(nn.Module):
         self.num_classes = num_classes
         self.num_anchors = num_anchors
 
-        self.conv1 = nn.Conv2d(
-            num_features_in, feature_size, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(num_features_in, feature_size, kernel_size=3, padding=1)
         self.act1 = nn.ReLU()
-        self.conv2 = nn.Conv2d(feature_size, feature_size,
-                               kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(feature_size, feature_size, kernel_size=3, padding=1)
         self.act2 = nn.ReLU()
-        self.conv3 = nn.Conv2d(feature_size, feature_size,
-                               kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(feature_size, feature_size, kernel_size=3, padding=1)
         self.act3 = nn.ReLU()
-        self.conv4 = nn.Conv2d(feature_size, feature_size,
-                               kernel_size=3, padding=1)
+        self.conv4 = nn.Conv2d(feature_size, feature_size, kernel_size=3, padding=1)
         self.act4 = nn.ReLU()
-        self.output = nn.Conv2d(
-            feature_size, num_anchors*num_classes, kernel_size=3, padding=1)
+        self.output = nn.Conv2d(feature_size, num_anchors * num_classes, kernel_size=3, padding=1)
         self.output_act = nn.Sigmoid()
 
     def forward(self, x):
@@ -137,8 +121,7 @@ class ClassificationModel(nn.Module):
         # out is B x C x W x H, with C = n_classes + n_anchors
         out1 = out.permute(0, 2, 3, 1)
         batch_size, width, height, channels = out1.shape
-        out2 = out1.view(batch_size, width, height,
-                         self.num_anchors, self.num_classes)
+        out2 = out1.view(batch_size, width, height, self.num_anchors, self.num_classes)
         return out2.contiguous().view(x.shape[0], -1, self.num_classes)
 
 
@@ -155,24 +138,20 @@ class Anchors(nn.Module):
         if ratios is None:
             self.ratios = np.array([0.5, 1, 2])
         if scales is None:
-            self.scales = np.array(
-                [2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)])
+            self.scales = np.array([2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)])
 
     def forward(self, image):
 
         image_shape = image.shape[2:]
         image_shape = np.array(image_shape)
-        image_shapes = [(image_shape + 2 ** x - 1) // (2 ** x)
-                        for x in self.pyramid_levels]
+        image_shapes = [(image_shape + 2 ** x - 1) // (2 ** x) for x in self.pyramid_levels]
 
         # compute anchors over all pyramid levels
         all_anchors = np.zeros((0, 4)).astype(np.float32)
 
         for idx, p in enumerate(self.pyramid_levels):
-            anchors = generate_anchors(
-                base_size=self.sizes[idx], ratios=self.ratios, scales=self.scales)
-            shifted_anchors = shift(
-                image_shapes[idx], self.strides[idx], anchors)
+            anchors = generate_anchors(base_size=self.sizes[idx], ratios=self.ratios, scales=self.scales)
+            shifted_anchors = shift(image_shapes[idx], self.strides[idx], anchors)
             all_anchors = np.append(all_anchors, shifted_anchors, axis=0)
 
         all_anchors = np.expand_dims(all_anchors, axis=0)
@@ -221,8 +200,7 @@ def compute_shape(image_shape, pyramid_levels):
     :return:
     """
     image_shape = np.array(image_shape[:2])
-    image_shapes = [(image_shape + 2 ** x - 1) // (2 ** x)
-                    for x in pyramid_levels]
+    image_shapes = [(image_shape + 2 ** x - 1) // (2 ** x) for x in pyramid_levels]
     return image_shapes
 
 
@@ -241,8 +219,7 @@ def anchors_for_shape(
     # compute anchors over all pyramid levels
     all_anchors = np.zeros((0, 4))
     for idx, p in enumerate(pyramid_levels):
-        anchors = generate_anchors(
-            base_size=sizes[idx], ratios=ratios, scales=scales)
+        anchors = generate_anchors(base_size=sizes[idx], ratios=ratios, scales=scales)
         shifted_anchors = shift(image_shapes[idx], strides[idx], anchors)
         all_anchors = np.append(all_anchors, shifted_anchors, axis=0)
 
@@ -255,10 +232,7 @@ def shift(shape, stride, anchors):
 
     shift_x, shift_y = np.meshgrid(shift_x, shift_y)
 
-    shifts = np.vstack((
-        shift_x.ravel(), shift_y.ravel(),
-        shift_x.ravel(), shift_y.ravel()
-    )).transpose()
+    shifts = np.vstack((shift_x.ravel(), shift_y.ravel(), shift_x.ravel(), shift_y.ravel())).transpose()
 
     # add A anchors (1, A, 4) to
     # cell K shifts (K, 1, 4) to get
@@ -266,21 +240,13 @@ def shift(shape, stride, anchors):
     # reshape to (K*A, 4) shifted anchors
     A = anchors.shape[0]
     K = shifts.shape[0]
-    all_anchors = (anchors.reshape((1, A, 4)) +
-                   shifts.reshape((1, K, 4)).transpose((1, 0, 2)))
+    all_anchors = anchors.reshape((1, A, 4)) + shifts.reshape((1, K, 4)).transpose((1, 0, 2))
     all_anchors = all_anchors.reshape((K * A, 4))
 
     return all_anchors
 
 
-def conv_ws_2d(input,
-               weight,
-               bias=None,
-               stride=1,
-               padding=0,
-               dilation=1,
-               groups=1,
-               eps=1e-5):
+def conv_ws_2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1, eps=1e-5):
     c_in = weight.size(0)
     weight_flat = weight.view(c_in, -1)
     mean = weight_flat.mean(dim=1, keepdim=True).view(c_in, 1, 1, 1)
@@ -290,16 +256,18 @@ def conv_ws_2d(input,
 
 
 class ConvWS2d(nn.Conv2d):
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 dilation=1,
-                 groups=1,
-                 bias=True,
-                 eps=1e-5):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=0,
+        dilation=1,
+        groups=1,
+        bias=True,
+        eps=1e-5,
+    ):
         super(ConvWS2d, self).__init__(
             in_channels,
             out_channels,
@@ -308,12 +276,14 @@ class ConvWS2d(nn.Conv2d):
             padding=padding,
             dilation=dilation,
             groups=groups,
-            bias=bias)
+            bias=bias,
+        )
         self.eps = eps
 
     def forward(self, x):
-        return conv_ws_2d(x, self.weight, self.bias, self.stride, self.padding,
-                          self.dilation, self.groups, self.eps)
+        return conv_ws_2d(
+            x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups, self.eps
+        )
 
 
 conv_cfg = {
@@ -424,20 +394,22 @@ class ConvModule(nn.Module):
             ("conv", "norm", "act") and ("act", "conv", "norm").
     """
 
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 dilation=1,
-                 groups=1,
-                 bias='auto',
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 activation='relu',
-                 inplace=True,
-                 order=('conv', 'norm', 'act')):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=0,
+        dilation=1,
+        groups=1,
+        bias='auto',
+        conv_cfg=None,
+        norm_cfg=None,
+        activation='relu',
+        inplace=True,
+        order=('conv', 'norm', 'act'),
+    ):
         super(ConvModule, self).__init__()
         assert conv_cfg is None or isinstance(conv_cfg, dict)
         assert norm_cfg is None or isinstance(norm_cfg, dict)
@@ -469,7 +441,8 @@ class ConvModule(nn.Module):
             padding=padding,
             dilation=dilation,
             groups=groups,
-            bias=bias)
+            bias=bias,
+        )
         # export the attributes of self.conv to a higher level for convenience
         self.in_channels = self.conv.in_channels
         self.out_channels = self.conv.out_channels
@@ -495,8 +468,7 @@ class ConvModule(nn.Module):
         if self.with_activatation:
             # TODO: introduce `act_cfg` and supports more activation layers
             if self.activation not in ['relu']:
-                raise ValueError('{} is currently not supported.'.format(
-                    self.activation))
+                raise ValueError('{} is currently not supported.'.format(self.activation))
             if self.activation == 'relu':
                 self.activate = nn.ReLU(inplace=inplace)
 
@@ -537,18 +509,12 @@ def uniform_init(module, a=0, b=1, bias=0):
         nn.init.constant_(module.bias, bias)
 
 
-def kaiming_init(module,
-                 mode='fan_out',
-                 nonlinearity='relu',
-                 bias=0,
-                 distribution='normal'):
+def kaiming_init(module, mode='fan_out', nonlinearity='relu', bias=0, distribution='normal'):
     assert distribution in ['uniform', 'normal']
     if distribution == 'uniform':
-        nn.init.kaiming_uniform_(
-            module.weight, mode=mode, nonlinearity=nonlinearity)
+        nn.init.kaiming_uniform_(module.weight, mode=mode, nonlinearity=nonlinearity)
     else:
-        nn.init.kaiming_normal_(
-            module.weight, mode=mode, nonlinearity=nonlinearity)
+        nn.init.kaiming_normal_(module.weight, mode=mode, nonlinearity=nonlinearity)
     if hasattr(module, 'bias'):
         nn.init.constant_(module.bias, bias)
 
