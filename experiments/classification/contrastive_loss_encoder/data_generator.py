@@ -18,47 +18,7 @@ class Dataset_train(Dataset):
         self.volumes_list = volumes_list
         self.preprocessing = Preprocessing(aug)
 
-    # TODO
-    def generate_pairs(self, n_pairs: int):
 
-        # create a list of labels
-        labels = []
-        for volume in self.volumes_list:
-            labels.append(volume.split('/')[-2])
-
-        labels = np.array(labels)
-
-        self.volumes_list = np.array(self.volumes_list)
-
-        # generate pairs
-        self.pairs_list = []
-        for i in range(n_pairs):
-            pairs = {}
-
-            # generate positive pair
-            anchor = self.volumes_list[np.random.choice(self.volumes_list.shape[0])]
-            sample = anchor.split('/')[-1]
-            anchor_label = labels[np.where(np.array(self.volumes_list) == anchor)]
-            pairs['anchor'] = anchor
-
-            # select positive
-            sample = anchor.split('/')[-1]
-            sample_int = sample
-            sample_int = int(sample_int.split('_')[0])
-            records_pos_subset = self.volumes_list[np.where(labels != anchor_label)]
-            records_pos_subset = records_pos_subset.tolist()
-            records_pos_subset = [record for record in records_pos_subset if record.find(sample) != -1]
-            records_pos_subset = np.array(records_pos_subset)
-
-            if records_pos_subset.shape[0] == 0:
-                continue
-
-            pairs['supportive'] = records_pos_subset[np.random.choice(records_pos_subset.shape[0])]
-            self.pairs_list.append(pairs)
-
-        self.volumes_list = self.volumes_list.tolist()
-
-        return True
 
     def __len__(self):
         return len(self.volumes_list)

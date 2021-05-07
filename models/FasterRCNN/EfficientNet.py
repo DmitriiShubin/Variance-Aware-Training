@@ -9,9 +9,7 @@ class EfficientNet(effnet):
 
         super(EfficientNet, self).__init__(blocks_args=blocks_args, global_params=global_params)
 
-
-
-    def forward(self, inputs1, inputs2):
+    def forward(self, inputs):
         """EfficientNet's forward function.
            Calls extract_features to extract features, applies final linear layer, and returns logits.
         Args:
@@ -20,27 +18,14 @@ class EfficientNet(effnet):
             Output of this model after processing.
         """
         # Convolution layers
-        x1 = self.extract_features(inputs1)
-        x2 = self.extract_features(inputs2)
-
-        x = torch.cat([x1, x2], dim=1)
-
-        x = torch.mean(x, dim=2)
-        x = torch.mean(x, dim=2)
-
-        x = torch.relu(self.fc1(x))
-        x = torch.sigmoid(self.fc2(x))
-
-
+        x = self.extract_features(inputs)
+        # Pooling and final linear layer
         return x
 
+    def freeze_layers(self):
 
-    def build_projection_network(self, device):
-
-        dummy = torch.rand(1, 3, 96, 96).to(device)
-        n_filt = self.extract_features(dummy).shape[1]
-
-        self.fc1 = nn.Linear(n_filt, n_filt).to(device)
-        self.fc2 = nn.Linear(n_filt, n_filt).to(device)
+        for param in self.parameters():
+            print(param)
+            param.requires_grad = False
 
         return True

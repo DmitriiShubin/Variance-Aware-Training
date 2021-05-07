@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.metrics import multilabel_confusion_matrix, roc_auc_score
+from mean_average_precision import MetricBuilder
 
 
 class Dice_score:
@@ -122,116 +123,51 @@ class F1:
         return True
 
 
-def get_iou(bb1, bb2):
-    """
-    Calculate the Intersection over Union (IoU) of two bounding boxes.
-
-    Parameters
-    ----------
-    bb1 : dict
-        Keys: {'x1', 'x2', 'y1', 'y2'}
-        The (x1, y1) position is at the top left corner,
-        the (x2, y2) position is at the bottom right corner
-    bb2 : dict
-        Keys: {'x1', 'x2', 'y1', 'y2'}
-        The (x, y) position is at the top left corner,
-        the (x2, y2) position is at the bottom right corner
-
-    Returns
-    -------
-    float
-        in [0, 1]
-    """
-
-    assert bb1['x1'] <= bb1['x2'], f"bb1: {bb1['x1']}| bb1: {bb1['x2']}"
-    assert bb1['y1'] <= bb1['y2'], f"bb1: {bb1['y1']}| bb1: {bb1['y2']}"
-    assert bb2['x1'] <= bb2['x2'], f"bb1: {bb2['x1']}| bb1: {bb2['x2']}"
-    assert bb2['y1'] <= bb2['y2'], f"bb1: {bb2['y1']}| bb1: {bb2['y2']}"
-
-    # determine the coordinates of the intersection rectangle
-    x_left = max(bb1['x1'], bb2['x1'])
-    y_top = max(bb1['y1'], bb2['y1'])
-    x_right = min(bb1['x2'], bb2['x2'])
-    y_bottom = min(bb1['y2'], bb2['y2'])
-
-    if x_right < x_left or y_bottom < y_top:
-        return 0.0
-
-    # The intersection of two axis-aligned bounding boxes is always an
-    # axis-aligned bounding box
-    intersection_area = (x_right - x_left) * (y_bottom - y_top)
-
-    # compute the area of both AABBs
-    bb1_area = (bb1['x2'] - bb1['x1']) * (bb1['y2'] - bb1['y1'])
-    bb2_area = (bb2['x2'] - bb2['x1']) * (bb2['y2'] - bb2['y1'])
-
-    # compute the intersection over union by taking the intersection
-    # area and dividing it by the sum of prediction + ground-truth
-    # areas - the interesection area
-    iou = intersection_area / float(bb1_area + bb2_area - intersection_area)
-    assert iou >= 0.0
-    assert iou <= 1.0
-    return iou
-
-
 class AP:
-    def __init__(self, uou_thresholds=[0.5, 0.6, 0.7, 0.8]):
+    def __init__(self, n_classes):
 
-        self.uou_thresholds = uou_thresholds
+        self.iou_thresholds = [0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
 
-        self.AP_scores = []
+        self.AP = 0.0
+        self.n_pictures = 0.0
+        self.map_calc = MetricBuilder.build_evaluation_metric("map_2d", async_mode=True, num_classes=n_classes-1)
 
-    def calc_running_score(self, labels: list, outputs: list):
+    def calc_running_score(self, y_batch, bboxes, scores, classes):
 
-        for index, label_sample in enumerate(labels):
+        # TOOO: shange index
+        if y_batch[0]['labels'][0] == 0:
+            gt = np.zeros((0, 6))
 
-            for gt_object in label_sample.keys():
-                gt_object = label_sample[gt_object]
+            if bboxes.shape[0] != 0:
+                self.n_pictures += 1
 
-                precision = 0
+        else:
+            self.n_pictures += 1
+            gt = np.concatenate([y_batch[0]['boxes'].astype(np.int32),
+                                 np.zeros((y_batch[0]['boxes'].shape[0], 1)),
+                                 np.zeros((y_batch[0]['boxes'].shape[0], 2))], axis=1)
 
-                for threshold in self.uou_thresholds:
+        preds = np.concatenate([bboxes.astype(np.int32), classes.astype(np.int32), scores], axis=1)
 
-                    tp = 0
-                    fp = 0
-                    fn = 0
-                    # if any bb was predicted for image where where is not bb, it counts as FP
-                    if gt_object['Obj_score'] == -1:
-                        for pred_object in outputs[index].keys():
-                            fp += 1
-                        continue
 
-                    # FP - when bb is predicted, but overlaps with target with IOU < threshold
-                    # TP - gt_bb and predicted bb overlaps with IOU >= threshold
-                    for pred_object in outputs[index].keys():
-                        pred_object = outputs[index][pred_object]
-                        if pred_object['Obj_score'] == -1:
-                            fn += 1
-                            continue
-                        iou = get_iou(pred_object, gt_object)
-                        if iou < threshold:
-                            fp += 1
-                        else:
-                            tp += 1
+        # gt:   [xmin, ymin, xmax, ymax, class_id, difficult, crowd]
+        # pred: [xmin, ymin, xmax, ymax, class_id, confidence]
+        self.map_calc.add(preds, gt)
+        self.AP += self.map_calc.value(iou_thresholds=self.iou_thresholds, recall_thresholds=np.arange(0., 1.01, 0.01), mpolicy='soft')['mAP']
+        self.map_calc.reset()
 
-                    if tp == 0 and fp == 0:
-                        continue
-                    precision += tp / (tp + fp + fn)
-
-                precision /= len(self.uou_thresholds)
-
-                self.AP_scores.append(precision)
 
         return True
 
     def compute(self):
 
-        AP = np.mean(self.AP_scores)
+        mAP = self.AP / self.n_pictures
 
-        self.reset()
+        self.reset_matric()
 
-        return AP
+        return mAP
 
-    def reset(self):
-        self.AP_scores = []
+    def reset_matric(self):
+        self.AP = 0.0
+        self.n_pictures = 0.0
         return True

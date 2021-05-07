@@ -64,7 +64,7 @@ import click
 
 @click.command()
 @click.option('--experiment', default='./experiments/detection/baseline/config_RSNA_2.yml', help='')
-@click.option('--gpu', default='5', help='')
+@click.option('--gpu', default='7', help='')
 def main(experiment, gpu):
 
     # ACDC
@@ -125,15 +125,15 @@ def main(experiment, gpu):
     #
 
     # pre-training models
-    # run_pre_training_contrastive_classification(experiment=f'./experiments/classification/contrastive_loss_encoder/config_aptos.yml', gpu='6,7')
-    # run_pre_training_patch_classification(experiment=f'./experiments/classification/patch_encoder/config_aptos.yml', gpu='6,7')
-    # run_pre_training_rotation_classification(experiment=f'./experiments/classification/rotation_encoder/config_aptos.yml', gpu='6,7')
+    #run_pre_training_contrastive_classification(experiment=f'./experiments/classification/contrastive_loss_encoder/config_aptos.yml', gpu='0,1')
+    run_pre_training_patch_classification(experiment=f'./experiments/classification/patch_encoder/config_aptos.yml', gpu='0,1')
+    # run_pre_training_rotation_classification(experiment=f'./experiments/classification/rotation_encoder/config_aptos.yml', gpu='0')
     ###########################################################################
     # RSNA
 
     # run_yolov4_baseline(experiment='./experiments/detection/baseline/config_RSNA_2.yml', gpu='0')
 
-    run_yolov4_baseline(experiment=experiment, gpu=gpu)
+    #run_yolov4_baseline(experiment=experiment, gpu=gpu)
 
     return None
 

@@ -13,23 +13,23 @@ np.random.seed(42)
 
 
 class Dataset_train(Dataset):
-    def __init__(self, volums_list, aug, n_classes):
+    def __init__(self, volums_list, aug, n_classes,dataset):
 
         self.n_classes = n_classes
         self.volums_list = volums_list
-        self.preprocessing = Preprocessing(aug)
+        self.preprocessing = Preprocessing(aug,dataset)
 
     def __len__(self):
         return len(self.volums_list)
 
     def __getitem__(self, idx):
 
-        sample = self.load_data(idx)
+        X, y = self.load_data(idx)
 
-        # X = torch.tensor(X, dtype=torch.float)
+        X = torch.tensor(X, dtype=torch.float)
         # y = torch.tensor(y, dtype=torch.float)
 
-        return sample
+        return X, y
 
     def load_data(self, id):
 
@@ -38,59 +38,59 @@ class Dataset_train(Dataset):
 
         annot = self.get_annotations(y)
 
-        X, annot = self.preprocessing.run(X=X, bboxes=annot)
+        X, annot['boxes'],annot['labels'] = self.preprocessing.run(X=X, bboxes=annot['boxes'],classes=annot['labels'])
 
-        sample = {'img': torch.from_numpy(X), 'annot': torch.from_numpy(annot), 'scale': 1}
 
-        return sample
+
+        return X, annot
 
     def get_annotations(self, y):
 
-        # get ground truth annotations
-        annotations = np.zeros((0, 5))
-
         # some images appear to miss annotations (like image with id 257034)
-        if y['0']['Target'] == -1:
-            return annotations
+        if y['0']['Target'] == 0:
+            target = {
+                'boxes': torch.Tensor([[0, 0, 1, 1]]),
+                'labels': torch.Tensor([0.0]).type(torch.int64),
+            }
+            return target
 
         # parse annotations
+        boxes = []
+        labels = []
         for object in y.keys():
             object = y[object]
             # some annotations have basically no width / height, skip them
             if object['w'] < 1 or object['h'] < 1:
                 continue
 
-            annotation = np.zeros((1, 5))
-            annotation[0, 0] = object['x']
-            annotation[0, 1] = object['y']
-            annotation[0, 2] = object['x'] + object['w']
-            annotation[0, 3] = object['y'] + object['h']
-            annotation[0, 4] = 0
-            annotations = np.append(annotations, annotation, axis=0)
+            boxes.append([object['x'], object['y'], object['x'] + object['w'], object['y'] + object['h']])
+            labels.append([1.0])
 
-        # transform from [x, y, w, h] to [x1, y1, x2, y2]
-        # annotations[:, 0] = annotations[:, 0] - annotations[:, 2] / 2
-        # annotations[:, 1] = annotations[:, 1] - annotations[:, 3] / 2
-        # annotations[:, 2] = annotations[:, 0] + annotations[:, 2] / 2
-        # annotations[:, 3] = annotations[:, 1] + annotations[:, 3] / 2
+        boxes = torch.Tensor(boxes)
+        labels = torch.Tensor(labels).type(torch.int64)
+        labels = labels.view(-1)
 
-        return annotations
+        target = {}
+        target["boxes"] = boxes
+        target["labels"] = labels
+
+        return target
 
 
 class Preprocessing:
-    def __init__(self, aug):
+    def __init__(self, aug,dataset):
 
         self.aug = aug
-        self.augmentations = Augmentations()
+        self.augmentations = Augmentations(dataset)
 
-    def run(self, X, bboxes):
+    def run(self, X, bboxes,classes):
 
         if self.aug:
-            X, bboxes = self.augmentations.run(X, bboxes)
+            X, bboxes,classes = self.augmentations.run(X, bboxes,classes)
 
         X = self.standard_scaling(X)
 
-        return X, bboxes
+        return X, bboxes,classes
 
     def standard_scaling(self, X):
         X = X.astype(np.float32)
@@ -128,40 +128,106 @@ class Preprocessing:
 
 
 class Augmentations:
-    def __init__(self):
+    def __init__(self,dataset):
 
         prob = 0.5
-        self.augs = A.Compose(
-            [
-                A.HorizontalFlip(p=prob),
-                A.VerticalFlip(p=prob),
-                A.Rotate(limit=15, p=prob),
-                # # # # A.ElasticTransform(alpha=0.05, p=prob),
-                A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
-                A.RandomGamma(gamma_limit=(80, 120), p=prob),
-            ],
-            bbox_params=A.BboxParams(format='coco'),
-        )
+        if dataset == 'RSNA_1':
+            self.augs = A.Compose(
+                [
+                    #A.HorizontalFlip(p=prob),
+                    #A.VerticalFlip(p=prob),
+                    #A.Rotate(limit=15, p=prob),
+                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
+                    # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ],
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
+            ))
+        elif dataset == 'RSNA_2':
+            self.augs = A.Compose(
+                [
+                    A.HorizontalFlip(p=prob),
+                    #A.VerticalFlip(p=prob),
+                    #A.Rotate(limit=15, p=prob),
+                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
+                    # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ],
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
+            ))
+        elif dataset == 'RSNA_3':
+            self.augs = A.Compose(
+                [
+                    #A.HorizontalFlip(p=prob),
+                    #A.VerticalFlip(p=prob),
+                    A.Rotate(limit=15, p=prob),
+                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
+                    # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ],
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
+            ))
+        elif dataset == 'RSNA_4':
+            self.augs = A.Compose(
+                [
+                    #A.HorizontalFlip(p=prob),
+                    A.VerticalFlip(p=prob),
+                    #A.Rotate(limit=15, p=prob),
+                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
+                    # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ],
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
+            ))
+        elif dataset == 'RSNA_5':
+            self.augs = A.Compose(
+                [
+                    #A.HorizontalFlip(p=prob),
+                    #A.VerticalFlip(p=prob),
+                    #A.Rotate(limit=15, p=prob),
+                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
+                    A.RandomSizedCrop(min_max_height=(100, 220), height=256, width=256, p=prob),
+                    #A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ],
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
+            ))
+        elif dataset == 'RSNA_6':
+            self.augs = A.Compose(
+                [
+                    #A.HorizontalFlip(p=prob),
+                    #A.VerticalFlip(p=prob),
+                    #A.Rotate(limit=15, p=prob),
+                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
+                    # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ],
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
+            ))
 
-    def run(self, image, bboxes):
+    def run(self, image, bboxes,classes):
 
         shape = image.shape[1]
-
+        #
         bboxes = bboxes / shape
-
+        #
         bboxes = bboxes.tolist()
+        classes = classes.tolist()
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))
         # apply augs
-        augmented = self.augs(image=image, bboxes=bboxes)
+        augmented = self.augs(image=image, bboxes=bboxes,class_labels=classes)
         image = augmented['image']
         bboxes = augmented['bboxes']
+        classes = augmented['class_labels']
         if len(bboxes) == 0:
-            bboxes = np.zeros((0, 5))
+            bboxes = torch.Tensor(np.zeros((0, 5)))
+            classes = torch.Tensor([0.0]).type(torch.int64)
         else:
-            bboxes = np.array(bboxes)
+            bboxes = torch.Tensor(bboxes)
             bboxes = bboxes * shape
+            classes = torch.Tensor(classes).type(torch.int64)
+
 
         image = np.transpose(image.astype(np.float32), (2, 0, 1))
 
-        return image, bboxes
+        return image, bboxes,classes

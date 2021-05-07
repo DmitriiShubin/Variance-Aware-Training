@@ -317,7 +317,10 @@ class Model:
                 )
                 print('Only one GPU is available')
 
-        self.model.module.build_projection_network(self.hparams['model']['emb_dim'], device=self.device)
+        if len(gpu)>1:
+            self.model.module.build_projection_network(self.hparams['model']['emb_dim'], device=self.device)
+        else:
+            self.model.build_projection_network(self.hparams['model']['emb_dim'], device=self.device)
 
         print('Cuda available: ', torch.cuda.is_available())
 
