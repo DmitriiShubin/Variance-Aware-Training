@@ -14,7 +14,7 @@ image_height: 240
 debug_path: './data/CV_debug/encoder_patch_aptos/'
 checkpoint_path: ./data/model_weights/encoder_patch_aptos/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
 model_path: ./data/model_weights/encoder_patch_aptos/ # CHANGE WHEN CREATE A NEW MODEL
-dataset: 'APTOS_1'
+dataset: 'APTOS_2'
 model:
   n_classes: 1
   pre_trained_model: 'efficientnet-b3'

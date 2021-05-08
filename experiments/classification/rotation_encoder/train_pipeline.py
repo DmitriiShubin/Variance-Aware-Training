@@ -6,6 +6,9 @@ import torch
 import os
 
 
+from metrics import Dice_score
+
+
 def seed_everything(seed):
     np.random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -31,6 +34,7 @@ class TrainPipeline:
         self.exclusions = []
 
         self.splits, self.splits_test = self.load_split_table()
+        #self.metric = Dice_score(self.hparams['model']['n_classes'])
 
         self.model = model
 
@@ -46,16 +50,26 @@ class TrainPipeline:
 
         self.model = self.model(hparams=self.hparams, gpu=self.gpu)
 
-        train = self.Dataset_train(self.splits['train'].values[0], aug=True)
-        valid = self.Dataset_train(self.splits['val'].values[0], aug=True)
+        train = self.Dataset_train(
+            self.splits['train'].values[0],
+            aug=True,
+            n_classes=self.hparams['model']['n_classes'],
+            dataset=self.hparams['dataset'],
+        )
+        valid = self.Dataset_train(
+            self.splits['val'].values[0],
+            aug=False,
+            n_classes=self.hparams['model']['n_classes'],
+            dataset=self.hparams['dataset'],
+        )
 
         # train model
         start_training = self.model.fit(train=train, valid=valid)
 
         # get model predictions
-        contrastive_loss = self.model.predict(valid)
+        fold_score = self.model.predict(valid)
 
-        print("Model's final contrastive loss: ", contrastive_loss)
+        print("Model's final scrore, cv: ", fold_score)
 
         # save the model
         self.model.save(
@@ -63,12 +77,12 @@ class TrainPipeline:
             + self.hparams['model_name']
             + f"_{self.hparams['split_table_path'].split('/')[-1][:-5]}"
             + '_fold_'
-            + str(np.round(contrastive_loss, 2))
+            + str(np.round(fold_score, 2))
             + '_'
             + str(start_training)
         )
 
-        return contrastive_loss, start_training
+        return fold_score, start_training
 
     def save_debug_data(self, error, validation_list):
 

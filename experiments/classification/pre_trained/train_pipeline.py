@@ -6,7 +6,7 @@ import torch
 import os
 
 
-from metrics import Dice_score
+from metrics import RocAuc
 
 
 def seed_everything(seed):
@@ -34,7 +34,7 @@ class TrainPipeline:
         self.exclusions = []
 
         self.splits, self.splits_test = self.load_split_table()
-        self.metric = Dice_score(self.hparams['model']['n_classes'])
+        self.metric = RocAuc()
 
         self.model = model
 
@@ -51,16 +51,13 @@ class TrainPipeline:
         self.model = self.model(hparams=self.hparams, gpu=self.gpu)
 
         train = self.Dataset_train(
-            self.splits['train'].values[0],
-            aug=True,
-            n_classes=self.hparams['model']['n_classes'],
-            dataset=self.hparams['dataset'],
+            self.splits['train'].values[0], aug=True, n_classes=self.hparams['model']['n_classes']
         )
         valid = self.Dataset_train(
-            self.splits['val'].values[0],
-            aug=False,
-            n_classes=self.hparams['model']['n_classes'],
-            dataset=self.hparams['dataset'],
+            self.splits['val'].values[0], aug=False, n_classes=self.hparams['model']['n_classes']
+        )
+        test = self.Dataset_train(
+            self.splits_test['test'].values[0], aug=False, n_classes=self.hparams['model']['n_classes']
         )
 
         # train model
@@ -68,8 +65,10 @@ class TrainPipeline:
 
         # get model predictions
         fold_score = self.model.predict(valid)
+        fold_score_test = self.model.predict(test)
 
         print("Model's final scrore, cv: ", fold_score)
+        print("Model's final scrore, test: ", fold_score_test)
 
         # save the model
         self.model.save(
@@ -79,24 +78,9 @@ class TrainPipeline:
             + '_fold_'
             + str(np.round(fold_score, 2))
             + '_'
+            + str(np.round(fold_score_test, 2))
+            + '_'
             + str(start_training)
         )
 
-        return fold_score, start_training
-
-    def save_debug_data(self, error, validation_list):
-
-        for index, data in enumerate(validation_list):
-
-            patient_fold = data.split('/')[-2]
-            data = data.split('/')[-1]
-
-            out_json = {}
-            out_json['error'] = error[index].tolist()
-
-            os.makedirs(self.hparams['debug_path'] + patient_fold, exist_ok=True)
-            # save debug data
-            with open(self.hparams['debug_path'] + patient_fold + '/' + f'{data[:-4]}.json', 'w') as outfile:
-                json.dump(out_json, outfile)
-
-        return True
+        return fold_score, fold_score_test, start_training

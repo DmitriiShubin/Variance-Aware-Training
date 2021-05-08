@@ -20,7 +20,7 @@ from time import time
 from utils.loss_functions import f1_loss, Dice_loss
 
 # model
-from models.encoder_patch_classification.structure import EfficientNet
+from models.encoder_rotation_classification.structure import EfficientNet
 
 
 class Model:
@@ -79,18 +79,17 @@ class Model:
             self.model.train()
             avg_loss = 0.0
 
-            for X1_batch, X2_batch, y_batch in tqdm(train_loader):
+            for X_batch, y_batch in tqdm(train_loader):
 
                 # push the data into the GPU
-                X1_batch = X1_batch.float().to(self.device)
-                X2_batch = X2_batch.float().to(self.device)
+                X_batch = X_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred = self.model(X1_batch, X2_batch)
+                pred = self.model(X_batch)
 
                 # process main loss
                 pred = pred.reshape(-1, pred.shape[-1])
@@ -100,8 +99,7 @@ class Model:
                 # remove data from GPU
                 y_batch = y_batch.float().cpu().detach()
                 pred = pred.float().cpu().detach()
-                X1_batch = X1_batch.float().cpu().detach()
-                X2_batch = X2_batch.float().cpu().detach()
+                X_batch = X_batch.float().cpu().detach()
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
@@ -128,15 +126,14 @@ class Model:
 
             with torch.no_grad():
 
-                for X1_batch, X2_batch, y_batch in tqdm(valid_loader):
+                for X_batch, y_batch in tqdm(valid_loader):
 
                     # push the data into the GPU
-                    X1_batch = X1_batch.float().to(self.device)
-                    X2_batch = X2_batch.float().to(self.device)
+                    X_batch = X_batch.float().to(self.device)
                     y_batch = y_batch.float().to(self.device)
 
                     # get predictions
-                    pred = self.model(X1_batch, X2_batch)
+                    pred = self.model(X_batch)
 
                     # calculate main loss
                     pred = pred.reshape(-1, pred.shape[-1])
@@ -145,8 +142,7 @@ class Model:
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
                     # remove data from GPU
-                    X1_batch = X1_batch.float().cpu().detach()
-                    X2_batch = X2_batch.float().cpu().detach()
+                    X_batch = X_batch.float().cpu().detach()
                     pred = pred.float().cpu().detach()
                     y_batch = y_batch.float().cpu().detach()
 
@@ -218,12 +214,11 @@ class Model:
 
         print('Getting predictions')
         with torch.no_grad():
-            for i, (X1_batch, X2_batch, y_batch) in enumerate(tqdm(test_loader)):
-                X1_batch = X1_batch.float().to(self.device)
-                X2_batch = X2_batch.float().to(self.device)
+            for i, (X_batch, y_batch) in enumerate(tqdm(test_loader)):
+                X_batch = X_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
-                pred = self.model(X1_batch, X2_batch)
+                pred = self.model(X_batch)
 
                 # calculate main loss
                 pred = pred.reshape(-1, pred.shape[-1])
@@ -233,8 +228,7 @@ class Model:
                 avg_test_loss += self.loss(pred, y_batch).item() / len(test_loader)
 
                 pred = pred.cpu().detach().numpy()
-                X1_batch = X1_batch.cpu().detach().numpy()
-                X2_batch = X2_batch.cpu().detach().numpy()
+                X_batch = X_batch.cpu().detach().numpy()
                 y_batch = y_batch.cpu().detach().numpy()
 
         return avg_test_loss
@@ -291,35 +285,37 @@ class Model:
         # TODO: re-write to pure DDP
         if inference or gpu is None:
             self.device = torch.device('cpu')
-            self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
-                self.device
-            )
+            self.model = EfficientNet.from_pretrained(
+                self.hparams['model']['pre_trained_model'], num_classes=self.hparams['model']['n_classes']
+            ).to(self.device)
+            # self.model.freeze_layers()
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 1:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
-                        self.device
-                    )
+                    self.model = EfficientNet.from_pretrained(
+                        self.hparams['model']['pre_trained_model'],
+                        num_classes=self.hparams['model']['n_classes'],
+                    ).to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
+                    # self.model.module.freeze_layers()
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
-                        self.device
-                    )
+                    self.model = EfficientNet.from_pretrained(
+                        self.hparams['model']['pre_trained_model'],
+                        num_classes=self.hparams['model']['n_classes'],
+                    ).to(self.device)
+                    # self.model.freeze_layers()
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
-                    self.device
-                )
+                self.model = EfficientNet.from_pretrained(
+                    self.hparams['model']['pre_trained_model'],
+                    num_classes=self.hparams['model']['n_classes'],
+                ).to(self.device)
+                # self.model.freeze_layers()
                 print('Only one GPU is available')
-
-        if len(gpu) > 1:
-            self.model.module.build_projection_network( device=self.device)
-        else:
-            self.model.build_projection_network( device=self.device)
 
         print('Cuda available: ', torch.cuda.is_available())
 

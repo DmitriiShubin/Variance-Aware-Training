@@ -7,7 +7,6 @@ import json
 import torch
 from torch.utils.data import Dataset
 import albumentations as A
-from torchvision.ops import box_convert
 
 # custom modules
 np.random.seed(42)
@@ -38,7 +37,6 @@ class Dataset_train(Dataset):
         y = json.load(open(self.volums_list[id].replace('image.npy', 'label.json')))
 
         annot = self.get_annotations(y)
-
 
         X, annot['boxes'],annot['labels'] = self.preprocessing.run(X=X, bboxes=annot['boxes'],classes=annot['labels'])
 
@@ -143,8 +141,8 @@ class Augmentations:
                     # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
                     # A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3
-                                         ))
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
+            ))
         elif dataset == 'RSNA_2':
             self.augs = A.Compose(
                 [
@@ -155,8 +153,8 @@ class Augmentations:
                     # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
                     # A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3
-                                         ))
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
+            ))
         elif dataset == 'RSNA_3':
             self.augs = A.Compose(
                 [
@@ -167,8 +165,8 @@ class Augmentations:
                     # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
                     # A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3
-                                         ))
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
+            ))
         elif dataset == 'RSNA_4':
             self.augs = A.Compose(
                 [
@@ -179,8 +177,8 @@ class Augmentations:
                     # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
                     # A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3
-                                         ))
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
+            ))
         elif dataset == 'RSNA_5':
             self.augs = A.Compose(
                 [
@@ -191,8 +189,8 @@ class Augmentations:
                     A.RandomSizedCrop(min_max_height=(100, 220), height=256, width=256, p=prob),
                     #A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3
-                                         ))
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
+            ))
         elif dataset == 'RSNA_6':
             self.augs = A.Compose(
                 [
@@ -200,53 +198,24 @@ class Augmentations:
                     #A.VerticalFlip(p=prob),
                     #A.Rotate(limit=15, p=prob),
                     # # # # A.ElasticTransform(alpha=0.05, p=prob),
-                    A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
-                    #A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                    # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'],min_visibility=0.3
+                bbox_params=A.BboxParams(format='pascal_voc',label_fields=['class_labels']
             ))
 
     def run(self, image, bboxes,classes):
-
-        image = np.transpose(image.astype(np.float32), (1, 2, 0))
-
-
-        bboxes = box_convert(bboxes,'xyxy','xywh')
-
-
-        bboxes = bboxes.tolist()
-        classes = classes.tolist()
-
-
-        # apply augs
-        augmented = self.augs(image=image, bboxes=bboxes, category_ids=classes)
-        image = augmented['image']
-        bboxes = augmented['bboxes']
-        classes = augmented['category_ids']
-        if len(bboxes) == 0:
-            bboxes = torch.Tensor(np.zeros((0, 4)))
-            classes = torch.Tensor([0.0]).type(torch.int64)
-        else:
-            bboxes = torch.Tensor(bboxes)
-            bboxes = box_convert(bboxes,'xywh','xyxy')
-            classes = torch.Tensor(classes).type(torch.int64)
-
-        image = np.transpose(image.astype(np.float32), (2, 0, 1))
-
-        return image, bboxes,classes
-
-    def process_with_bbooxes(self,image,bboxes,classes):
 
         shape = image.shape[1]
         #
         bboxes = bboxes / shape
         #
-
         bboxes = bboxes.tolist()
         classes = classes.tolist()
 
+        image = np.transpose(image.astype(np.float32), (1, 2, 0))
         # apply augs
-        augmented = self.augs(image=image, bboxes=bboxes, class_labels=classes)
+        augmented = self.augs(image=image, bboxes=bboxes,class_labels=classes)
         image = augmented['image']
         bboxes = augmented['bboxes']
         classes = augmented['class_labels']
@@ -254,10 +223,11 @@ class Augmentations:
             bboxes = torch.Tensor(np.zeros((0, 5)))
             classes = torch.Tensor([0.0]).type(torch.int64)
         else:
-            # print(bboxes)
-            # print(classes)
             bboxes = torch.Tensor(bboxes)
             bboxes = bboxes * shape
             classes = torch.Tensor(classes).type(torch.int64)
 
-        return image,bboxes,classes
+
+        image = np.transpose(image.astype(np.float32), (2, 0, 1))
+
+        return image, bboxes,classes

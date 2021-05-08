@@ -12,15 +12,15 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import Dice_score
+from metrics import AP
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
-from utils.post_processing import Post_Processing
 from time import time
-from utils.loss_functions import f1_loss, Dice_loss
+from utils.loss_functions import f1_loss
 
 # model
-from models.encoder_patch_classification.structure import EfficientNet
+from models.adv_FasterRCNN_early.structure import FasterRCNN
+from utils.post_processing import Post_Processing
 
 
 class Model:
@@ -45,15 +45,15 @@ class Model:
 
         # ininialize model architecture
         self.__setup_model(inference=inference, gpu=gpu)
+        self.postprocessing = Post_Processing()
 
         # define model parameters
         self.__setup_model_hparams()
 
         # declare preprocessing object
-        self.postprocessing = Post_Processing()
         self.__seed_everything(42)
 
-    def fit(self, train, valid):
+    def fit(self, train, valid, pretrain):
 
         # setup train and val dataloaders
         train_loader = DataLoader(
@@ -61,13 +61,18 @@ class Model:
             batch_size=self.hparams['batch_size'],
             shuffle=True,
             num_workers=self.hparams['num_workers'],
+            collate_fn=self.collate_fn
+
         )
         valid_loader = DataLoader(
             valid,
             batch_size=self.hparams['batch_size'],
             shuffle=False,
             num_workers=self.hparams['num_workers'],
+            collate_fn=self.collate_fn
         )
+
+        adv_loader = DataLoader(pretrain, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=0)
 
         # tensorboard
         writer = SummaryWriter(f"runs/{self.hparams['model_name']}_{self.start_training}")
@@ -78,33 +83,58 @@ class Model:
             # training mode
             self.model.train()
             avg_loss = 0.0
+            avg_adv_loss = 0.0
 
-            for X1_batch, X2_batch, y_batch in tqdm(train_loader):
+            for X_batch, y_batch, X_batch_adv, y_batch_adv in tqdm(train_loader):
+
+                X_batch_adv = torch.stack(X_batch_adv,dim=0)
+                y_batch_adv = torch.stack(y_batch_adv, dim=0)
+                sample = np.round(np.random.uniform(size=X_batch_adv.shape[0]), 2)
+                X_batch_adv_train_val, _, _, _ = next(iter(adv_loader))
+                X_batch_adv_train_val = X_batch_adv_train_val[: len(X_batch)]
+                X_batch_adv[sample >= 0.5] = X_batch_adv_train_val[sample >= 0.5]
+                y_batch_adv[sample >= 0.5] = 1
+                y_batch_adv[sample < 0.5] = 0
 
                 # push the data into the GPU
-                X1_batch = X1_batch.float().to(self.device)
-                X2_batch = X2_batch.float().to(self.device)
-                y_batch = y_batch.float().to(self.device)
+                X_batch = list(X.to(self.device) for X in X_batch)
+                y_batch = [{k: v.to(self.device) for k, v in t.items()} for t in y_batch]
+                X_batch_adv = X_batch_adv.float().to(self.device)
+                y_batch_adv = y_batch_adv.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred = self.model(X1_batch, X2_batch)
+                losses, pred_adv = self.model(x1=X_batch,x2=X_batch_adv,target=y_batch, train=True)
 
                 # process main loss
-                pred = pred.reshape(-1, pred.shape[-1])
-                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
-                train_loss = self.loss(pred, y_batch)
+                train_loss = (
+                        self.hparams['model']['l_1'] * losses['loss_classifier']
+                        + self.hparams['model']['l_2'] * losses['loss_box_reg']
+                        + self.hparams['model']['l_3'] * losses['loss_objectness']
+                        + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
+                )
 
-                # remove data from GPU
-                y_batch = y_batch.float().cpu().detach()
-                pred = pred.float().cpu().detach()
-                X1_batch = X1_batch.float().cpu().detach()
-                X2_batch = X2_batch.float().cpu().detach()
+                # process loss_2
+                pred_adv = pred_adv.reshape(-1)
+                y_batch_adv = y_batch_adv.reshape(-1)
+                adv_loss = self.loss_adv(pred_adv, y_batch_adv)
 
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
+                avg_adv_loss += adv_loss.item() / len(train_loader)
+
+                train_loss = train_loss + self.hparams['model']['alpha'] * adv_loss
+
+                # remove data from GPU
+                losses = losses.float().cpu().detach().numpy()
+                X_batch_adv = X_batch_adv.float().cpu().detach().numpy()
+                y_batch_adv = y_batch_adv.cpu().detach().numpy()
+                pred_adv = pred_adv.cpu().detach().numpy()
+                X_batch = [X.cpu().detach().numpy() for X in X_batch]
+                y_batch = [{k: v.cpu().detach().numpy() for k, v in t.items()} for t in y_batch]
+
 
                 # gradient clipping
                 if self.apply_clipping:
@@ -115,8 +145,6 @@ class Model:
                 # backprop
                 train_loss.backward()
 
-                # iptimizer step
-                self.optimizer.step()
 
             # evaluate the model
             print('Model evaluation')
@@ -128,27 +156,33 @@ class Model:
 
             with torch.no_grad():
 
-                for X1_batch, X2_batch, y_batch in tqdm(valid_loader):
-
+                for X_batch, y_batch,_,_ in tqdm(valid_loader):
                     # push the data into the GPU
-                    X1_batch = X1_batch.float().to(self.device)
-                    X2_batch = X2_batch.float().to(self.device)
-                    y_batch = y_batch.float().to(self.device)
+                    X_batch = list(X.to(self.device) for X in X_batch)
+                    y_batch = [{k: v.to(self.device) for k, v in t.items()} for t in y_batch]
 
-                    # get predictions
-                    pred = self.model(X1_batch, X2_batch)
+                    # clean gradients from the previous step
+                    self.optimizer.zero_grad()
 
-                    # calculate main loss
-                    pred = pred.reshape(-1, pred.shape[-1])
-                    y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                    # get model predictions
+                    losses = self.model(X_batch, y_batch)
 
-                    avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
+                    # process main loss
+                    train_loss = (
+                            self.hparams['model']['l_1'] * losses['loss_classifier']
+                            + self.hparams['model']['l_2'] * losses['loss_box_reg']
+                            + self.hparams['model']['l_3'] * losses['loss_objectness']
+                            + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
+                    )
+                    self.optimizer.zero_grad()
+
+                    # calc loss
+                    avg_val_loss += train_loss.item() / len(valid_loader)
 
                     # remove data from GPU
-                    X1_batch = X1_batch.float().cpu().detach()
-                    X2_batch = X2_batch.float().cpu().detach()
-                    pred = pred.float().cpu().detach()
-                    y_batch = y_batch.float().cpu().detach()
+                    X_batch = [X.cpu().detach().numpy() for X in X_batch]
+                    y_batch = [{k: v.cpu().detach().numpy() for k, v in t.items()} for t in y_batch]
+
 
             # early stopping for scheduler
             if self.hparams['scheduler_name'] == 'ReduceLROnPlateau':
@@ -167,6 +201,8 @@ class Model:
                     avg_loss,
                     '| Val_loss: ',
                     avg_val_loss,
+                    '| Adv_loss: ',
+                    avg_adv_loss,
                     '| Current LR: ',
                     self.__get_lr(self.optimizer),
                 )
@@ -175,6 +211,7 @@ class Model:
             writer.add_scalars(
                 'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
             )
+            #writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
 
             # early stopping procesudre
             if es_result == 2:
@@ -191,7 +228,7 @@ class Model:
 
         return self.start_training
 
-    def predict(self, X_test):
+    def predict(self, X_test, objectness_threshold, nms_threshold):
         """
         This function makes:
         1. batch-wise predictions
@@ -211,33 +248,41 @@ class Model:
         self.model.eval()
 
         test_loader = torch.utils.data.DataLoader(
-            X_test, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=0,
+            X_test,
+            batch_size=1,
+            shuffle=False,
+            num_workers=0,
+            collate_fn=self.collate_fn,
         )
 
-        avg_test_loss = 0
+        self.metric.reset_matric()
 
         print('Getting predictions')
         with torch.no_grad():
-            for i, (X1_batch, X2_batch, y_batch) in enumerate(tqdm(test_loader)):
-                X1_batch = X1_batch.float().to(self.device)
-                X2_batch = X2_batch.float().to(self.device)
-                y_batch = y_batch.float().to(self.device)
+            for index, (X_batch, y_batch,_,_) in enumerate(tqdm(test_loader)):
+                # push the data into the GPU
+                X_batch = list(X.to(self.device) for X in X_batch)
+                y_batch = [{k: v.to(self.device) for k, v in t.items()} for t in y_batch]
 
-                pred = self.model(X1_batch, X2_batch)
+                # clean gradients from the previous step
+                self.optimizer.zero_grad()
 
-                # calculate main loss
-                pred = pred.reshape(-1, pred.shape[-1])
-                y_batch = y_batch.reshape(-1, y_batch.shape[-1])
+                # get model predictions
+                preds = self.model(X_batch)
 
-                # calculate a sample-wise error
-                avg_test_loss += self.loss(pred, y_batch).item() / len(test_loader)
+                # remove data from GPU
+                X_batch = [X.cpu().detach().numpy() for X in X_batch]
+                y_batch = [{k: v.cpu().detach().numpy() for k, v in t.items()} for t in y_batch]
+                preds = [{k: v.cpu() for k, v in t.items()} for t in preds]
 
-                pred = pred.cpu().detach().numpy()
-                X1_batch = X1_batch.cpu().detach().numpy()
-                X2_batch = X2_batch.cpu().detach().numpy()
-                y_batch = y_batch.cpu().detach().numpy()
+                bboxes, scores, classes = self.postprocessing.run(preds, objectness_threshold, nms_threshold)
 
-        return avg_test_loss
+                # calculate a step for metrics
+                self.metric.calc_running_score(y_batch=y_batch, bboxes=bboxes, scores=scores, classes=classes)
+
+        fold_score = self.metric.compute()
+
+        return fold_score
 
     def save(self, model_path):
 
@@ -291,35 +336,31 @@ class Model:
         # TODO: re-write to pure DDP
         if inference or gpu is None:
             self.device = torch.device('cpu')
-            self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
-                self.device
-            )
+            self.model = FasterRCNN(hparams=self.hparams['model'], device=self.device).to(self.device)
+            self.model.build_adv_model(device=self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 1:
                     print("Number of GPUs will be used: ", len(gpu))
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
+                    self.model = FasterRCNN(hparams=self.hparams['model'], device=self.device).to(
                         self.device
                     )
+                    self.model.build_adv_model(device=self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
+                    # self.model.module.freeze_layers()
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
+                    self.model = FasterRCNN(hparams=self.hparams['model'], device=self.device).to(
                         self.device
                     )
+                    self.model.build_adv_model(device=self.device)
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                self.model = EfficientNet.from_pretrained(self.hparams['model']['pre_trained_model']).to(
-                    self.device
-                )
+                self.model = FasterRCNN(hparams=self.hparams['model'], device=self.device).to(self.device)
+                self.model.build_adv_model(device=self.device)
                 print('Only one GPU is available')
-
-        if len(gpu) > 1:
-            self.model.module.build_projection_network( device=self.device)
-        else:
-            self.model.build_projection_network( device=self.device)
 
         print('Cuda available: ', torch.cuda.is_available())
 
@@ -327,11 +368,11 @@ class Model:
 
     def __setup_model_hparams(self):
 
-        # 1. define losses
-        self.loss = nn.BCELoss()
+
+        self.loss_adv = nn.BCELoss()
 
         # 2. define model metric
-        self.metric = Dice_score(self.hparams['model']['n_classes'])
+        self.metric = AP(n_classes=self.hparams['model']['n_classes'])  #
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(
@@ -366,3 +407,6 @@ class Model:
         random.seed(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
+    def collate_fn(self, batch):
+        return tuple(zip(*batch))

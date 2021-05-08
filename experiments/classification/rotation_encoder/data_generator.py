@@ -80,11 +80,13 @@ class Preprocessing:
 
     def run(self, X):
 
+        X = np.transpose(X.astype(np.float32), (2, 0, 1))
+
         if self.aug:
 
             X = self.augmentations.run(X)
 
-        X = self.standard_scaling(X)
+        X = self.imagenet_normalize(X)
 
         return X
 
@@ -98,6 +100,18 @@ class Preprocessing:
                 X[i, :, :] = (X[i, :, :] - mean) / std
             else:
                 X[i, :, :] = X[i, :, :] - mean
+
+        return X
+
+    def imagenet_normalize(self, X):
+
+        X = X / 255.0
+
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
+
+        for i in range(len(mean)):
+            X[:, :, i] = (X[:, :, i] - mean[i]) / std[i]
 
         return X
 
@@ -138,26 +152,29 @@ class Preprocessing:
 class Augmentations:
     def __init__(self, dataset):
 
-        if dataset == 'brats':
-            prob = 0.5
+        prob = 0.5
+        if dataset == 'APTOS_1':
             self.augs = A.Compose(
                 [
-                    A.Blur(blur_limit=1, p=prob),
-                    A.RandomSizedCrop(min_max_height=(90, 90), height=240, width=240, p=prob),
+                    # A.Blur(blur_limit=3, p=prob),
+                    A.HorizontalFlip(p=prob),
+                    A.VerticalFlip(p=prob),
+                    A.Rotate(limit=90, p=prob),
+                    A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
+                    # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
                     A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
-        elif dataset == 'APTOS':
-            prob = 0.5
+        elif dataset == 'APTOS_2':
             self.augs = A.Compose(
                 [
                     # A.Blur(blur_limit=3, p=prob),
                     # A.HorizontalFlip(p=prob),
                     # A.VerticalFlip(p=prob),
-                    A.Rotate(limit=5, p=prob),
-                    A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
+                    # A.Rotate(limit=90, p=prob),
+                    # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
                     # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
 

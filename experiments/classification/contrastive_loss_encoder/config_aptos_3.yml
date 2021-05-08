@@ -6,15 +6,15 @@ min_delta: 0.01 #min delta of improvement for early stopping
 verbose_train: true
 num_workers: 0
 n_train_samples: 1
-model_name: encoder_patch_aptos # CHANGE WHEN CREATE A NEW MODEL
+model_name: encoder_contrastive_aptos # CHANGE WHEN CREATE A NEW MODEL
 split_table_path: './data/split_tables/aptos/UB_split_table.json'
 test_split_table_path: './data/split_tables/aptos/test_split_table.json'
 image_width: 240
 image_height: 240
-debug_path: './data/CV_debug/encoder_patch_aptos/'
-checkpoint_path: ./data/model_weights/encoder_patch_aptos/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
-model_path: ./data/model_weights/encoder_patch_aptos/ # CHANGE WHEN CREATE A NEW MODEL
-dataset: 'APTOS_1'
+debug_path: './data/CV_debug/aptos_encoder_contrastive/'
+checkpoint_path: ./data/model_weights/encoder_contrastive_aptos/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
+model_path: ./data/model_weights/encoder_contrastive_aptos/ # CHANGE WHEN CREATE A NEW MODEL
+dataset: 'APTOS_3'
 model:
   n_classes: 1
   pre_trained_model: 'efficientnet-b3'

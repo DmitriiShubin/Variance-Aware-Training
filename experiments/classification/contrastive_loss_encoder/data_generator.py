@@ -13,10 +13,10 @@ np.random.seed(42)
 
 
 class Dataset_train(Dataset):
-    def __init__(self, volumes_list, aug):
+    def __init__(self, volumes_list, aug,dataset):
 
         self.volumes_list = volumes_list
-        self.preprocessing = Preprocessing(aug)
+        self.preprocessing = Preprocessing(aug,dataset)
 
 
 
@@ -44,19 +44,20 @@ class Dataset_train(Dataset):
 
 
 class Preprocessing:
-    def __init__(self, aug):
+    def __init__(self, aug,dataset):
 
         self.aug = aug
-        self.augmentations = Augmentations()
+        self.augmentations = Augmentations(dataset)
 
     def run(self, X):
+
+        X = np.transpose(X.astype(np.float32), (2, 0, 1))
 
         if self.aug:
             X = self.augmentations.run(X)
 
         X = self.imagenet_normalize(X)
 
-        X = np.transpose(X.astype(np.float32), (2, 0, 1))
 
         return X
 
@@ -120,26 +121,67 @@ class Preprocessing:
 
 
 class Augmentations:
-    def __init__(self):
+    def __init__(self,dataset):
 
         prob = 0.5
-        self.augs = A.Compose(
-            [
-                # A.Blur(blur_limit=3, p=prob),
-                A.HorizontalFlip(p=prob),
-                A.VerticalFlip(p=prob),
-                A.Rotate(limit=90, p=prob),
-                A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
-                A.RandomGamma(gamma_limit=(80, 120), p=prob),
-            ]
-        )
 
+        if dataset == 'APTOS_1':
+            self.augs = A.Compose(
+                [
+                    # A.Blur(blur_limit=3, p=prob),
+                    A.HorizontalFlip(p=prob),
+                    A.VerticalFlip(p=prob),
+                    A.Rotate(limit=90, p=prob),
+                    A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
+                    # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ]
+            )
+        elif dataset == 'APTOS_2':
+            self.augs = A.Compose(
+                [
+                    # A.Blur(blur_limit=3, p=prob),
+                    A.HorizontalFlip(p=prob),
+                    A.VerticalFlip(p=prob),
+                    A.Rotate(limit=90, p=prob),
+                    A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
+                    A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ]
+            )
+        elif dataset == 'APTOS_3':
+            self.augs = A.Compose(
+                [
+                    A.Blur(blur_limit=3, p=prob),
+                    A.HorizontalFlip(p=prob),
+                    A.VerticalFlip(p=prob),
+                    A.Rotate(limit=90, p=prob),
+                    A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
+                    # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ]
+            )
+        elif dataset == 'APTOS_4':
+            self.augs = A.Compose(
+                [
+                    A.Blur(blur_limit=3, p=prob),
+                    A.HorizontalFlip(p=prob),
+                    A.VerticalFlip(p=prob),
+                    A.Rotate(limit=90, p=prob),
+                    A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
+                    A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ]
+            )
     def run(self, image):
+
+        image = np.transpose(image.astype(np.float32), (1, 2, 0))
 
         # apply augs
         augmented = self.augs(image=image)
 
         image = augmented['image']
+
+        image = np.transpose(image.astype(np.float32), (2, 0, 1))
 
         return image
