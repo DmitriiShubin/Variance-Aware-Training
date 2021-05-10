@@ -167,12 +167,12 @@ def main(experiment, gpu):
     # baseline models
     # for i in range(1,7):
     #     run_detection_baseline(experiment=f'./experiments/detection/baseline/config_RSNA_8_{i}.yml', gpu='7')
-    run_detection_baseline(experiment=experiment, gpu=gpu)
+    #run_detection_baseline(experiment=experiment, gpu=gpu)
 
     # adversarial models early
     # run_fasterrcnn_adv_early(experiment=f'./experiments/detection/adversarial_network_train_val_early/config_RSNA_2.yml', gpu='0')
     # run_fasterrcnn_adv_late(experiment=f'./experiments/detection/adversarial_network_train_val_late/config_RSNA_2.yml', gpu='0')
-
+    run_fasterrcnn_adv_early(experiment=experiment, gpu=gpu)
 
     #pre-training models
     # run_pre_training_contrastive_classification(
