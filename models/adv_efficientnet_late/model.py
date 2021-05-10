@@ -391,7 +391,7 @@ class Model:
             checkpoint_path=self.hparams['checkpoint_path'] + f'/checkpoint_{self.start_training}' + '.pt',
             patience=self.hparams['patience'],
             delta=self.hparams['min_delta'],
-            is_maximize=True,
+            is_maximize=False,
         )
 
         # 6. set gradient clipping
