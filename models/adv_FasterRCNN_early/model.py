@@ -148,7 +148,7 @@ class Model:
 
                 # backprop
                 train_loss.backward()
-
+                self.optimizer.step()
             # evaluate the model
             print('Model evaluation')
 

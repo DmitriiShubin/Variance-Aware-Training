@@ -17,7 +17,7 @@ model_path: ./data/model_weights/effnet_2_adversarial_late_RSNA/ # CHANGE WHEN C
 dataset: 'RSNA_1'
 model:
   n_classes: 2
-  pre_trained_model: 'efficientnet-b2'
+  pre_trained_model: 'efficientnet-b1'
   l_1: 1 # loss_classifier
   l_2: 1 # loss_box_reg
   l_3: 1 # loss_objectness

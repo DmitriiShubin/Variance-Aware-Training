@@ -41,7 +41,7 @@ class Dataset_train(Dataset):
 
         annot = self.get_annotations(y)
         annot_dummy = annot.copy()
-        
+
         X, annot['boxes'], annot['labels'] = self.preprocessing.run(
             X=X, bboxes=annot['boxes'], classes=annot['labels']
         )
