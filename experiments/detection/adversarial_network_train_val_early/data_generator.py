@@ -41,6 +41,7 @@ class Dataset_train(Dataset):
 
         annot = self.get_annotations(y)
 
+        annot_dummy = annot.copy()
         X, annot['boxes'], annot['labels'] = self.preprocessing.run(
             X=X, bboxes=annot['boxes'], classes=annot['labels']
         )
@@ -51,7 +52,7 @@ class Dataset_train(Dataset):
         X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
 
         y_s = [0]
-        annot_dummy = annot.copy()
+
         X_s, _, _ = self.preprocessing.run(X=X_s, bboxes=annot_dummy['boxes'], classes=annot_dummy['labels'])
 
         return X, annot, X_s, y_s

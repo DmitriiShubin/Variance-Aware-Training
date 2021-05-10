@@ -82,7 +82,7 @@ import click
 
 
 @click.command()
-@click.option('--experiment', default='./experiments/detection/baseline/config_RSNA_2.yml', help='')
+@click.option('--experiment', default='./experiments/detection/adversarial_network_train_val_early/config_RSNA_2_1.yml', help='')
 @click.option('--gpu', default='7', help='')
 def main(experiment, gpu):
 
