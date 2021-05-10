@@ -13,12 +13,10 @@ np.random.seed(42)
 
 
 class Dataset_train(Dataset):
-    def __init__(self, volumes_list, aug,dataset):
+    def __init__(self, volumes_list, aug, dataset):
 
         self.volumes_list = volumes_list
-        self.preprocessing = Preprocessing(aug,dataset)
-
-
+        self.preprocessing = Preprocessing(aug, dataset)
 
     def __len__(self):
         return len(self.volumes_list)
@@ -44,7 +42,7 @@ class Dataset_train(Dataset):
 
 
 class Preprocessing:
-    def __init__(self, aug,dataset):
+    def __init__(self, aug, dataset):
 
         self.aug = aug
         self.augmentations = Augmentations(dataset)
@@ -57,7 +55,6 @@ class Preprocessing:
             X = self.augmentations.run(X)
 
         X = self.imagenet_normalize(X)
-
 
         return X
 
@@ -121,7 +118,7 @@ class Preprocessing:
 
 
 class Augmentations:
-    def __init__(self,dataset):
+    def __init__(self, dataset):
 
         prob = 0.5
 
@@ -173,6 +170,7 @@ class Augmentations:
                     A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
+
     def run(self, image):
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))

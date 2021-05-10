@@ -21,15 +21,16 @@ class EfficientNet(effnet):
 
         return True
 
-    def forward(self, x):
+    def forward(self, x, pretrain=False):
         x = self.extract_features(x)
 
-        x = torch.mean(x, dim=2)
-        x = torch.mean(x, dim=2)
+        if pretrain:
+            x = torch.mean(x, dim=2)
+            x = torch.mean(x, dim=2)
 
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
+            x = torch.relu(self.fc1(x))
+            x = torch.relu(self.fc2(x))
+            x = self.fc3(x)
         return x
 
     def encoder(self, x):

@@ -4,7 +4,7 @@ from torchvision.ops import nms, remove_small_boxes
 
 
 class Post_Processing:
-    def run(self,pred,objectness_threshold,nms_threshold):
+    def run(self, pred, objectness_threshold, nms_threshold):
 
         bboxes = pred[0]['boxes'].detach().numpy()
         scores = pred[0]['scores'].unsqueeze(dim=1).detach().numpy()
@@ -42,6 +42,5 @@ class Post_Processing:
             bboxes = np.expand_dims(bboxes, axis=0)
             classes = np.expand_dims(classes, axis=0)
             scores = np.expand_dims(scores, axis=0)
-
 
         return bboxes, scores, classes

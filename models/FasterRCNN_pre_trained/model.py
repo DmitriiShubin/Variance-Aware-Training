@@ -19,7 +19,7 @@ from time import time
 from utils.loss_functions import f1_loss
 
 # model
-from models.FasterRCNN.structure import FasterRCNN
+from models.FasterRCNN_pre_trained.structure import FasterRCNN
 from utils.post_processing_detection import Post_Processing
 
 

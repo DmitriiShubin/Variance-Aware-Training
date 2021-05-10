@@ -14,11 +14,11 @@ np.random.seed(42)
 
 
 class Dataset_train(Dataset):
-    def __init__(self, volums_list, aug, n_classes,dataset):
+    def __init__(self, volums_list, aug, n_classes, dataset):
 
         self.n_classes = n_classes
         self.volums_list = volums_list
-        self.preprocessing = Preprocessing(aug,dataset)
+        self.preprocessing = Preprocessing(aug, dataset)
 
     def __len__(self):
         return len(self.volums_list)
@@ -39,10 +39,9 @@ class Dataset_train(Dataset):
 
         annot = self.get_annotations(y)
 
-
-        X, annot['boxes'],annot['labels'] = self.preprocessing.run(X=X, bboxes=annot['boxes'],classes=annot['labels'])
-
-
+        X, annot['boxes'], annot['labels'] = self.preprocessing.run(
+            X=X, bboxes=annot['boxes'], classes=annot['labels']
+        )
 
         return X, annot
 
@@ -80,19 +79,19 @@ class Dataset_train(Dataset):
 
 
 class Preprocessing:
-    def __init__(self, aug,dataset):
+    def __init__(self, aug, dataset):
 
         self.aug = aug
         self.augmentations = Augmentations(dataset)
 
-    def run(self, X, bboxes,classes):
+    def run(self, X, bboxes, classes):
 
         if self.aug:
-            X, bboxes,classes = self.augmentations.run(X, bboxes,classes)
+            X, bboxes, classes = self.augmentations.run(X, bboxes, classes)
 
         X = self.standard_scaling(X)
 
-        return X, bboxes,classes
+        return X, bboxes, classes
 
     def standard_scaling(self, X):
         X = X.astype(np.float32)
@@ -130,93 +129,37 @@ class Preprocessing:
 
 
 class Augmentations:
-    def __init__(self,dataset):
+    def __init__(self, dataset):
+
+        """
+
+        best:
+        A.HorizontalFlip(p=prob),
+        A.Rotate(limit=15, p=prob),
+        A.RandomGamma(gamma_limit=(80, 120), p=prob),
+        """
 
         prob = 0.5
-        if dataset == 'RSNA_1':
-            self.augs = A.Compose(
-                [
-                    #A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
-                    #A.Rotate(limit=15, p=prob),
-                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
-                    # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
-                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3
-                                         ))
-        elif dataset == 'RSNA_2':
-            self.augs = A.Compose(
-                [
-                    A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
-                    #A.Rotate(limit=15, p=prob),
-                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
-                    # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
-                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3
-                                         ))
-        elif dataset == 'RSNA_3':
-            self.augs = A.Compose(
-                [
-                    #A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
-                    A.Rotate(limit=15, p=prob),
-                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
-                    # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
-                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3
-                                         ))
-        elif dataset == 'RSNA_4':
-            self.augs = A.Compose(
-                [
-                    #A.HorizontalFlip(p=prob),
-                    A.VerticalFlip(p=prob),
-                    #A.Rotate(limit=15, p=prob),
-                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
-                    # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
-                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3
-                                         ))
-        elif dataset == 'RSNA_5':
-            self.augs = A.Compose(
-                [
-                    #A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
-                    #A.Rotate(limit=15, p=prob),
-                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
-                    A.RandomSizedCrop(min_max_height=(100, 220), height=256, width=256, p=prob),
-                    #A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3
-                                         ))
-        elif dataset == 'RSNA_6':
-            self.augs = A.Compose(
-                [
-                    #A.HorizontalFlip(p=prob),
-                    #A.VerticalFlip(p=prob),
-                    #A.Rotate(limit=15, p=prob),
-                    # # # # A.ElasticTransform(alpha=0.05, p=prob),
-                    A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
-                    #A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                ],
-                bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'],min_visibility=0.3
-            ))
+        self.augs = A.Compose(
+            [
+                A.HorizontalFlip(p=prob),
+                # A.VerticalFlip(p=prob),
+                A.Rotate(limit=15, p=prob),
+                # # # # A.ElasticTransform(alpha=0.05, p=prob),
+                # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                A.RandomGamma(gamma_limit=(80, 120), p=prob),
+            ],
+            bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3),
+        )
 
-    def run(self, image, bboxes,classes):
+    def run(self, image, bboxes, classes):
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))
 
-
-        bboxes = box_convert(bboxes,'xyxy','xywh')
-
+        bboxes = box_convert(bboxes, 'xyxy', 'xywh')
 
         bboxes = bboxes.tolist()
         classes = classes.tolist()
-
 
         # apply augs
         augmented = self.augs(image=image, bboxes=bboxes, category_ids=classes)
@@ -228,19 +171,18 @@ class Augmentations:
             classes = torch.Tensor([0.0]).type(torch.int64)
         else:
             bboxes = torch.Tensor(bboxes)
-            bboxes = box_convert(bboxes,'xywh','xyxy')
+            bboxes = box_convert(bboxes, 'xywh', 'xyxy')
             classes = torch.Tensor(classes).type(torch.int64)
 
         image = np.transpose(image.astype(np.float32), (2, 0, 1))
 
-        return image, bboxes,classes
+        return image, bboxes, classes
 
-    def process_with_bbooxes(self,image,bboxes,classes):
+    def process_with_bbooxes(self, image, bboxes, classes):
 
         shape = image.shape[1]
-        #
+
         bboxes = bboxes / shape
-        #
 
         bboxes = bboxes.tolist()
         classes = classes.tolist()
@@ -260,4 +202,4 @@ class Augmentations:
             bboxes = bboxes * shape
             classes = torch.Tensor(classes).type(torch.int64)
 
-        return image,bboxes,classes
+        return image, bboxes, classes

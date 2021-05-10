@@ -16,7 +16,7 @@ checkpoint_path: ./data/model_weights/encoder_rotation_RSNA/checkpoint/ # CHANGE
 model_path: ./data/model_weights/encoder_rotation_RSNA/ # CHANGE WHEN CREATE A NEW MODEL
 dataset: 'RSNA_1'
 model:
-  pre_trained_model: 'efficientnet-b0'
+  pre_trained_model: 'efficientnet-b2'
   emb_dim: 256
   n_classes: 4
 #  n_filters_input: 32

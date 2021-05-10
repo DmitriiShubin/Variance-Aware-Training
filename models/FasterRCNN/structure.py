@@ -34,7 +34,7 @@ class FasterRCNN(nn.Module):
             box_roi_pool=self.roi_pooler,
         ).to(device)
 
-        #self.sub_module_b_dict = nn.ModuleDict({'frcnn': self.frcnn})
+        # self.sub_module_b_dict = nn.ModuleDict({'frcnn': self.frcnn})
 
     def forward(self, inputs, target=None):
         if target == None:

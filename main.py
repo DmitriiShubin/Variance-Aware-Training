@@ -54,7 +54,7 @@ from experiments.classification.adversarial_network_train_val_early.run_experime
     run as run_efficientnet_adv_early,
 )
 
-#pre-trained models
+# pre-trained models
 from experiments.classification.pre_trained.run_experiment import run as run_pre_trained_classification
 
 ################################################
@@ -70,9 +70,11 @@ from experiments.detection.baseline.run_experiment import run as run_detection_b
 from experiments.detection.adversarial_network_train_val_early.run_experiment import (
     run as run_fasterrcnn_adv_early,
 )
+from experiments.detection.adversarial_network_train_val_late.run_experiment import (
+    run as run_fasterrcnn_adv_late,
+)
 
-#pre-trained models
-
+# pre-trained models
 
 
 import click
@@ -141,13 +143,18 @@ def main(experiment, gpu):
     #
 
     # pre-training models
-    # run_pre_training_contrastive_classification(experiment=f'./experiments/classification/contrastive_loss_encoder/config_aptos.yml', gpu='0,1')
-    # run_pre_training_patch_classification(experiment=f'./experiments/classification/patch_encoder/config_aptos.yml', gpu='0')
-    # run_pre_training_rotation_classification(experiment=f'./experiments/classification/rotation_encoder/config_aptos.yml', gpu='0')
-
+    run_pre_training_contrastive_classification(
+        experiment=f'./experiments/classification/contrastive_loss_encoder/config_aptos.yml', gpu='0,1,2'
+    )
+    run_pre_training_patch_classification(
+        experiment=f'./experiments/classification/patch_encoder/config_aptos.yml', gpu='0'
+    )
+    run_pre_training_rotation_classification(
+        experiment=f'./experiments/classification/rotation_encoder/config_aptos.yml', gpu='0'
+    )
 
     # pre-trainED models
-    #run_pre_trained_classification(experiment=f'./experiments/classification/pre_trained/config_aptos_2_contrastive.yml', gpu='0')
+    # run_pre_trained_classification(experiment=f'./experiments/classification/pre_trained/config_aptos_2_contrastive.yml', gpu='0')
     # run_pre_trained_classification(
     #     experiment=f'./experiments/classification/pre_trained/config_aptos_2_rotation.yml', gpu='0')
     # run_pre_trained_classification(
@@ -156,16 +163,14 @@ def main(experiment, gpu):
     ###########################################################################
     # RSNA
 
-
     # baseline models
-    for i in range(2,7):
-        run_detection_baseline(experiment=f'./experiments/detection/baseline/config_RSNA_8_{i}.yml', gpu='7')
-    #run_detection_baseline(experiment=f'./experiments/detection/baseline/config_RSNA_8_1.yml', gpu='7')
+    # for i in range(1,7):
+    #     run_detection_baseline(experiment=f'./experiments/detection/baseline/config_RSNA_8_{i}.yml', gpu='7')
+    # run_detection_baseline(experiment=experiment, gpu=gpu)
 
-    #adversarial models early
-    #run_fasterrcnn_adv_early(experiment=f'./experiments/detection/adversarial_network_train_val_early/config_RSNA_2.yml', gpu='0')
-
-
+    # adversarial models early
+    # run_fasterrcnn_adv_early(experiment=f'./experiments/detection/adversarial_network_train_val_early/config_RSNA_2.yml', gpu='0')
+    # run_fasterrcnn_adv_late(experiment=f'./experiments/detection/adversarial_network_train_val_late/config_RSNA_2.yml', gpu='0')
     return None
 
 

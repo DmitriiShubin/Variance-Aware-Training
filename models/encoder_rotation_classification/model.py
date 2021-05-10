@@ -89,7 +89,7 @@ class Model:
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred = self.model(X_batch)
+                pred = self.model(X_batch, pretrain=True)
 
                 # process main loss
                 pred = pred.reshape(-1, pred.shape[-1])
@@ -133,7 +133,7 @@ class Model:
                     y_batch = y_batch.float().to(self.device)
 
                     # get predictions
-                    pred = self.model(X_batch)
+                    pred = self.model(X_batch, pretrain=True)
 
                     # calculate main loss
                     pred = pred.reshape(-1, pred.shape[-1])
@@ -218,7 +218,7 @@ class Model:
                 X_batch = X_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
-                pred = self.model(X_batch)
+                pred = self.model(X_batch, pretrain=True)
 
                 # calculate main loss
                 pred = pred.reshape(-1, pred.shape[-1])

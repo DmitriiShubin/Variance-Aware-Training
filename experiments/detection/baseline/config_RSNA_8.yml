@@ -1,5 +1,5 @@
 batch_size: 4
-n_epochs: 1000
+n_epochs: 3000
 patience: 100 #number of epochs wait until improvement
 clipping: false #apply gradient clipping
 min_delta: 0.005 #min delta of improvement for early stopping
@@ -17,7 +17,7 @@ model_path: ./data/model_weights/effnet_8_baseline_RSNA/ # CHANGE WHEN CREATE A 
 dataset: 'RSNA_1'
 model:
   n_classes: 2
-  pre_trained_model: 'efficientnet-b0'
+  pre_trained_model: 'efficientnet-b2'
   l_1: 1 # loss_classifier
   l_2: 1 # loss_box_reg
   l_3: 1 # loss_objectness

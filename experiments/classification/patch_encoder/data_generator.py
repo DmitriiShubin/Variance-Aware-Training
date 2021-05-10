@@ -173,7 +173,7 @@ class Preprocessing:
 class Augmentations:
     def __init__(self, dataset):
 
-        prob=0.5
+        prob = 0.5
 
         if dataset == 'APTOS_1':
             self.augs = A.Compose(

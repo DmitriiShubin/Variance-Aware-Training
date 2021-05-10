@@ -90,8 +90,8 @@ class Model:
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred_anchor = self.model(X_anchor)
-                pred_supportive = self.model(X_supportive)
+                pred_anchor = self.model(X_anchor, pretrain=True)
+                pred_supportive = self.model(X_supportive, pretrain=True)
 
                 train_loss = self.loss(pred_anchor, pred_supportive)
 
@@ -136,8 +136,8 @@ class Model:
                     self.optimizer.zero_grad()
 
                     # get model predictions
-                    pred_anchor = self.model(X_anchor)
-                    pred_supportive = self.model(X_supportive)
+                    pred_anchor = self.model(X_anchor, pretrain=True)
+                    pred_supportive = self.model(X_supportive, pretrain=True)
 
                     avg_val_loss += self.loss(pred_anchor, pred_supportive).item() / len(valid_loader)
 
@@ -226,8 +226,8 @@ class Model:
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred_anchor = self.model(X_anchor)
-                pred_supportive = self.model(X_supportive)
+                pred_anchor = self.model(X_anchor, pretrain=True)
+                pred_supportive = self.model(X_supportive, pretrain=True)
 
                 avg_test_loss += self.loss(pred_anchor, pred_supportive).item() / len(test_loader)
 
@@ -317,7 +317,7 @@ class Model:
                 )
                 print('Only one GPU is available')
 
-        if len(gpu)>1:
+        if len(gpu) > 1:
             self.model.module.build_projection_network(self.hparams['model']['emb_dim'], device=self.device)
         else:
             self.model.build_projection_network(self.hparams['model']['emb_dim'], device=self.device)

@@ -90,7 +90,7 @@ class Model:
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                pred = self.model(X1_batch, X2_batch)
+                pred = self.model(X1_batch, X2_batch, pretrain=True)
 
                 # process main loss
                 pred = pred.reshape(-1, pred.shape[-1])
@@ -136,7 +136,7 @@ class Model:
                     y_batch = y_batch.float().to(self.device)
 
                     # get predictions
-                    pred = self.model(X1_batch, X2_batch)
+                    pred = self.model(X1_batch, X2_batch, pretrain=True)
 
                     # calculate main loss
                     pred = pred.reshape(-1, pred.shape[-1])
@@ -223,7 +223,7 @@ class Model:
                 X2_batch = X2_batch.float().to(self.device)
                 y_batch = y_batch.float().to(self.device)
 
-                pred = self.model(X1_batch, X2_batch)
+                pred = self.model(X1_batch, X2_batch, pretrain=True)
 
                 # calculate main loss
                 pred = pred.reshape(-1, pred.shape[-1])
@@ -317,9 +317,9 @@ class Model:
                 print('Only one GPU is available')
 
         if len(gpu) > 1:
-            self.model.module.build_projection_network( device=self.device)
+            self.model.module.build_projection_network(device=self.device)
         else:
-            self.model.build_projection_network( device=self.device)
+            self.model.build_projection_network(device=self.device)
 
         print('Cuda available: ', torch.cuda.is_available())
 

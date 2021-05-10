@@ -17,7 +17,7 @@ model_path: ./data/model_weights/encoder_contrastive_RSNA/ # CHANGE WHEN CREATE 
 dataset: 'RSNA_1'
 model:
   n_classes: 1
-  pre_trained_model: 'efficientnet-b0'
+  pre_trained_model: 'efficientnet-b2'
   emb_dim: 256
 #  n_filters_input: 32
 #  n_layers: 5

@@ -20,7 +20,7 @@ from utils.loss_functions import f1_loss
 
 # model
 from models.adv_FasterRCNN_early.structure import FasterRCNN
-from utils.post_processing import Post_Processing
+from utils.post_processing_detection import Post_Processing
 
 
 class Model:
@@ -61,18 +61,23 @@ class Model:
             batch_size=self.hparams['batch_size'],
             shuffle=True,
             num_workers=self.hparams['num_workers'],
-            collate_fn=self.collate_fn
-
+            collate_fn=self.collate_fn,
         )
         valid_loader = DataLoader(
             valid,
             batch_size=self.hparams['batch_size'],
             shuffle=False,
             num_workers=self.hparams['num_workers'],
-            collate_fn=self.collate_fn
+            collate_fn=self.collate_fn,
         )
 
-        adv_loader = DataLoader(pretrain, batch_size=self.hparams['batch_size'], shuffle=True, num_workers=0)
+        adv_loader = DataLoader(
+            pretrain,
+            batch_size=self.hparams['batch_size'],
+            shuffle=True,
+            num_workers=0,
+            collate_fn=self.collate_fn,
+        )
 
         # tensorboard
         writer = SummaryWriter(f"runs/{self.hparams['model_name']}_{self.start_training}")
@@ -87,10 +92,11 @@ class Model:
 
             for X_batch, y_batch, X_batch_adv, y_batch_adv in tqdm(train_loader):
 
-                X_batch_adv = torch.stack(X_batch_adv,dim=0)
+                X_batch_adv = torch.stack(X_batch_adv, dim=0)
                 y_batch_adv = torch.stack(y_batch_adv, dim=0)
                 sample = np.round(np.random.uniform(size=X_batch_adv.shape[0]), 2)
                 X_batch_adv_train_val, _, _, _ = next(iter(adv_loader))
+                X_batch_adv_train_val = torch.stack(X_batch_adv_train_val, dim=0)
                 X_batch_adv_train_val = X_batch_adv_train_val[: len(X_batch)]
                 X_batch_adv[sample >= 0.5] = X_batch_adv_train_val[sample >= 0.5]
                 y_batch_adv[sample >= 0.5] = 1
@@ -106,14 +112,14 @@ class Model:
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                losses, pred_adv = self.model(x1=X_batch,x2=X_batch_adv,target=y_batch, train=True)
+                losses, pred_adv = self.model(x1=X_batch, x2=X_batch_adv, target=y_batch, train=True)
 
                 # process main loss
                 train_loss = (
-                        self.hparams['model']['l_1'] * losses['loss_classifier']
-                        + self.hparams['model']['l_2'] * losses['loss_box_reg']
-                        + self.hparams['model']['l_3'] * losses['loss_objectness']
-                        + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
+                    self.hparams['model']['l_1'] * losses['loss_classifier']
+                    + self.hparams['model']['l_2'] * losses['loss_box_reg']
+                    + self.hparams['model']['l_3'] * losses['loss_objectness']
+                    + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
                 )
 
                 # process loss_2
@@ -128,13 +134,11 @@ class Model:
                 train_loss = train_loss + self.hparams['model']['alpha'] * adv_loss
 
                 # remove data from GPU
-                losses = losses.float().cpu().detach().numpy()
                 X_batch_adv = X_batch_adv.float().cpu().detach().numpy()
                 y_batch_adv = y_batch_adv.cpu().detach().numpy()
                 pred_adv = pred_adv.cpu().detach().numpy()
                 X_batch = [X.cpu().detach().numpy() for X in X_batch]
                 y_batch = [{k: v.cpu().detach().numpy() for k, v in t.items()} for t in y_batch]
-
 
                 # gradient clipping
                 if self.apply_clipping:
@@ -145,18 +149,17 @@ class Model:
                 # backprop
                 train_loss.backward()
 
-
             # evaluate the model
             print('Model evaluation')
 
             # val mode
-            self.model.eval()
+            self.model.train()
             self.optimizer.zero_grad()
             avg_val_loss = 0.0
 
             with torch.no_grad():
 
-                for X_batch, y_batch,_,_ in tqdm(valid_loader):
+                for X_batch, y_batch, _, _ in tqdm(valid_loader):
                     # push the data into the GPU
                     X_batch = list(X.to(self.device) for X in X_batch)
                     y_batch = [{k: v.to(self.device) for k, v in t.items()} for t in y_batch]
@@ -165,14 +168,14 @@ class Model:
                     self.optimizer.zero_grad()
 
                     # get model predictions
-                    losses = self.model(X_batch, y_batch)
+                    losses, _ = self.model(x1=X_batch, target=y_batch, train=False)
 
                     # process main loss
                     train_loss = (
-                            self.hparams['model']['l_1'] * losses['loss_classifier']
-                            + self.hparams['model']['l_2'] * losses['loss_box_reg']
-                            + self.hparams['model']['l_3'] * losses['loss_objectness']
-                            + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
+                        self.hparams['model']['l_1'] * losses['loss_classifier']
+                        + self.hparams['model']['l_2'] * losses['loss_box_reg']
+                        + self.hparams['model']['l_3'] * losses['loss_objectness']
+                        + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
                     )
                     self.optimizer.zero_grad()
 
@@ -182,7 +185,6 @@ class Model:
                     # remove data from GPU
                     X_batch = [X.cpu().detach().numpy() for X in X_batch]
                     y_batch = [{k: v.cpu().detach().numpy() for k, v in t.items()} for t in y_batch]
-
 
             # early stopping for scheduler
             if self.hparams['scheduler_name'] == 'ReduceLROnPlateau':
@@ -211,7 +213,7 @@ class Model:
             writer.add_scalars(
                 'Loss', {'Train_loss': avg_loss, 'Val_loss': avg_val_loss}, epoch,
             )
-            #writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
+            # writer.add_scalars('Metric', {'Metric_train': metric_train, 'Metric_val': metric_val}, epoch)
 
             # early stopping procesudre
             if es_result == 2:
@@ -248,18 +250,14 @@ class Model:
         self.model.eval()
 
         test_loader = torch.utils.data.DataLoader(
-            X_test,
-            batch_size=1,
-            shuffle=False,
-            num_workers=0,
-            collate_fn=self.collate_fn,
+            X_test, batch_size=1, shuffle=False, num_workers=0, collate_fn=self.collate_fn,
         )
 
         self.metric.reset_matric()
 
         print('Getting predictions')
         with torch.no_grad():
-            for index, (X_batch, y_batch,_,_) in enumerate(tqdm(test_loader)):
+            for index, (X_batch, y_batch, _, _) in enumerate(tqdm(test_loader)):
                 # push the data into the GPU
                 X_batch = list(X.to(self.device) for X in X_batch)
                 y_batch = [{k: v.to(self.device) for k, v in t.items()} for t in y_batch]
@@ -278,7 +276,9 @@ class Model:
                 bboxes, scores, classes = self.postprocessing.run(preds, objectness_threshold, nms_threshold)
 
                 # calculate a step for metrics
-                self.metric.calc_running_score(y_batch=y_batch, bboxes=bboxes, scores=scores, classes=classes)
+                self.metric.calc_running_score(
+                    y_batch=y_batch, bboxes=bboxes, scores=scores, classes=classes
+                )
 
         fold_score = self.metric.compute()
 
@@ -367,7 +367,6 @@ class Model:
         return True
 
     def __setup_model_hparams(self):
-
 
         self.loss_adv = nn.BCELoss()
 

@@ -50,25 +50,35 @@ class TrainPipeline:
 
         self.model = self.model(hparams=self.hparams, gpu=self.gpu)
 
-
         train = self.Dataset_train(
-            self.splits['train'].values[0], aug=True, n_classes=self.hparams['model']['n_classes'],dataset=self.hparams['dataset']
+            self.splits['train'].values[0],
+            aug=True,
+            n_classes=self.hparams['model']['n_classes'],
+            dataset=self.hparams['dataset'],
         )
         valid = self.Dataset_train(
-            self.splits['val'].values[0], aug=False, n_classes=self.hparams['model']['n_classes'],dataset=self.hparams['dataset']
+            self.splits['val'].values[0],
+            aug=False,
+            n_classes=self.hparams['model']['n_classes'],
+            dataset=self.hparams['dataset'],
         )
         test = self.Dataset_train(
-            self.splits_test['test'].values[0], aug=False, n_classes=self.hparams['model']['n_classes'],dataset=self.hparams['dataset']
+            self.splits_test['test'].values[0],
+            aug=False,
+            n_classes=self.hparams['model']['n_classes'],
+            dataset=self.hparams['dataset'],
         )
 
         # train model
         start_training = self.model.fit(train=train, valid=valid)
 
-
-
         # get model predictions
-        fold_score = self.model.predict(valid, self.hparams['model']['obj_threshold'], self.hparams['model']['nms_threshold'])
-        fold_score_test = self.model.predict(test, self.hparams['model']['obj_threshold'], self.hparams['model']['nms_threshold'])
+        fold_score = self.model.predict(
+            valid, self.hparams['model']['obj_threshold'], self.hparams['model']['nms_threshold']
+        )
+        fold_score_test = self.model.predict(
+            test, self.hparams['model']['obj_threshold'], self.hparams['model']['nms_threshold']
+        )
 
         print("Model's final scrore, cv: ", fold_score)
         print("Model's final scrore, test: ", fold_score_test)

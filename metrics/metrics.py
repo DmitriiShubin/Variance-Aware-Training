@@ -130,7 +130,9 @@ class AP:
 
         self.AP = 0.0
         self.n_pictures = 0.0
-        self.map_calc = MetricBuilder.build_evaluation_metric("map_2d", async_mode=True, num_classes=n_classes-1)
+        self.map_calc = MetricBuilder.build_evaluation_metric(
+            "map_2d", async_mode=True, num_classes=n_classes - 1
+        )
 
     def calc_running_score(self, y_batch, bboxes, scores, classes):
 
@@ -143,19 +145,24 @@ class AP:
 
         else:
             self.n_pictures += 1
-            gt = np.concatenate([y_batch[0]['boxes'].astype(np.int32),
-                                 np.zeros((y_batch[0]['boxes'].shape[0], 1)),
-                                 np.zeros((y_batch[0]['boxes'].shape[0], 2))], axis=1)
+            gt = np.concatenate(
+                [
+                    y_batch[0]['boxes'].astype(np.int32),
+                    np.zeros((y_batch[0]['boxes'].shape[0], 1)),
+                    np.zeros((y_batch[0]['boxes'].shape[0], 2)),
+                ],
+                axis=1,
+            )
 
         preds = np.concatenate([bboxes.astype(np.int32), classes.astype(np.int32), scores], axis=1)
-
 
         # gt:   [xmin, ymin, xmax, ymax, class_id, difficult, crowd]
         # pred: [xmin, ymin, xmax, ymax, class_id, confidence]
         self.map_calc.add(preds, gt)
-        self.AP += self.map_calc.value(iou_thresholds=self.iou_thresholds, recall_thresholds=np.arange(0., 1.01, 0.01), mpolicy='soft')['mAP']
+        self.AP += self.map_calc.value(
+            iou_thresholds=self.iou_thresholds, recall_thresholds=np.arange(0.0, 1.01, 0.01), mpolicy='soft'
+        )['mAP']
         self.map_calc.reset()
-
 
         return True
 

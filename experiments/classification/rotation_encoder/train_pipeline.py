@@ -34,7 +34,7 @@ class TrainPipeline:
         self.exclusions = []
 
         self.splits, self.splits_test = self.load_split_table()
-        #self.metric = Dice_score(self.hparams['model']['n_classes'])
+        # self.metric = Dice_score(self.hparams['model']['n_classes'])
 
         self.model = model
 

@@ -7,6 +7,7 @@ from models.encoder_patch_classification.structure import EfficientNet as effnet
 from models.encoder_rotation_classification.structure import EfficientNet as effnet_rotation
 from efficientnet_pytorch import EfficientNet as effnet
 
+
 class EfficientNet(effnet):
     def __init__(self, blocks_args=None, global_params=None):
 
@@ -22,6 +23,7 @@ class EfficientNet(effnet):
         """
         # Convolution layers
         x = self.encoder.extract_features(inputs)
+
         # Pooling and final linear layer
         x = self._avg_pooling(x)
         if self._global_params.include_top:
@@ -38,22 +40,20 @@ class EfficientNet(effnet):
 
         return True
 
-    def load_self_supervised_model(self,type_pretrain:str,
-                                   pre_trained_model:str,
-                                   pre_trained_model_ssl:str,
-                                   device):
+    def load_self_supervised_model(
+        self, type_pretrain: str, pre_trained_model: str, pre_trained_model_ssl: str, device
+    ):
 
-        hparams = yaml.load(open(pre_trained_model_ssl+'_hparams.yml'), Loader=yaml.FullLoader)
+        hparams = yaml.load(open(pre_trained_model_ssl + '_hparams.yml'), Loader=yaml.FullLoader)
 
         if type_pretrain == 'contrastive':
             self.encoder = effnet_contrastive.from_pretrained(pre_trained_model).to(device)
-            self.encoder.build_projection_network(hparams['model']['emb_dim'],device=device)
+            self.encoder.build_projection_network(hparams['model']['emb_dim'], device=device)
         elif type_pretrain == 'patch':
             self.encoder = effnet_patch.from_pretrained(pre_trained_model).to(device)
             self.encoder.build_projection_network(device=device)
         elif type_pretrain == 'rotation':
-            self.encoder = effnet_rotation.from_pretrained(pre_trained_model,num_classes=4).to(device)
-
+            self.encoder = effnet_rotation.from_pretrained(pre_trained_model, num_classes=4).to(device)
 
         self.encoder.load_state_dict(torch.load(pre_trained_model_ssl + '.pt'))
 

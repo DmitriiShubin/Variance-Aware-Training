@@ -63,8 +63,13 @@ class TrainPipeline:
         start_training = self.model.fit(train=train, valid=valid, pretrain=pretrain)
 
         # get model predictions
-        fold_score = self.model.predict(valid)
-        fold_score_test = self.model.predict(test)
+        # get model predictions
+        fold_score = self.model.predict(
+            valid, self.hparams['model']['obj_threshold'], self.hparams['model']['nms_threshold']
+        )
+        fold_score_test = self.model.predict(
+            test, self.hparams['model']['obj_threshold'], self.hparams['model']['nms_threshold']
+        )
 
         print("Model's final scrore, cv: ", fold_score)
         print("Model's final scrore, test: ", fold_score_test)
