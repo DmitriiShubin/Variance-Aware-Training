@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from models.FasterRCNN.EfficientNet import EfficientNet
+from models.FasterRCNN_pre_trained.EfficientNet import EfficientNet
 import torchvision
 from torchvision.models.detection import FasterRCNN as FasterRCNN_torchvision
 from torchvision.models.detection.rpn import AnchorGenerator

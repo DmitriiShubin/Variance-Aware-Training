@@ -14,25 +14,23 @@ np.random.seed(42)
 
 
 class Dataset_train(Dataset):
-    def __init__(self, volums_list, aug, n_classes):
+    def __init__(self, volums_list, aug, n_classes, dataset):
 
         self.n_classes = n_classes
         self.volums_list = volums_list
-        self.preprocessing = Preprocessing(aug)
+        self.preprocessing = Preprocessing(aug, dataset)
 
     def __len__(self):
         return len(self.volums_list)
 
     def __getitem__(self, idx):
 
-        X, y, X_s, y_s = self.load_data(idx)
+        X, y = self.load_data(idx)
 
         X = torch.tensor(X, dtype=torch.float)
         # y = torch.tensor(y, dtype=torch.float)
-        X_s = torch.tensor(X_s, dtype=torch.float)
-        y_s = torch.tensor(y_s, dtype=torch.float)
 
-        return X, y, X_s, y_s
+        return X, y
 
     def load_data(self, id):
 
@@ -45,16 +43,7 @@ class Dataset_train(Dataset):
             X=X, bboxes=annot['boxes'], classes=annot['labels']
         )
 
-        # second head
-        images_subset = self.volums_list.copy()
-        images_subset.remove(self.volums_list[id])
-        X_s = np.load(np.random.choice(np.array(images_subset))).astype(np.float32)
-
-        y_s = [0]
-        annot_dummy = annot.copy()
-        X_s, _, _ = self.preprocessing.run(X=X_s, bboxes=annot_dummy['boxes'], classes=annot_dummy['labels'])
-
-        return X, annot, X_s, y_s
+        return X, annot
 
     def get_annotations(self, y):
 
@@ -90,10 +79,10 @@ class Dataset_train(Dataset):
 
 
 class Preprocessing:
-    def __init__(self, aug):
+    def __init__(self, aug, dataset):
 
         self.aug = aug
-        self.augmentations = Augmentations()
+        self.augmentations = Augmentations(dataset)
 
     def run(self, X, bboxes, classes):
 
@@ -140,7 +129,15 @@ class Preprocessing:
 
 
 class Augmentations:
-    def __init__(self):
+    def __init__(self, dataset):
+
+        """
+
+        best:
+        A.HorizontalFlip(p=prob),
+        A.Rotate(limit=15, p=prob),
+        A.RandomGamma(gamma_limit=(80, 120), p=prob),
+        """
 
         prob = 0.5
         self.augs = A.Compose(
@@ -184,9 +181,8 @@ class Augmentations:
     def process_with_bbooxes(self, image, bboxes, classes):
 
         shape = image.shape[1]
-        #
+
         bboxes = bboxes / shape
-        #
 
         bboxes = bboxes.tolist()
         classes = classes.tolist()

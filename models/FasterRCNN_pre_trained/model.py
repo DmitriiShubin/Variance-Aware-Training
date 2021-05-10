@@ -359,6 +359,24 @@ class Model:
                 # self.model.freeze_layers()
                 print('Only one GPU is available')
 
+
+        if len(gpu) > 1:
+            self.model.module.load_self_supervised_model(
+                type_pretrain=self.hparams['model']['type_pretrain'],
+                pre_trained_model=self.hparams['model']['pre_trained_model'],
+                pre_trained_model_ssl=self.hparams['model']['pre_trained_model_ssl'],
+                device=self.device,
+            )
+        else:
+            self.model.load_self_supervised_model(
+                type_pretrain=self.hparams['model']['type_pretrain'],
+                pre_trained_model=self.hparams['model']['pre_trained_model'],
+                pre_trained_model_ssl=self.hparams['model']['pre_trained_model_ssl'],
+                device=self.device,
+            )
+
+
+
         print('Cuda available: ', torch.cuda.is_available())
 
         return True

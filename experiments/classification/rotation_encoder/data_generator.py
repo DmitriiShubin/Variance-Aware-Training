@@ -77,10 +77,12 @@ class Preprocessing:
 
         self.aug = aug
         self.augmentations = Augmentations(dataset)
+        self.dataset = dataset
 
     def run(self, X):
 
-        X = np.transpose(X.astype(np.float32), (2, 0, 1))
+        if self.dataset.find('RSNA') == -1:
+            X = np.transpose(X.astype(np.float32), (2, 0, 1))
 
         if self.aug:
 
@@ -177,7 +179,18 @@ class Augmentations:
                     # A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
-
+        elif dataset == 'RSNA_1':
+            self.augs = A.Compose(
+                [
+                    # A.Blur(blur_limit=3, p=prob),
+                    # A.HorizontalFlip(p=prob),
+                    # A.VerticalFlip(p=prob),
+                    # A.Rotate(limit=90, p=prob),
+                    # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
+                    # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
+                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                ]
+            )
     def run(self, image):
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))

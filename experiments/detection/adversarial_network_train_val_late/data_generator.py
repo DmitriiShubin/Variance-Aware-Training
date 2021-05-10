@@ -145,12 +145,12 @@ class Augmentations:
         prob = 0.5
         self.augs = A.Compose(
             [
-                # A.HorizontalFlip(p=prob),
+                A.HorizontalFlip(p=prob),
                 # A.VerticalFlip(p=prob),
-                # A.Rotate(limit=15, p=prob),
+                A.Rotate(limit=15, p=prob),
                 # # # # A.ElasticTransform(alpha=0.05, p=prob),
                 # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
-                # A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                A.RandomGamma(gamma_limit=(80, 120), p=prob),
             ],
             bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3),
         )
