@@ -50,7 +50,7 @@ class Preprocessing:
 
     def run(self, X):
 
-        if self.dataset.find('RSNA')==-1:
+        if self.dataset.find('RSNA') == -1:
             X = np.transpose(X.astype(np.float32), (2, 0, 1))
 
         if self.aug:
@@ -184,6 +184,7 @@ class Augmentations:
                     # A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
+
     def run(self, image):
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))

@@ -57,8 +57,8 @@ class FasterRCNN(nn.Module):
         # Convolution layers
         endpoints_s = self.backbone.extract_endpoints(x_s)
 
-        x6_s = self.rever1_6(endpoints_s['reduction_6']).mean(dim=2).mean(dim=2)
-        x12_s = self.rever1_12(endpoints_s['reduction_6']).std(dim=2).std(dim=2)
+        x6_s = self.rever1_6(endpoints['reduction_6']).mean(dim=2).mean(dim=2)
+        x12_s = self.rever1_12(endpoints['reduction_6']).std(dim=2).std(dim=2)
 
         x6_p = self.rever2_6(endpoints_s['reduction_6']).mean(dim=2).mean(dim=2)
         x12_p = self.rever2_12(endpoints_s['reduction_6']).std(dim=2).std(dim=2)

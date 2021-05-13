@@ -77,12 +77,22 @@ from experiments.detection.adversarial_network_train_val_late.run_experiment imp
 # pre-trained models
 from experiments.detection.pre_trained.run_experiment import run as run_pre_trained_detection
 
+################################################
+
+#OSIC experiments:
+
+# baseline models
+from experiments.forecasting.baseline.run_experiment import run as run_forecasting_baseline
 
 import click
 
 
 @click.command()
-@click.option('--experiment', default='./experiments/detection/adversarial_network_train_val_early/config_RSNA_2_1.yml', help='')
+@click.option(
+    '--experiment',
+    default='./experiments/detection/adversarial_network_train_val_early/config_RSNA_2_1.yml',
+    help='',
+)
 @click.option('--gpu', default='7', help='')
 def main(experiment, gpu):
 
@@ -167,14 +177,15 @@ def main(experiment, gpu):
     # baseline models
     # for i in range(1,7):
     #     run_detection_baseline(experiment=f'./experiments/detection/baseline/config_RSNA_8_{i}.yml', gpu='7')
-    #run_detection_baseline(experiment=experiment, gpu=gpu)
+    # run_detection_baseline(experiment=experiment, gpu=gpu)
+    #run_detection_baseline(experiment=f'./experiments/detection/baseline/config_RSNA_2.yml', gpu='7')
 
     # adversarial models early
     # run_fasterrcnn_adv_early(experiment=f'./experiments/detection/adversarial_network_train_val_early/config_RSNA_2.yml', gpu='0')
     # run_fasterrcnn_adv_late(experiment=f'./experiments/detection/adversarial_network_train_val_late/config_RSNA_2.yml', gpu='0')
-    run_fasterrcnn_adv_early(experiment=experiment, gpu=gpu)
+    #run_fasterrcnn_adv_early(experiment=experiment, gpu=gpu)
 
-    #pre-training models
+    # pre-training models
     # run_pre_training_contrastive_classification(
     #     experiment=f'./experiments/classification/contrastive_loss_encoder/config_rsna.yml', gpu='0,1'
     # )
@@ -185,9 +196,15 @@ def main(experiment, gpu):
     #     experiment=f'./experiments/classification/rotation_encoder/config_rsna.yml', gpu='0'
     # )
 
-    #run_pre_trained_detection(experiment=f'./experiments/detection/pre_trained/config_RSNA_2_contrastive.yml',gpu='0')
-    #run_pre_trained_detection(experiment=f'./experiments/detection/pre_trained/config_RSNA_2_rotation.yml', gpu='0')
-    #run_pre_trained_detection(experiment=f'./experiments/detection/pre_trained/config_RSNA_2_patch.yml', gpu='0')
+    # run_pre_trained_detection(experiment=f'./experiments/detection/pre_trained/config_RSNA_2_contrastive.yml',gpu='0')
+    # run_pre_trained_detection(experiment=f'./experiments/detection/pre_trained/config_RSNA_2_rotation.yml', gpu='0')
+    # run_pre_trained_detection(experiment=f'./experiments/detection/pre_trained/config_RSNA_2_patch.yml', gpu='0')
+
+    ###########################################################################
+    # OSIC
+
+    # baseline models
+    run_forecasting_baseline(experiment=f'./experiments/forecasting/baseline/config_osic_2.yml', gpu='7')
 
     return None
 

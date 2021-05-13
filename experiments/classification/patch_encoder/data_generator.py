@@ -213,6 +213,7 @@ class Augmentations:
                     # A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
+
     def run(self, image):
 
         image = np.transpose(image.astype(np.float32), (1, 2, 0))

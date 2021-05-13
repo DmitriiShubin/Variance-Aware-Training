@@ -1,21 +1,22 @@
 from utils.update_hparams import update_hparams
+
 from utils.logger import Logger
 
 import yaml
 import os
 
-from experiments.detection.adversarial_network_train_val_early.data_generator1 import Dataset_train
-from experiments.detection.adversarial_network_train_val_early.train_pipeline import TrainPipeline
-from models.adv_FasterRCNN_early_fixed import Model
+from experiments.forecasting.baseline.data_generator import Dataset_train
+from models.efficientnet_forecasting import Model
+from experiments.forecasting.baseline.train_pipeline import TrainPipeline
 
 
 def run(
     batch_size=None,
     lr=None,
     n_epochs=None,
-    gpu='1',
+    gpu='7',
     dropout=None,
-    experiment='./experiments/adversarial_network_train_val_early/config_brats_2.yml',
+    experiment='./experiments/baseline/config_brats_2.yml',
 ):
 
     # load hyperparameters
@@ -51,7 +52,3 @@ def run(
     logger.kpi_logger.info(f'GPU = {gpu}')
     logger.kpi_logger.info(f"Model name: = {hparams['model_name']}")
     logger.kpi_logger.info('=============================================')
-
-
-if __name__ == "__main__":
-    run()

@@ -249,7 +249,7 @@ class Model:
         self.model.eval()
 
         test_loader = torch.utils.data.DataLoader(
-            X_test, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=0,
+            X_test, batch_size=self.hparams['batch_size'], shuffle=False, num_workers=0
         )
 
         self.metric.reset()

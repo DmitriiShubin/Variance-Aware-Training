@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.metrics import multilabel_confusion_matrix, roc_auc_score
+from sklearn.metrics import mean_squared_error as mse
 from mean_average_precision import MetricBuilder
 
 
@@ -177,4 +178,35 @@ class AP:
     def reset_matric(self):
         self.AP = 0.0
         self.n_pictures = 0.0
+        return True
+
+
+class MSE:
+    def __init__(self):
+
+        self.mse_running_score = 0
+        self.n_samples = 0
+
+
+    def calc_running_score(self, labels:np.array, outputs:np.array):
+
+        self.n_samples += labels.shape[0]
+
+        self.mse_running_score+=np.sum((labels-outputs)**2)
+
+
+
+    def compute(self):
+
+        mase_metric = self.mse_running_score/self.n_samples
+
+
+        self.reset()
+
+        return mase_metric
+
+
+    def reset(self):
+        self.mse_running_score = 0
+        self.n_samples = 0
         return True

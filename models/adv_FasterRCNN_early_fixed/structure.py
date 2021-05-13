@@ -1,16 +1,15 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from models.adv_FasterRCNN_early.EfficientNet import EfficientNet
+from models.FasterRCNN.EfficientNet import EfficientNet
 import torchvision
 from torchvision.models.detection import FasterRCNN as FasterRCNN_torchvision
-from torchvision.models.detection import RetinaNet as RetinaNet_torchvision
 from torchvision.models.detection.rpn import AnchorGenerator
 from models.pytorch_revgrad import RevGrad
-
+from .RPN import RegionProposalNetwork_new
 
 class FasterRCNN(nn.Module):
-    def __init__(self, hparams, device):
+    def __init__(self, hparams):
         super(FasterRCNN, self).__init__()
 
         self.hparams = hparams
@@ -20,45 +19,39 @@ class FasterRCNN(nn.Module):
         endpoints = self.backbone.extract_endpoints(dummy)
         n_filt = endpoints['reduction_6'].shape[1]
         self.backbone.out_channels = n_filt
-        self.backbone.to(device)
+
 
         self.anchor_generator = AnchorGenerator(
-            #sizes=((32, 64, 128, 256, 512),), aspect_ratios=((0.5, 1.0, 2.0),)
-            sizes = ((32, 64, 128,256,512),), aspect_ratios = ((0.5, 1.0, 2.0),)
-        ).to(device)
+            sizes=((32, 64, 128, 256, 512),), aspect_ratios=((0.5, 1.0, 2.0),)
+        )
         self.roi_pooler = torchvision.ops.MultiScaleRoIAlign(
-            featmap_names=['0'], output_size=7, sampling_ratio=2
-        ).to(device)
+            featmap_names=['0'], output_size=5, sampling_ratio=2
+        )
 
         self.frcnn = FasterRCNN_torchvision(
             self.backbone,
             num_classes=self.hparams['n_classes'],
             rpn_anchor_generator=self.anchor_generator,
             box_roi_pool=self.roi_pooler,
-        ).to(device)
+        )
 
-        # self.frcnn = RetinaNet_torchvision(
-        #     self.backbone,
-        #     num_classes=self.hparams['n_classes'],
-        #     anchor_generator=self.anchor_generator
-        # ).to(device)
 
-    def forward(self, x1, x2=None, target=None):
-
-        if target is None:
-            return self.predictive_network(x1)
+    def forward(self, x1,x2=None, target=None):
+        if target == None:
+            return self.frcnn(x1)
         else:
-            loss, endpoints = self.predictive_network(x1, target)
-            if x2 is None:
-                return loss
+            if x2 == None:
+                return self.frcnn(x1, target)
             else:
-                out_s = self.adversarial_network(endpoints, x2)
-                return loss, out_s
+                endpoints = self.backbone.extract_endpoints(torch.stack(x1,dim=0))
+                endpoints_s = self.backbone.extract_endpoints(x2)
+                adv_out = self.adversarial_network(endpoints,endpoints_s)
+                return self.frcnn(x1, target),adv_out
 
-    def adversarial_network(self, endpoints, x_s):
+    def adversarial_network(self, endpoints, endpoints_s):
 
         # Convolution layers
-        endpoints_s = self.backbone.extract_endpoints(x_s)
+
 
         x1_s = self.rever1_1(endpoints_s['reduction_1']).mean(dim=2).mean(dim=2)
         x2_s = self.rever1_2(endpoints_s['reduction_2']).mean(dim=2).mean(dim=2)
@@ -117,61 +110,51 @@ class FasterRCNN(nn.Module):
         )
 
         x = torch.relu(self.adv_fc1(x))
-        #x = torch.relu(self.adv_fc2(x))
+        # x = torch.relu(self.adv_fc2(x))
         # x = torch.relu(self.adv_fc3(x))
         x = torch.sigmoid(self.adv_fc4(x))
 
         return x
 
-    def predictive_network(self, inputs, target=None):
-        if target == None:
-            return self.frcnn(inputs)
-        else:
-            # Convolution layers
-            endpoints = self.backbone.extract_endpoints(torch.stack(inputs, dim=0))
-            return self.frcnn(inputs, target), endpoints
+    def build_adv_model(self):
 
-    def build_adv_model(self, device):
-
-        dummy = torch.rand(1, 3, 96, 96).to(device)
-        self.backbone.eval()
+        dummy = torch.rand(1, 3, 96, 96)
         endpoints = self.backbone.extract_endpoints(dummy)
-        self.backbone.train()
-        dummy = dummy.cpu().detach()
 
         n_filt = 0
         for i in endpoints.keys():
             n_filt += endpoints[i].shape[1]
 
-        self.adv_fc1 = nn.Linear(n_filt * 4, 300).to(device)
-        #self.adv_fc2 = nn.Linear(300, 300).to(device)
-        self.adv_fc4 = nn.Linear(300, 1).to(device)
+        self.adv_fc1 = nn.Linear(n_filt * 4, 300)
+        self.adv_fc2 = nn.Linear(300, 300)
+        # self.adv_fc3 = nn.Linear(300, 300)
+        self.adv_fc4 = nn.Linear(300, 1)
 
         # gradient reversal layer
-        self.rever1_1 = RevGrad().to(device)
-        self.rever1_2 = RevGrad().to(device)
-        self.rever1_3 = RevGrad().to(device)
-        self.rever1_4 = RevGrad().to(device)
-        self.rever1_5 = RevGrad().to(device)
-        self.rever1_6 = RevGrad().to(device)
-        self.rever1_7 = RevGrad().to(device)
-        self.rever1_8 = RevGrad().to(device)
-        self.rever1_9 = RevGrad().to(device)
-        self.rever1_10 = RevGrad().to(device)
-        self.rever1_11 = RevGrad().to(device)
-        self.rever1_12 = RevGrad().to(device)
+        self.rever1_1 = RevGrad()
+        self.rever1_2 = RevGrad()
+        self.rever1_3 = RevGrad()
+        self.rever1_4 = RevGrad()
+        self.rever1_5 = RevGrad()
+        self.rever1_6 = RevGrad()
+        self.rever1_7 = RevGrad()
+        self.rever1_8 = RevGrad()
+        self.rever1_9 = RevGrad()
+        self.rever1_10 = RevGrad()
+        self.rever1_11 = RevGrad()
+        self.rever1_12 = RevGrad()
 
-        self.rever2_1 = RevGrad().to(device)
-        self.rever2_2 = RevGrad().to(device)
-        self.rever2_3 = RevGrad().to(device)
-        self.rever2_4 = RevGrad().to(device)
-        self.rever2_5 = RevGrad().to(device)
-        self.rever2_6 = RevGrad().to(device)
-        self.rever2_7 = RevGrad().to(device)
-        self.rever2_8 = RevGrad().to(device)
-        self.rever2_9 = RevGrad().to(device)
-        self.rever2_10 = RevGrad().to(device)
-        self.rever2_11 = RevGrad().to(device)
-        self.rever2_12 = RevGrad().to(device)
+        self.rever2_1 = RevGrad()
+        self.rever2_2 = RevGrad()
+        self.rever2_3 = RevGrad()
+        self.rever2_4 = RevGrad()
+        self.rever2_5 = RevGrad()
+        self.rever2_6 = RevGrad()
+        self.rever2_7 = RevGrad()
+        self.rever2_8 = RevGrad()
+        self.rever2_9 = RevGrad()
+        self.rever2_10 = RevGrad()
+        self.rever2_11 = RevGrad()
+        self.rever2_12 = RevGrad()
 
         return True

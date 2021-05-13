@@ -19,9 +19,10 @@ from time import time
 from utils.loss_functions import f1_loss
 
 # model
-from models.FasterRCNN_pre_trained.structure import FasterRCNN
+from models.adv_FasterRCNN_early_fixed.structure import FasterRCNN
 from utils.post_processing_detection import Post_Processing
-
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 class Model:
     """
@@ -53,7 +54,7 @@ class Model:
         # declare preprocessing object
         self.__seed_everything(42)
 
-    def fit(self, train, valid):
+    def fit(self, train, valid, pretrain):
 
         # setup train and val dataloaders
         train_loader = DataLoader(
@@ -71,6 +72,14 @@ class Model:
             collate_fn=self.collate_fn,
         )
 
+        adv_loader = DataLoader(
+            pretrain,
+            batch_size=self.hparams['batch_size'],
+            shuffle=True,
+            num_workers=0,
+            collate_fn=self.collate_fn,
+        )
+
         # tensorboard
         writer = SummaryWriter(f"runs/{self.hparams['model_name']}_{self.start_training}")
 
@@ -82,17 +91,31 @@ class Model:
             avg_loss = 0.0
             avg_adv_loss = 0.0
 
-            for X_batch, y_batch in tqdm(train_loader):
+            for X_batch, y_batch, X_batch_adv, y_batch_adv in tqdm(train_loader):
+
+                X_batch_adv = torch.stack(X_batch_adv, dim=0)
+                y_batch_adv = torch.stack(y_batch_adv, dim=0)
+                sample = np.round(np.random.uniform(size=X_batch_adv.shape[0]), 2)
+                X_batch_adv_train_val, _, _, _ = next(iter(adv_loader))
+                X_batch_adv_train_val = torch.stack(X_batch_adv_train_val, dim=0)
+                X_batch_adv_train_val = X_batch_adv_train_val[: len(X_batch)]
+                X_batch_adv[sample >= 0.5] = X_batch_adv_train_val[sample >= 0.5]
+                y_batch_adv[sample >= 0.5] = 1
+                y_batch_adv[sample < 0.5] = 0
 
                 # push the data into the GPU
                 X_batch = list(X.to(self.device) for X in X_batch)
                 y_batch = [{k: v.to(self.device) for k, v in t.items()} for t in y_batch]
+                X_batch_adv = X_batch_adv.float().to(self.device)
+                y_batch_adv = y_batch_adv.float().to(self.device)
 
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                losses = self.model(X_batch, y_batch)
+
+
+                losses, pred_adv = self.model(x1=X_batch, x2=X_batch_adv, target=y_batch)
 
                 # process main loss
                 train_loss = (
@@ -102,10 +125,22 @@ class Model:
                     + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
                 )
 
+
+                # process loss_2
+                pred_adv = pred_adv.reshape(-1)
+                y_batch_adv = y_batch_adv.reshape(-1)
+                adv_loss = self.loss_adv(pred_adv, y_batch_adv)
+
                 # calc loss
                 avg_loss += train_loss.item() / len(train_loader)
+                avg_adv_loss += adv_loss.item() / len(train_loader)
+
+                train_loss = train_loss + self.hparams['model']['alpha'] * adv_loss
 
                 # remove data from GPU
+                X_batch_adv = X_batch_adv.float().cpu().detach().numpy()
+                y_batch_adv = y_batch_adv.cpu().detach().numpy()
+                pred_adv = pred_adv.cpu().detach().numpy()
                 X_batch = [X.cpu().detach().numpy() for X in X_batch]
                 y_batch = [{k: v.cpu().detach().numpy() for k, v in t.items()} for t in y_batch]
 
@@ -117,8 +152,6 @@ class Model:
 
                 # backprop
                 train_loss.backward()
-
-                # iptimizer step
                 self.optimizer.step()
 
             # evaluate the model
@@ -131,24 +164,28 @@ class Model:
 
             with torch.no_grad():
 
-                for X_batch, y_batch in tqdm(valid_loader):
+                for X_batch, y_batch, _, _ in tqdm(valid_loader):
+
                     # push the data into the GPU
                     X_batch = list(X.to(self.device) for X in X_batch)
                     y_batch = [{k: v.to(self.device) for k, v in t.items()} for t in y_batch]
+
 
                     # clean gradients from the previous step
                     self.optimizer.zero_grad()
 
                     # get model predictions
-                    losses = self.model(X_batch, y_batch)
+                    losses = self.model(x1=X_batch, target=y_batch)
 
                     # process main loss
                     train_loss = (
-                        self.hparams['model']['l_1'] * losses['loss_classifier']
-                        + self.hparams['model']['l_2'] * losses['loss_box_reg']
-                        + self.hparams['model']['l_3'] * losses['loss_objectness']
-                        + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
+                            self.hparams['model']['l_1'] * losses['loss_classifier']
+                            + self.hparams['model']['l_2'] * losses['loss_box_reg']
+                            + self.hparams['model']['l_3'] * losses['loss_objectness']
+                            + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
                     )
+
+
                     self.optimizer.zero_grad()
 
                     # calc loss
@@ -175,8 +212,8 @@ class Model:
                     avg_loss,
                     '| Val_loss: ',
                     avg_val_loss,
-                    # '| Adv_loss: ',
-                    # avg_adv_loss,
+                    '| Adv_loss: ',
+                    avg_adv_loss,
                     '| Current LR: ',
                     self.__get_lr(self.optimizer),
                 )
@@ -229,7 +266,7 @@ class Model:
 
         print('Getting predictions')
         with torch.no_grad():
-            for index, (X_batch, y_batch) in enumerate(tqdm(test_loader)):
+            for index, (X_batch, y_batch,_,_) in enumerate(tqdm(test_loader)):
 
                 # push the data into the GPU
                 X_batch = list(X.to(self.device) for X in X_batch)
@@ -334,51 +371,42 @@ class Model:
         # TODO: re-write to pure DDP
         if inference or gpu is None:
             self.device = torch.device('cpu')
-            self.model = FasterRCNN(hparams=self.hparams['model'], device=self.device).to(self.device)
-            # self.model.freeze_layers()
+            self.model = FasterRCNN(hparams=self.hparams['model'])
+            self.model.build_adv_model()
+            self.model.to(self.device)
         else:
             if torch.cuda.device_count() > 1:
                 if len(gpu) > 1:
                     print("Number of GPUs will be used: ", len(gpu))
+                    # os.environ['MASTER_ADDR'] = '0.0.0.0'  #
+                    # os.environ['MASTER_PORT'] = '22'
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = FasterRCNN(hparams=self.hparams['model'], device=self.device).to(
-                        self.device
-                    )
+                    self.model = FasterRCNN(hparams=self.hparams['model'])
+                    self.model.build_adv_model()
+                    self.model.to(self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
-                    # self.model.module.freeze_layers()
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                    self.model = FasterRCNN(hparams=self.hparams['model'], device=self.device).to(
-                        self.device
-                    )
-                    # self.model.freeze_layers()
+                    self.model = FasterRCNN(hparams=self.hparams['model'])
+                    self.model.build_adv_model()
+                    self.model.to(self.device)
             else:
                 self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
-                self.model = FasterRCNN(hparams=self.hparams['model'], device=self.device).to(self.device)
-                # self.model.freeze_layers()
+                self.model = FasterRCNN(hparams=self.hparams['model'])
+                self.model.build_adv_model()
+                self.model.to(self.device)
                 print('Only one GPU is available')
 
-        if len(gpu) > 1:
-            self.model.module.load_self_supervised_model(
-                type_pretrain=self.hparams['model']['type_pretrain'],
-                pre_trained_model=self.hparams['model']['pre_trained_model'],
-                pre_trained_model_ssl=self.hparams['model']['pre_trained_model_ssl'],
-                device=self.device,
-            )
-        else:
-            self.model.load_self_supervised_model(
-                type_pretrain=self.hparams['model']['type_pretrain'],
-                pre_trained_model=self.hparams['model']['pre_trained_model'],
-                pre_trained_model_ssl=self.hparams['model']['pre_trained_model_ssl'],
-                device=self.device,
-            )
-
         print('Cuda available: ', torch.cuda.is_available())
+
+
 
         return True
 
     def __setup_model_hparams(self):
+
+        self.loss_adv = nn.BCELoss()
 
         # 2. define model metric
         self.metric = AP(n_classes=self.hparams['model']['n_classes'])  #

@@ -25,7 +25,7 @@ class Dataset_train(Dataset):
 
     def __getitem__(self, idx):
 
-        X, y, X_s, y_s = self.load_data(idx)
+        X, y,X_s,y_s = self.load_data(idx)
 
         X = torch.tensor(X, dtype=torch.float)
         # y = torch.tensor(y, dtype=torch.float)
@@ -55,15 +55,12 @@ class Dataset_train(Dataset):
 
         X_s, _, _ = self.preprocessing.run(X=X_s, bboxes=annot_dummy['boxes'], classes=annot_dummy['labels'])
 
-
-
-
-        return X, annot, X_s, y_s
+        return X, annot,X_s,y_s
 
     def get_annotations(self, y):
 
         # some images appear to miss annotations (like image with id 257034)
-        if y['0']['Target'] == 0.0:
+        if y['0']['Target'] == 0:
             target = {
                 'boxes': torch.Tensor([[0, 0, 1, 1]]),
                 'labels': torch.Tensor([0.0]).type(torch.int64),
@@ -82,16 +79,16 @@ class Dataset_train(Dataset):
             boxes.append([object['x'], object['y'], object['x'] + object['w'], object['y'] + object['h']])
             labels.append([1.0])
 
-        if len(boxes) == 0:
+        boxes = torch.Tensor(boxes)
+        labels = torch.Tensor(labels).type(torch.int64)
+        labels = labels.view(-1)
+
+        if boxes.shape[0]==0:
             target = {
                 'boxes': torch.Tensor([[0, 0, 1, 1]]),
                 'labels': torch.Tensor([0.0]).type(torch.int64),
             }
             return target
-
-        boxes = torch.Tensor(boxes)
-        labels = torch.Tensor(labels).type(torch.int64)
-        labels = labels.view(-1)
 
         target = {}
         target["boxes"] = boxes
@@ -108,8 +105,8 @@ class Preprocessing:
 
     def run(self, X, bboxes, classes):
 
-        # if self.aug:
-        #     X, bboxes, classes = self.augmentations.run(X, bboxes, classes)
+        if self.aug:
+            X, bboxes, classes = self.augmentations.run(X, bboxes, classes)
 
         X = self.standard_scaling(X)
 
@@ -153,15 +150,23 @@ class Preprocessing:
 class Augmentations:
     def __init__(self):
 
+        """
+
+        best:
+        A.HorizontalFlip(p=prob),
+        A.Rotate(limit=15, p=prob),
+        A.RandomGamma(gamma_limit=(80, 120), p=prob),
+        """
+
         prob = 0.5
         self.augs = A.Compose(
             [
-                # A.HorizontalFlip(p=prob),
-                # # A.VerticalFlip(p=prob),
-                # A.Rotate(limit=15, p=prob),
-                # # # # # A.ElasticTransform(alpha=0.05, p=prob),
-                # # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
-                # A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                A.HorizontalFlip(p=prob),
+                # A.VerticalFlip(p=prob),
+                A.Rotate(limit=15, p=prob),
+                # # # # A.ElasticTransform(alpha=0.05, p=prob),
+                # A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                A.RandomGamma(gamma_limit=(80, 120), p=prob),
             ],
             bbox_params=A.BboxParams(format='coco', label_fields=['category_ids'], min_visibility=0.3),
         )
@@ -195,9 +200,8 @@ class Augmentations:
     def process_with_bbooxes(self, image, bboxes, classes):
 
         shape = image.shape[1]
-        #
+
         bboxes = bboxes / shape
-        #
 
         bboxes = bboxes.tolist()
         classes = classes.tolist()
@@ -211,7 +215,8 @@ class Augmentations:
             bboxes = torch.Tensor(np.zeros((0, 5)))
             classes = torch.Tensor([0.0]).type(torch.int64)
         else:
-
+            # print(bboxes)
+            # print(classes)
             bboxes = torch.Tensor(bboxes)
             bboxes = bboxes * shape
             classes = torch.Tensor(classes).type(torch.int64)

@@ -111,8 +111,13 @@ class Model:
                 # clean gradients from the previous step
                 self.optimizer.zero_grad()
 
+
+
                 # get model predictions
-                losses, pred_adv = self.model(x1=X_batch, x2=X_batch_adv, target=y_batch, train=True)
+                losses, pred_adv = self.model(x1=X_batch, x2=X_batch_adv, target=y_batch)
+                # losses = self.model(x1=X_batch, target=y_batch)
+
+
 
                 # process main loss
                 train_loss = (
@@ -121,6 +126,11 @@ class Model:
                     + self.hparams['model']['l_3'] * losses['loss_objectness']
                     + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
                 )
+
+                # train_loss = (
+                #         self.hparams['model']['l_1'] * losses['classification']
+                #         + self.hparams['model']['l_2'] * losses['bbox_regression']
+                # )
 
                 # process loss_2
                 pred_adv = pred_adv.reshape(-1)
@@ -149,11 +159,12 @@ class Model:
                 # backprop
                 train_loss.backward()
                 self.optimizer.step()
+
             # evaluate the model
             print('Model evaluation')
 
             # val mode
-            self.model.train()
+            self.model.eval()
             self.optimizer.zero_grad()
             avg_val_loss = 0.0
 
@@ -168,31 +179,52 @@ class Model:
                     self.optimizer.zero_grad()
 
                     # get model predictions
-                    losses, _ = self.model(x1=X_batch, target=y_batch, train=False)
-
-                    # process main loss
-                    train_loss = (
-                        self.hparams['model']['l_1'] * losses['loss_classifier']
-                        + self.hparams['model']['l_2'] * losses['loss_box_reg']
-                        + self.hparams['model']['l_3'] * losses['loss_objectness']
-                        + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
-                    )
-                    self.optimizer.zero_grad()
-
-                    # calc loss
-                    avg_val_loss += train_loss.item() / len(valid_loader)
+                    preds = self.model(x1=X_batch)
 
                     # remove data from GPU
                     X_batch = [X.cpu().detach().numpy() for X in X_batch]
                     y_batch = [{k: v.cpu().detach().numpy() for k, v in t.items()} for t in y_batch]
+                    preds = [{k: v.cpu() for k, v in t.items()} for t in preds]
 
+                    bboxes, scores, classes = self.postprocessing.run(preds, self.hparams['model']['obj_threshold'], self.hparams['model']['nms_threshold'])
+
+                    # calculate a step for metrics
+                    self.metric.calc_running_score(
+                        y_batch=y_batch, bboxes=bboxes, scores=scores, classes=classes
+                    )
+
+
+
+                    # losses = self.model(x1=X_batch, target=y_batch)
+                    #
+                    # # process main loss
+                    # train_loss = (
+                    #     self.hparams['model']['l_1'] * losses['loss_classifier']
+                    #     + self.hparams['model']['l_2'] * losses['loss_box_reg']
+                    #     + self.hparams['model']['l_3'] * losses['loss_objectness']
+                    #     + self.hparams['model']['l_4'] * losses['loss_rpn_box_reg']
+                    # )
+                    # train_loss = (
+                    #         self.hparams['model']['l_1'] * losses['classification']
+                    #         + self.hparams['model']['l_2'] * losses['bbox_regression']
+                    # )
+                    #self.optimizer.zero_grad()
+
+                    # calc loss
+                    #avg_val_loss += train_loss.item() / len(valid_loader)
+
+                    # remove data from GPU
+                    # X_batch = [X.cpu().detach().numpy() for X in X_batch]
+                    # y_batch = [{k: v.cpu().detach().numpy() for k, v in t.items()} for t in y_batch]
+
+            metric_val = self.metric.compute()
             # early stopping for scheduler
             if self.hparams['scheduler_name'] == 'ReduceLROnPlateau':
-                self.scheduler.step(avg_val_loss)
+                self.scheduler.step(metric_val)
             else:
                 self.scheduler.step()
 
-            es_result = self.early_stopping(score=avg_val_loss, model=self.model, threshold=None)
+            es_result = self.early_stopping(score=metric_val, model=self.model, threshold=None)
 
             # print statistics
             if self.hparams['verbose_train']:
@@ -201,8 +233,8 @@ class Model:
                     epoch + 1,
                     '| Train_loss: ',
                     avg_loss,
-                    '| Val_loss: ',
-                    avg_val_loss,
+                    '| Metric_val: ',
+                    metric_val,
                     '| Adv_loss: ',
                     avg_adv_loss,
                     '| Current LR: ',
@@ -266,7 +298,7 @@ class Model:
                 self.optimizer.zero_grad()
 
                 # get model predictions
-                preds = self.model(X_batch)
+                preds = self.model(x1=X_batch)
 
                 # remove data from GPU
                 X_batch = [X.cpu().detach().numpy() for X in X_batch]
@@ -348,7 +380,7 @@ class Model:
                     )
                     self.model.build_adv_model(device=self.device)
                     self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
-                    # self.model.module.freeze_layers()
+                    self.model.module.build_adv_model(device=self.device)
                 else:
                     print("Only one GPU will be used")
                     self.device = torch.device(f"cuda:{gpu[0]}" if torch.cuda.is_available() else "cpu")
@@ -388,7 +420,7 @@ class Model:
             checkpoint_path=self.hparams['checkpoint_path'] + f'/checkpoint_{self.start_training}' + '.pt',
             patience=self.hparams['patience'],
             delta=self.hparams['min_delta'],
-            is_maximize=False,
+            is_maximize=True,
         )
 
         # 6. set gradient clipping
