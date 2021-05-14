@@ -6,7 +6,7 @@ import yaml
 import os
 
 from experiments.classification.baseline.data_generator import Dataset_train
-from models.efficientnet import Model
+from models.classification.efficientnet import Model
 from experiments.classification.baseline.train_pipeline import TrainPipeline
 
 

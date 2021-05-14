@@ -6,7 +6,7 @@ import os
 
 from experiments.classification.adversarial_network_train_val_early.data_generator import Dataset_train
 from experiments.classification.adversarial_network_train_val_early.train_pipeline import TrainPipeline
-from models.adv_efficientnet_early import Model
+from models.classification.adv_efficientnet_early import Model
 
 
 def run(

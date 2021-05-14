@@ -6,7 +6,7 @@ import yaml
 import os
 
 from experiments.segmentation.pre_trained_rotation.data_generator import Dataset_train
-from models.unet_pre_trained_rotation import Model
+from models.segmentation.unet_pre_trained_rotation import Model
 from experiments.segmentation.pre_trained_rotation.train_pipeline import TrainPipeline
 
 

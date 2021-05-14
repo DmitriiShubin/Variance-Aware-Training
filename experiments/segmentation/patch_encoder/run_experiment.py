@@ -6,7 +6,7 @@ import os
 
 from experiments.segmentation.patch_encoder.train_pipeline import TrainPipeline
 from experiments.segmentation.patch_encoder.data_generator import Dataset_train
-from models.encoder_patch import Model
+from models.segmentation.encoder_patch import Model
 
 
 def run(

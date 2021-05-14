@@ -6,7 +6,7 @@ import yaml
 import os
 
 from experiments.segmentation.baseline.data_generator import Dataset_train
-from models.unet import Model
+from models.segmentation.unet import Model
 from experiments.segmentation.baseline.train_pipeline import TrainPipeline
 
 

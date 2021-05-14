@@ -6,7 +6,7 @@ import yaml
 import os
 
 from experiments.segmentation.pre_trained_contrastive.data_generator import Dataset_train
-from models.unet_pre_trained_contrastive import Model
+from models.segmentation.unet_pre_trained_contrastive import Model
 from experiments.segmentation.pre_trained_contrastive.train_pipeline import TrainPipeline
 
 

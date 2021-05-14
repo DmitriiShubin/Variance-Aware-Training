@@ -6,7 +6,7 @@ import os
 
 from experiments.segmentation.rotation_encoder.train_pipeline import TrainPipeline
 from experiments.segmentation.rotation_encoder.data_generator import Dataset_train
-from models.encoder_rotation import Model
+from models.segmentation.encoder_rotation import Model
 
 
 def run(

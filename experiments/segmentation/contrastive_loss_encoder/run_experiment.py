@@ -5,7 +5,7 @@ import os
 
 from experiments.segmentation.contrastive_loss_encoder.data_generator import Dataset_train
 from experiments.segmentation.contrastive_loss_encoder.train_pipeline import TrainPipeline
-from models.encoder_contrastive import Model
+from models.segmentation.encoder_contrastive import Model
 
 
 def run(
