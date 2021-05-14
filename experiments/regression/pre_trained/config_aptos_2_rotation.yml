@@ -15,7 +15,7 @@ debug_path: './data/CV_debug/effnet_2_pre_trained_rotation_aptos/'
 checkpoint_path: ./data/model_weights/effnet_2_pre_trained_rotation_aptos/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
 model_path: ./data/model_weights/effnet_2_pre_trained_rotation_aptos/ # CHANGE WHEN CREATE A NEW MODEL
 model:
-  n_classes: 2
+  n_classes: 1
   pre_trained_model: 'efficientnet-b3'
   pre_trained_model_ssl: "./data/model_weights/encoder_rotation_aptos/encoder_rotation_aptos_UB_split_table_fold_0.01_1620423429.1153467"
   type_pretrain: "rotation"

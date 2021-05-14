@@ -37,9 +37,7 @@ class Dataset_train(Dataset):
 
         X = np.load(self.volums_list[id]).astype(np.float32)
         y = np.load(self.volums_list[id][:-4] + '_label.npy').astype(np.float32)
-        y1 = np.zeros((2))
-        y1[int(y)] = 1
-        y = y1
+
 
         X = self.preprocessing.run(X=X)
 

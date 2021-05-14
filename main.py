@@ -39,15 +39,7 @@ from experiments.segmentation.adversarial_network_train_val_late.run_experiment 
 from experiments.regression.baseline.run_experiment import run as run_efficientnet_baseline_regression
 
 # pre-training models
-from experiments.regression.contrastive_loss_encoder.run_experiment import (
-    run as run_pre_training_contrastive_regression,
-)
-from experiments.regression.patch_encoder.run_experiment import (
-    run as run_pre_training_patch_regression,
-)
-from experiments.regression.rotation_encoder.run_experiment import (
-    run as run_pre_training_rotation_regression,
-)
+
 
 # adversarial models
 from experiments.regression.adversarial_network_train_val_early.run_experiment import (
@@ -119,11 +111,16 @@ def main(experiment, gpu):
     # APTOS
 
     # baseline models
+    #run_efficientnet_baseline_regression(experiment='./experiments/regression/baseline/config_aptos_8.yml', gpu='7')
 
-    run_efficientnet_baseline_regression(experiment='./experiments/regression/baseline/config_aptos_8.yml', gpu='7')
+    #adv models
+    #run_efficientnet_adv_early_regression(experiment='./experiments/regression/adversarial_network_train_val_early/config_aptos_8.yml', gpu='6,7')
 
+    # run_efficientnet_adv_late_regression(
+    #     experiment='./experiments/regression/adversarial_network_train_val_late/config_aptos_8.yml', gpu='6,7')
 
-
+    run_pre_trained_regression(
+        experiment='./experiments/regression/pre_trained/config_aptos_2_contrastive.yml', gpu='7')
 
     ###########################################################################
 

@@ -15,7 +15,7 @@ debug_path: './data/CV_debug/effnet_2_pre_trained_contrastive_aptos/'
 checkpoint_path: ./data/model_weights/effnet_2_pre_trained_contrastive_aptos/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
 model_path: ./data/model_weights/effnet_2_pre_trained_contrastive_aptos/ # CHANGE WHEN CREATE A NEW MODEL
 model:
-  n_classes: 2
+  n_classes: 1
   pre_trained_model: 'efficientnet-b3'
   pre_trained_model_ssl: "./data/model_weights/encoder_contrastive_aptos/encoder_contrastive_aptos_UB_split_table_fold_4.0_1620423318.5937107"
   type_pretrain: "contrastive"

@@ -5,9 +5,9 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.classification.baseline.data_generator import Dataset_train
-from models.classification.efficientnet_pre_trained import Model
-from experiments.classification.baseline.train_pipeline import TrainPipeline
+from experiments.regression.baseline.data_generator import Dataset_train
+from models.regression.efficientnet_pre_trained import Model
+from experiments.regression.baseline.train_pipeline import TrainPipeline
 
 
 def run(

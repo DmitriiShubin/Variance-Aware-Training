@@ -12,15 +12,14 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import F1
+from metrics import Kappa
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
-from utils.loss_functions import f1_loss
 
 # model
 from models.classification.adv_efficientnet_late.structure import EfficientNet
-from utils.post_processing import Post_Processing
+from utils.post_processing_regression import Post_Processing
 
 
 class Model:
@@ -104,6 +103,8 @@ class Model:
                 pred, pred_adv = self.model(X_batch, X_batch_adv, train=True)
 
                 # process main loss
+                pred = pred.reshape(-1)
+                y_batch = y_batch.reshape(-1)
                 train_loss = self.loss(pred, y_batch)
 
                 # process loss_2
@@ -165,6 +166,8 @@ class Model:
                     # get predictions
                     pred = self.model(X_batch)
 
+                    pred = pred.reshape(-1)
+                    y_batch = y_batch.reshape(-1)
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
                     # remove data from GPU
@@ -261,6 +264,9 @@ class Model:
                 y_batch = y_batch.float().to(self.device)
 
                 pred = self.model(X_batch)
+
+                pred = pred.reshape(-1)
+                y_batch = y_batch.reshape(-1)
 
                 pred = pred.cpu().detach().numpy()
                 X_batch = X_batch.cpu().detach().numpy()
@@ -370,11 +376,11 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = f1_loss()
+        self.loss = nn.MSELoss()
         self.loss_adv = nn.BCELoss()
 
         # 2. define model metric
-        self.metric = F1(n_classes=self.hparams['model']['n_classes'])
+        self.metric = Kappa()
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

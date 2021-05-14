@@ -4,9 +4,9 @@ from utils.logger import Logger
 import yaml
 import os
 
-from experiments.classification.adversarial_network_train_val_early.data_generator import Dataset_train
-from experiments.classification.adversarial_network_train_val_early.train_pipeline import TrainPipeline
-from models.classification.adv_efficientnet_early import Model
+from experiments.regression.adversarial_network_train_val_early.data_generator import Dataset_train
+from experiments.regression.adversarial_network_train_val_early.train_pipeline import TrainPipeline
+from models.regression.adv_efficientnet_early import Model
 
 
 def run(
