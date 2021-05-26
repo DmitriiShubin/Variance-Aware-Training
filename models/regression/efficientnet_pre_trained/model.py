@@ -10,6 +10,7 @@ import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
+from torch.nn.parallel import DataParallel as DP
 
 # custom modules
 from metrics import Kappa
@@ -328,7 +329,7 @@ class Model:
                         self.hparams['model']['pre_trained_model'],
                         num_classes=self.hparams['model']['n_classes'],
                     ).to(self.device)
-
+                    self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                     # self.model.module.freeze_layers()
                 else:
                     print("Only one GPU will be used")
@@ -361,6 +362,12 @@ class Model:
                 pre_trained_model_ssl=self.hparams['model']['pre_trained_model_ssl'],
                 device=self.device,
             )
+
+        if self.hparams['model']['freeze']:
+            if len(gpu)>1:
+                self.model.module.freeze_layers()
+            else:
+                self.model.freeze_layers()
 
         print('Cuda available: ', torch.cuda.is_available())
 

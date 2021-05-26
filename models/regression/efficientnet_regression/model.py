@@ -348,6 +348,8 @@ class Model:
                 # self.model.freeze_layers()
                 print('Only one GPU is available')
 
+
+
         print('Cuda available: ', torch.cuda.is_available())
 
         return True
@@ -355,7 +357,7 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = nn.MSELoss() #
+        self.loss = nn.L1Loss()
 
         # 2. define model metric
         self.metric = Kappa()

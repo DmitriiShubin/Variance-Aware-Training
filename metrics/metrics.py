@@ -70,10 +70,9 @@ class RocAuc:
 
     def compute(self):
 
-        score = roc_auc_score(self.labels, self.outputs)
+        score = roc_auc_score(self.labels, self.outputs,average='macro')
 
-        self.labels = []
-        self.outputs = []
+        self.reset()
 
         return score
 

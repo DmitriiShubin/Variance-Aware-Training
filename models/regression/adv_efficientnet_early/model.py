@@ -376,7 +376,7 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = nn.MSELoss()
+        self.loss = nn.L1Loss()
         self.loss_adv = nn.BCELoss()
 
         # 2. define model metric

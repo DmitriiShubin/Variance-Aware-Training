@@ -1,7 +1,7 @@
 # basic libs
 import numpy as np
 import torch
-
+import json
 
 # pytorch
 import torch
@@ -35,9 +35,9 @@ class Dataset_train(Dataset):
 
         X = np.load(self.volums_list[id]).astype(np.float32)
         y = np.load(self.volums_list[id][:-4] + '_label.npy').astype(np.float32)
-        y1 = np.zeros((2))
-        y1[int(y)] = 1
-        y = y1
+        #y = np.array(json.load(open(self.volums_list[id][:-4] + '.json'))['label']).astype(np.float32)
+
+        y = [y.tolist()]
 
         X = self.preprocessing.run(X=X)
 
@@ -58,6 +58,10 @@ class Preprocessing:
         X = self.imagenet_normalize(X)
 
         X = np.transpose(X.astype(np.float32), (2, 0, 1))
+
+        #X = self.standard_scaling(X)
+
+
 
         return X
 
@@ -102,15 +106,15 @@ class Augmentations:
         prob = 0.5
         self.augs = A.Compose(
             [
-                # A.HorizontalFlip(p=prob),
-                # A.VerticalFlip(p=prob),
-                # A.Rotate(limit=90, p=prob),
-                # A.GlassBlur(sigma=1),
-                # A.GridDistortion(distort_limit=0.3),
-                # A.ElasticTransform(alpha=0.05, p=prob),
-                # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
-                # A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                # A.RandomBrightness(limit=0.2, p=prob)
+                A.HorizontalFlip(p=prob),
+                A.VerticalFlip(p=prob),
+                A.Rotate(limit=45, p=prob),
+                # # A.GlassBlur(sigma=1),
+                # # A.GridDistortion(distort_limit=0.3),
+                # # A.ElasticTransform(alpha=0.05, p=prob),
+                A.RandomSizedCrop(min_max_height=(65, 80), height=96, width=96, p=prob),
+                A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                # # A.RandomBrightness(limit=0.2, p=prob)
             ]
         )
 

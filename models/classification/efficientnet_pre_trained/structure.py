@@ -28,13 +28,12 @@ class EfficientNet(effnet):
         if self._global_params.include_top:
             x = x.flatten(start_dim=1)
             x = self._dropout(x)
-            x = torch.softmax(self._fc(x), dim=1)
+            x = torch.sigmoid(self._fc(x))
         return x
 
     def freeze_layers(self):
 
-        for param in self.parameters():
-            print(param)
+        for param in self._blocks.parameters():
             param.requires_grad = False
 
         return True

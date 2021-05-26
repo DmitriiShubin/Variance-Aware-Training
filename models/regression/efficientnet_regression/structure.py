@@ -29,7 +29,7 @@ class EfficientNet(effnet):
 
     def freeze_layers(self):
 
-        for param in self.parameters():
+        for param in self._blocks.parameters():
             print(param)
             param.requires_grad = False
 

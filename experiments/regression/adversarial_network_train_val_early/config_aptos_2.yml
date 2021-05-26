@@ -16,7 +16,7 @@ checkpoint_path: ./data/model_weights/effnet_2_adv_early_aptos/checkpoint/ # CHA
 model_path: ./data/model_weights/effnet_2_adv_early_aptos/ # CHANGE WHEN CREATE A NEW MODEL
 model:
   n_classes: 1
-  pre_trained_model: 'efficientnet-b3'
+  pre_trained_model: 'efficientnet-b4'
 #'efficientnet-b0', 'efficientnet-b1', 'efficientnet-b2', 'efficientnet-b3',
 #'efficientnet-b4', 'efficientnet-b5', 'efficientnet-b6', 'efficientnet-b7',
   alpha: 0.05

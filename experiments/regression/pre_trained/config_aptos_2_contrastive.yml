@@ -17,8 +17,9 @@ model_path: ./data/model_weights/effnet_2_pre_trained_contrastive_aptos/ # CHANG
 model:
   n_classes: 1
   pre_trained_model: 'efficientnet-b3'
-  pre_trained_model_ssl: "./data/model_weights/encoder_contrastive_aptos/encoder_contrastive_aptos_UB_split_table_fold_4.0_1620423318.5937107"
+  pre_trained_model_ssl: "./data/model_weights/encoder_contrastive_aptos/encoder_contrastive_aptos_UB_split_table_fold_1.74_1621390104.444057"
   type_pretrain: "contrastive"
+  freeze: True
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001

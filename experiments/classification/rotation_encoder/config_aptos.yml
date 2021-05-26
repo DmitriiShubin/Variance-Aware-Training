@@ -14,7 +14,7 @@ image_height: 240
 debug_path: './data/CV_debug/encoder_rotation_aptos/'
 checkpoint_path: ./data/model_weights/encoder_rotation_aptos/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
 model_path: ./data/model_weights/encoder_rotation_aptos/ # CHANGE WHEN CREATE A NEW MODEL
-dataset: 'APTOS_1'
+dataset: 'APTOS'
 model:
   pre_trained_model: 'efficientnet-b3'
   emb_dim: 256

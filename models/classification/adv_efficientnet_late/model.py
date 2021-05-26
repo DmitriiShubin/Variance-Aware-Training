@@ -12,11 +12,11 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import F1
+from metrics import RocAuc
 from utils.pytorchtools import EarlyStopping
 from torch.nn.parallel import DataParallel as DP
 from time import time
-from utils.loss_functions import f1_loss
+
 
 # model
 from models.classification.adv_efficientnet_late.structure import EfficientNet
@@ -104,6 +104,8 @@ class Model:
                 pred, pred_adv = self.model(X_batch, X_batch_adv, train=True)
 
                 # process main loss
+                pred = pred.reshape(-1)
+                y_batch = y_batch.reshape(-1)
                 train_loss = self.loss(pred, y_batch)
 
                 # process loss_2
@@ -137,8 +139,8 @@ class Model:
                 # iptimizer step
                 self.optimizer.step()
 
-                y_batch = self.postprocessing.run(y_batch)
-                pred = self.postprocessing.run(pred)
+                # y_batch = self.postprocessing.run(y_batch)
+                # pred = self.postprocessing.run(pred)
 
                 # calculate a step for metrics
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -165,6 +167,8 @@ class Model:
                     # get predictions
                     pred = self.model(X_batch)
 
+                    pred = pred.reshape(-1)
+                    y_batch = y_batch.reshape(-1)
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
                     # remove data from GPU
@@ -172,8 +176,8 @@ class Model:
                     pred = pred.float().cpu().detach().numpy()
                     y_batch = y_batch.float().cpu().detach().numpy()
 
-                    y_batch = self.postprocessing.run(y_batch)
-                    pred = self.postprocessing.run(pred)
+                    # y_batch = self.postprocessing.run(y_batch)
+                    # pred = self.postprocessing.run(pred)
 
                     # calculate a step for metrics
                     self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -262,12 +266,15 @@ class Model:
 
                 pred = self.model(X_batch)
 
+                pred = pred.reshape(-1)
+                y_batch = y_batch.reshape(-1)
+
                 pred = pred.cpu().detach().numpy()
                 X_batch = X_batch.cpu().detach().numpy()
                 y_batch = y_batch.cpu().detach().numpy()
 
-                y_batch = self.postprocessing.run(y_batch)
-                pred = self.postprocessing.run(pred)
+                # y_batch = self.postprocessing.run(y_batch)
+                # pred = self.postprocessing.run(pred)
 
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
@@ -370,11 +377,11 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = f1_loss()
+        self.loss = nn.BCELoss()
         self.loss_adv = nn.BCELoss()
 
         # 2. define model metric
-        self.metric = F1(n_classes=self.hparams['model']['n_classes'])
+        self.metric = RocAuc()
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(

@@ -124,7 +124,7 @@ class Augmentations:
 
         prob = 0.5
 
-        if dataset == 'APTOS_1':
+        if dataset == 'APTOS':
             self.augs = A.Compose(
                 [
                     # A.Blur(blur_limit=3, p=prob),
@@ -132,56 +132,22 @@ class Augmentations:
                     A.VerticalFlip(p=prob),
                     A.Rotate(limit=90, p=prob),
                     A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
+                    A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
                     A.RandomGamma(gamma_limit=(80, 120), p=prob),
                 ]
             )
-        elif dataset == 'APTOS_2':
+        elif dataset == 'HIST':
             self.augs = A.Compose(
                 [
-                    # A.Blur(blur_limit=3, p=prob),
                     A.HorizontalFlip(p=prob),
                     A.VerticalFlip(p=prob),
-                    A.Rotate(limit=90, p=prob),
-                    A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
+                    A.Rotate(limit=45, p=prob),
+                    # # A.GlassBlur(sigma=1),
+                    # # A.GridDistortion(distort_limit=0.3),
+                    # # A.ElasticTransform(alpha=0.05, p=prob),
+                    A.RandomSizedCrop(min_max_height=(65, 80), height=96, width=96, p=prob),
                     A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                ]
-            )
-        elif dataset == 'APTOS_3':
-            self.augs = A.Compose(
-                [
-                    A.Blur(blur_limit=3, p=prob),
-                    A.HorizontalFlip(p=prob),
-                    A.VerticalFlip(p=prob),
-                    A.Rotate(limit=90, p=prob),
-                    A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                ]
-            )
-        elif dataset == 'APTOS_4':
-            self.augs = A.Compose(
-                [
-                    A.Blur(blur_limit=3, p=prob),
-                    A.HorizontalFlip(p=prob),
-                    A.VerticalFlip(p=prob),
-                    A.Rotate(limit=90, p=prob),
-                    A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    A.RandomSizedCrop(min_max_height=(140, 220), height=256, width=256, p=prob),
-                    A.RandomGamma(gamma_limit=(80, 120), p=prob),
-                ]
-            )
-        elif dataset == 'RSNA_1':
-            self.augs = A.Compose(
-                [
-                    # A.Blur(blur_limit=3, p=prob),
-                    # A.HorizontalFlip(p=prob),
-                    # A.VerticalFlip(p=prob),
-                    # A.Rotate(limit=90, p=prob),
-                    # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=prob),
-                    # A.RandomSizedCrop(min_max_height=(180, 220), height=256, width=256, p=prob),
-                    # A.RandomGamma(gamma_limit=(80, 120), p=prob),
+                    # # A.RandomBrightness(limit=0.2, p=prob)
                 ]
             )
 

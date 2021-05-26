@@ -1,0 +1,32 @@
+batch_size: 32
+n_epochs: 3000
+patience: 100 #number of epochs wait until improvement
+clipping: false #apply gradient clipping
+min_delta: 0.005 #min delta of improvement for early stopping
+verbose_train: true
+num_workers: 0
+n_train_samples: 1
+model_name: effnet_2_adv_early_aptos # CHANGE WHEN CREATE A NEW MODEL
+split_table_path: './data/split_tables/aptos/2_split_table.json'
+test_split_table_path: './data/split_tables/aptos/test_split_table.json'
+image_width: 240
+image_height: 240
+debug_path: './data/CV_debug/effnet_2_adv_early_aptos/'
+checkpoint_path: ./data/model_weights/effnet_2_adv_early_aptos/checkpoint/ # CHANGE WHEN CREATE A NEW MODEL
+model_path: ./data/model_weights/effnet_2_adv_early_aptos/ # CHANGE WHEN CREATE A NEW MODEL
+model:
+  n_classes: 1
+  pre_trained_model: 'efficientnet-b3'
+#'efficientnet-b0', 'efficientnet-b1', 'efficientnet-b2', 'efficientnet-b3',
+#'efficientnet-b4', 'efficientnet-b5', 'efficientnet-b6', 'efficientnet-b7',
+  alpha: 0.1
+optimizer_name: Adam
+optimizer_hparams:
+  lr: 0.001
+  weight_decay: 0.0
+scheduler_name: ReduceLROnPlateau
+scheduler_hparams:
+  patience: 10000
+  threshold: 0.02
+  verbose: true
+  factor: 0.2

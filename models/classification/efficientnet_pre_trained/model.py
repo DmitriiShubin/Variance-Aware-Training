@@ -7,14 +7,15 @@ import random
 
 # pytorch
 import torch
+from torch import nn
+from torch.nn.parallel import DataParallel as DP
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 # custom modules
-from metrics import F1
+from metrics import RocAuc
 from utils.pytorchtools import EarlyStopping
 from time import time
-from utils.loss_functions import f1_loss
 
 # model
 from .structure import EfficientNet
@@ -115,8 +116,8 @@ class Model:
                 # iptimizer step
                 self.optimizer.step()
 
-                y_batch = self.postprocessing.run(y_batch)
-                pred = self.postprocessing.run(pred)
+                # y_batch = self.postprocessing.run(y_batch)
+                # pred = self.postprocessing.run(pred)
 
                 # calculate a step for metrics
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -154,8 +155,8 @@ class Model:
                     pred = pred.float().cpu().detach().numpy()
                     y_batch = y_batch.float().cpu().detach().numpy()
 
-                    y_batch = self.postprocessing.run(y_batch)
-                    pred = self.postprocessing.run(pred)
+                    # y_batch = self.postprocessing.run(y_batch)
+                    # pred = self.postprocessing.run(pred)
 
                     # calculate a step for metrics
                     self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -254,8 +255,8 @@ class Model:
                 X_batch = X_batch.cpu().detach().numpy()
                 y_batch = y_batch.cpu().detach().numpy()
 
-                y_batch = self.postprocessing.run(y_batch)
-                pred = self.postprocessing.run(pred)
+                # y_batch = self.postprocessing.run(y_batch)
+                # pred = self.postprocessing.run(pred)
 
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
@@ -328,7 +329,7 @@ class Model:
                         self.hparams['model']['pre_trained_model'],
                         num_classes=self.hparams['model']['n_classes'],
                     ).to(self.device)
-
+                    self.model = DP(self.model, device_ids=gpu, output_device=gpu[0])
                     # self.model.module.freeze_layers()
                 else:
                     print("Only one GPU will be used")
@@ -362,6 +363,12 @@ class Model:
                 device=self.device,
             )
 
+        if self.hparams['model']['freeze']:
+            if len(gpu)>1:
+                self.model.module.freeze_layers()
+            else:
+                self.model.freeze_layers()
+
         print('Cuda available: ', torch.cuda.is_available())
 
         return True
@@ -369,10 +376,10 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = f1_loss()  #
+        self.loss = nn.BCELoss()
 
         # 2. define model metric
-        self.metric = F1(n_classes=self.hparams['model']['n_classes'])  #
+        self.metric = RocAuc() #
 
         # 3. define optimizer
         self.optimizer = eval(f"torch.optim.{self.hparams['optimizer_name']}")(
