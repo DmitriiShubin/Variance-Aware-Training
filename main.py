@@ -74,7 +74,7 @@ def main(experiment, gpu):
     # ACDC
 
     # baseline, without pre-train
-    run_baseline_segmentation(experiment='./experiments/segmentation/baseline/config_ACDC_2.yml')
+    run_baseline_segmentation(experiment='./experiments/segmentation/baseline/config_ACDC_2.yml', eval=True)
     run_baseline_segmentation(experiment='./experiments/segmentation/baseline/config_ACDC_4.yml')
     run_baseline_segmentation(experiment='./experiments/segmentation/baseline/config_ACDC_8.yml')
     run_baseline_segmentation(experiment='./experiments/segmentation/baseline/config_ACDC_UB.yml')

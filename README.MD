@@ -59,6 +59,9 @@ PCam classification (ROC-AUC score):
 
 #### Dependencies
 
+
+![Download pre-trained weigths and data ](https://github.com/DmitriiShubin/Variance-Aware-Training/blob/working_segmentation/assets/method.png)
+
 Python version >3.7.0
 
 Install frameworks:
@@ -72,5 +75,4 @@ pip install -r requirements.txt
 python main.py
 ```
 
-#### Evaluation
 

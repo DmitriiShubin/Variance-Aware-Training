@@ -16,6 +16,7 @@ def run(
     gpu='1',
     dropout=None,
     experiment='./experiments/adversarial_network_train_val_early/config_brats_2.yml',
+    eval=False,
 ):
 
     # load hyperparameters
@@ -36,7 +37,7 @@ def run(
     logger = Logger()
 
     # run cross-val
-    cross_val = TrainPipeline(hparams=hparams, gpu=gpu, model=Model, Dataset_train=Dataset_train)
+    cross_val = TrainPipeline(hparams=hparams, gpu=gpu, model=Model, Dataset_train=Dataset_train, eval=eval)
     fold_scores_val, fold_scores_test, start_training = cross_val.train()
 
     # save logs

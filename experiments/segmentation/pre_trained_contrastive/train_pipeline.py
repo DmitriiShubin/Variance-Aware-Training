@@ -19,13 +19,14 @@ seed_everything(42)
 
 
 class TrainPipeline:
-    def __init__(self, hparams, gpu, model, Dataset_train):
+    def __init__(self, hparams, gpu, model, Dataset_train, eval):
 
         # load the model
 
         self.hparams = hparams
         self.gpu = gpu
         self.Dataset_train = Dataset_train
+        self.eval = eval
 
         print('\n')
         print('Selected Learning rate:', self.hparams['optimizer_hparams']['lr'])
@@ -69,8 +70,15 @@ class TrainPipeline:
             dataset=self.hparams['dataset'],
         )
 
-        # train model
-        start_training = self.model.fit(train=train, valid=valid)
+        if not self.eval:
+
+            self.model = self.model(hparams=self.hparams, gpu=self.gpu)
+
+            # train model
+            start_training = self.model.fit(train=train, valid=valid)
+        else:
+            self.model.restore(self.hparams['model']['model_weigths'])
+            start_training = 0.0
 
         # get model predictions
         error_val, fold_score = self.model.predict(valid)

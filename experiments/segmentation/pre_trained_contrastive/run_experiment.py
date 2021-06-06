@@ -17,6 +17,7 @@ def run(
     gpu='7',
     dropout=None,
     experiment='./experiments/pre_trained_contrastive/config_brats_2.yml',
+    eval=False,
 ):
 
     # load hyperparameters
@@ -31,13 +32,13 @@ def run(
         gpu = [int(i) for i in gpu.split(",")]
 
     hparams = update_hparams(
-        hparams=hparams, dropout=dropout, batch_size=batch_size, lr=lr, n_epochs=n_epochs,
+        hparams=hparams, dropout=dropout, batch_size=batch_size, lr=lr, n_epochs=n_epochs
     )
 
     logger = Logger()
 
     # run cross-val
-    cross_val = TrainPipeline(hparams=hparams, gpu=gpu, model=Model, Dataset_train=Dataset_train)
+    cross_val = TrainPipeline(hparams=hparams, gpu=gpu, model=Model, Dataset_train=Dataset_train, eval=eval)
     fold_scores_val, fold_scores_test, start_training = cross_val.train()
 
     # save logs
