@@ -74,7 +74,3 @@ python main.py
 
 #### Evaluation
 
-```
-python eval.py
-```
-
