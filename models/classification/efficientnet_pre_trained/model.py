@@ -91,9 +91,7 @@ class Model:
                 # get model predictions
                 pred = self.model(X_batch)
 
-                # process main loss
-                # pred = pred.reshape(-1)
-                # y_batch = y_batch.reshape(-1)
+
                 train_loss = self.loss(pred, y_batch)
 
                 # calc loss
@@ -116,8 +114,6 @@ class Model:
                 # iptimizer step
                 self.optimizer.step()
 
-                # y_batch = self.postprocessing.run(y_batch)
-                # pred = self.postprocessing.run(pred)
 
                 # calculate a step for metrics
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -144,9 +140,6 @@ class Model:
                     # get predictions
                     pred = self.model(X_batch)
 
-                    # calculate main loss
-                    # pred = pred.reshape(-1)
-                    # y_batch = y_batch.reshape(-1)
 
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
@@ -155,8 +148,6 @@ class Model:
                     pred = pred.float().cpu().detach().numpy()
                     y_batch = y_batch.float().cpu().detach().numpy()
 
-                    # y_batch = self.postprocessing.run(y_batch)
-                    # pred = self.postprocessing.run(pred)
 
                     # calculate a step for metrics
                     self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -247,16 +238,13 @@ class Model:
 
                 pred = self.model(X_batch)
 
-                # calculate main loss
-                # pred = pred.reshape(-1)
-                # y_batch = y_batch.reshape(-1)
+
 
                 pred = pred.cpu().detach().numpy()
                 X_batch = X_batch.cpu().detach().numpy()
                 y_batch = y_batch.cpu().detach().numpy()
 
-                # y_batch = self.postprocessing.run(y_batch)
-                # pred = self.postprocessing.run(pred)
+
 
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
 

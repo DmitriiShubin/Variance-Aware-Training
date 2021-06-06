@@ -139,8 +139,6 @@ class Model:
                 # iptimizer step
                 self.optimizer.step()
 
-                # y_batch = self.postprocessing.run(y_batch)
-                # pred = self.postprocessing.run(pred)
 
                 # calculate a step for metrics
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -176,8 +174,7 @@ class Model:
                     pred = pred.float().cpu().detach().numpy()
                     y_batch = y_batch.float().cpu().detach().numpy()
 
-                    # y_batch = self.postprocessing.run(y_batch)
-                    # pred = self.postprocessing.run(pred)
+
 
                     # calculate a step for metrics
                     self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -273,8 +270,6 @@ class Model:
                 X_batch = X_batch.cpu().detach().numpy()
                 y_batch = y_batch.cpu().detach().numpy()
 
-                # y_batch = self.postprocessing.run(y_batch)
-                # pred = self.postprocessing.run(pred)
 
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
 

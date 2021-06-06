@@ -74,8 +74,6 @@ class EfficientNet(effnet):
         x = torch.cat([x6_s, x12_s, x6_p, x12_p,], dim=1,)
 
         x = torch.relu(self.adv_fc1(x))
-        # x = torch.relu(self.adv_fc2(x))
-        # x = torch.relu(self.adv_fc3(x))
         x = torch.sigmoid(self.adv_fc4(x))
 
         return x

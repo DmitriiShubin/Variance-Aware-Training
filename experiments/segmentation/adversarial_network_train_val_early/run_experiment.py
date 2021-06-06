@@ -6,7 +6,7 @@ import os
 
 from experiments.segmentation.adversarial_network_train_val_early.data_generator import Dataset_train
 from experiments.segmentation.adversarial_network_train_val_early.train_pipeline import TrainPipeline
-from models.segmentation.adv_unet_train_val_early import Model
+from models.segmentation.adv_unet_early import Model
 
 
 def run(

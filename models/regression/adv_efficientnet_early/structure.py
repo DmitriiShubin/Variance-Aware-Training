@@ -141,8 +141,6 @@ class EfficientNet(effnet):
         )
 
         x = torch.relu(self.adv_fc1(x))
-        # x = torch.relu(self.adv_fc2(x))
-        # x = torch.relu(self.adv_fc3(x))
         x = torch.sigmoid(self.adv_fc4(x))
 
         return x

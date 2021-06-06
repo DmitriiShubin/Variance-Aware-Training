@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-from time import time
-import numpy as np
 from efficientnet_pytorch import EfficientNet as effnet
 
 

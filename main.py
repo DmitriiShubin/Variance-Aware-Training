@@ -76,45 +76,47 @@ import click
 @click.option('--gpu', default='7', help='')
 def main(experiment, gpu):
 
+
+
     # ACDC
-    #
-    # baseline, without pre-train
-    # run_baseline_segmentation(experiment='./experiments/baseline/config_ACDC_2.yml')
-    # run_baseline_segmentation(experiment='./experiments/baseline/config_ACDC_4.yml')
-    # run_baseline_segmentation(experiment='./experiments/baseline/config_ACDC_8.yml')
-    # run_baseline_segmentation(experiment='./experiments/baseline/config_ACDC_UB.yml')
-    #
-    # pre-training
-    # run_contrastive_pre_train_segmentation(experiment='./experiments/contrastive_loss_encoder/config_ACDC.yml',gpu='7')
-    # run_rotation_pre_train_segmentation(experiment='./experiments/rotation_encoder/config_ACDC.yml',gpu='7')
-    # run_patch_pre_train_segmentation(experiment='./experiments/patch_encoder/config_ACDC.yml',gpu='6')
-    #
-    # # pre-trained contrastive
-    # run_pre_trained_contrastive_segmentation(experiment='./experiments/pre_trained_contrastive/config_ACDC_2.yml')
-    # run_pre_trained_contrastive_segmentation(experiment='./experiments/pre_trained_contrastive/config_ACDC_4.yml')
-    # run_pre_trained_contrastive_segmentation(experiment='./experiments/pre_trained_contrastive/config_ACDC_8.yml')
-    #
-    # # pre-trained rotation
-    # run_pre_trained_rotation_segmentation(experiment='./experiments/pre_trained_rotation/config_ACDC_2.yml')
-    # run_pre_trained_rotation_segmentation(experiment='./experiments/pre_trained_rotation/config_ACDC_4.yml')
-    # run_pre_trained_rotation_segmentation(experiment='./experiments/pre_trained_rotation/config_ACDC_8.yml')
-    #
-    # # pre-trained patch
-    # run_pre_trained_patch_segmentation(experiment='./experiments/pre_trained_patch/config_ACDC_2.yml')
-    # run_pre_trained_patch_segmentation(experiment='./experiments/pre_trained_patch/config_ACDC_4.yml')
-    # run_pre_trained_patch_segmentation(experiment='./experiments/pre_trained_patch/config_ACDC_8.yml')
-    #
-    # Single-stage self-supervised early flat
-    # run_adversarial_network_train_val_early(
-    #     experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2.yml'
-    # )
-    # run_adversarial_network_train_val_early(experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_4.yml')
-    # run_adversarial_network_train_val_early(experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_8.yml')
-    #
-    # Single-stage self-supervised late flat
-    # run_adversarial_network_train_val_late(experiment='./experiments/adversarial_network_train_val_late/config_ACDC_2.yml')
-    # run_adversarial_network_train_val_late(experiment='./experiments/adversarial_network_train_val_late/config_ACDC_4.yml')
-    # run_adversarial_network_train_val_late(experiment='./experiments/adversarial_network_train_val_late/config_ACDC_8.yml')
+
+    #baseline, without pre-train
+    run_baseline_segmentation(experiment='./experiments/baseline/config_ACDC_2.yml')
+    run_baseline_segmentation(experiment='./experiments/baseline/config_ACDC_4.yml')
+    run_baseline_segmentation(experiment='./experiments/baseline/config_ACDC_8.yml')
+    run_baseline_segmentation(experiment='./experiments/baseline/config_ACDC_UB.yml')
+
+    #pre-training
+    run_pre_training_contrastive_segmentation(experiment='./experiments/contrastive_loss_encoder/config_ACDC.yml',gpu='7')
+    run_pre_training_rotation_segmentation(experiment='./experiments/rotation_encoder/config_ACDC.yml',gpu='7')
+    run_pre_training_patch_segmentation(experiment='./experiments/patch_encoder/config_ACDC.yml',gpu='6')
+
+    # pre-trained contrastive
+    run_pre_trained_contrastive_segmentation(experiment='./experiments/pre_trained_contrastive/config_ACDC_2.yml')
+    run_pre_trained_contrastive_segmentation(experiment='./experiments/pre_trained_contrastive/config_ACDC_4.yml')
+    run_pre_trained_contrastive_segmentation(experiment='./experiments/pre_trained_contrastive/config_ACDC_8.yml')
+
+    # pre-trained rotation
+    run_pre_trained_rotation_segmentation(experiment='./experiments/pre_trained_rotation/config_ACDC_2.yml')
+    run_pre_trained_rotation_segmentation(experiment='./experiments/pre_trained_rotation/config_ACDC_4.yml')
+    run_pre_trained_rotation_segmentation(experiment='./experiments/pre_trained_rotation/config_ACDC_8.yml')
+
+    # pre-trained patch
+    run_pre_trained_patch_segmentation(experiment='./experiments/pre_trained_patch/config_ACDC_2.yml')
+    run_pre_trained_patch_segmentation(experiment='./experiments/pre_trained_patch/config_ACDC_4.yml')
+    run_pre_trained_patch_segmentation(experiment='./experiments/pre_trained_patch/config_ACDC_8.yml')
+
+    Single-stage self-supervised early flat
+    run_adversarial_network_train_val_early(
+        experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_2.yml'
+    )
+    run_adversarial_network_train_val_early(experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_4.yml')
+    run_adversarial_network_train_val_early(experiment='./experiments/segmentation/adversarial_network_train_val_early/config_ACDC_8.yml')
+
+    Single-stage self-supervised late flat
+    run_adversarial_network_train_val_late(experiment='./experiments/adversarial_network_train_val_late/config_ACDC_2.yml')
+    run_adversarial_network_train_val_late(experiment='./experiments/adversarial_network_train_val_late/config_ACDC_4.yml')
+    run_adversarial_network_train_val_late(experiment='./experiments/adversarial_network_train_val_late/config_ACDC_8.yml')
 
     ###########################################################################
     # APTOS

@@ -91,6 +91,8 @@ class Model:
                 pred_anchor = self.model(X_anchor, pretrain=True)
                 pred_supportive = self.model(X_supportive, pretrain=True)
 
+                #[n_batch_size, emb_size]
+
                 train_loss = self.loss(pred_anchor, pred_supportive)
 
                 # remove data from GPU
