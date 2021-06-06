@@ -19,7 +19,7 @@ of the variance of the model (i.e., as a part of the model loss), and providing 
  self-supervised methods, but 10x faster.
  
  
-![](https://github.com/DmitriiShubin/Variance-Aware-Training/assets/method.png "")
+![](https://github.com/DmitriiShubin/Variance-Aware-Training/blob/working_segmentation/assets/method.png "")
 
 ### Results
 ACDC semantic segmentation (DICE marco score, without background):
