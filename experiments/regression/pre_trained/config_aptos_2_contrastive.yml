@@ -19,7 +19,7 @@ model:
   pre_trained_model: 'efficientnet-b3'
   pre_trained_model_ssl: "./data/model_weights/encoder_contrastive_aptos/encoder_contrastive_aptos_UB_split_table_fold_1.74_1621390104.444057"
   type_pretrain: "contrastive"
-  freeze: True
+  freeze: False
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001

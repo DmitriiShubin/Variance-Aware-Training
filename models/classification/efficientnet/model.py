@@ -142,15 +142,12 @@ class Model:
                     # get predictions
                     pred = self.model(X_batch)
 
-
                     avg_val_loss += self.loss(pred, y_batch).item() / len(valid_loader)
 
                     # remove data from GPU
                     X_batch = X_batch.float().cpu().detach().numpy()
                     pred = pred.float().cpu().detach().numpy()
                     y_batch = y_batch.float().cpu().detach().numpy()
-
-
 
                     # calculate a step for metrics
                     self.metric.calc_running_score(labels=y_batch, outputs=pred)
@@ -241,12 +238,9 @@ class Model:
 
                 pred = self.model(X_batch)
 
-
-
                 pred = pred.cpu().detach().numpy()
                 X_batch = X_batch.cpu().detach().numpy()
                 y_batch = y_batch.cpu().detach().numpy()
-
 
                 self.metric.calc_running_score(labels=y_batch, outputs=pred)
 
@@ -341,7 +335,7 @@ class Model:
         print('Cuda available: ', torch.cuda.is_available())
 
         if self.hparams['freeze']:
-            if len(gpu)>1:
+            if len(gpu) > 1:
                 self.model.module.freeze_layers()
             else:
                 self.model.freeze_layers()
@@ -351,7 +345,7 @@ class Model:
     def __setup_model_hparams(self):
 
         # 1. define losses
-        self.loss = nn.BCELoss()#f1_loss()  #
+        self.loss = nn.BCELoss()  # f1_loss()  #
 
         # 2. define model metric
         self.metric = RocAuc()

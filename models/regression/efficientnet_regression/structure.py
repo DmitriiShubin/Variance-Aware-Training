@@ -1,5 +1,3 @@
-
-
 from efficientnet_pytorch import EfficientNet as effnet
 
 

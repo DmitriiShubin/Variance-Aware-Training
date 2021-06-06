@@ -70,7 +70,7 @@ class RocAuc:
 
     def compute(self):
 
-        score = roc_auc_score(self.labels, self.outputs,average='macro')
+        score = roc_auc_score(self.labels, self.outputs, average='macro')
 
         self.reset()
 
@@ -188,18 +188,17 @@ class Kappa:
         self.labels = []
         self.N = 5
 
-    def calc_running_score(self,labels: np.array , outputs: np.array ):
+    def calc_running_score(self, labels: np.array, outputs: np.array):
 
         self.labels += labels.tolist()
         self.outputs += outputs.tolist()
 
     def compute(self):
 
-        score = kappa(self.labels,self.outputs,weights='quadratic')
+        score = kappa(self.labels, self.outputs, weights='quadratic')
 
         self.reset()
         return score
-
 
     def reset(self):
         self.outputs = []

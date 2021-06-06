@@ -1,7 +1,9 @@
 import torch
 import yaml
 
-from models.classification.encoder_contrastive_classification.structure import EfficientNet as effnet_contrastive
+from models.classification.encoder_contrastive_classification.structure import (
+    EfficientNet as effnet_contrastive,
+)
 from models.classification.encoder_patch_classification.structure import EfficientNet as effnet_patch
 from models.classification.encoder_rotation_classification.structure import EfficientNet as effnet_rotation
 from efficientnet_pytorch import EfficientNet as effnet

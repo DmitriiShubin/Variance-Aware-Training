@@ -19,7 +19,7 @@ model:
   pre_trained_model: 'efficientnet-b3'
 #'efficientnet-b0', 'efficientnet-b1', 'efficientnet-b2', 'efficientnet-b3',
 #'efficientnet-b4', 'efficientnet-b5', 'efficientnet-b6', 'efficientnet-b7',
-  alpha: 0.05
+  alpha: 0.1
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001

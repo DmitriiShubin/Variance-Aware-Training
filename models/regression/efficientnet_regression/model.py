@@ -348,8 +348,6 @@ class Model:
                 # self.model.freeze_layers()
                 print('Only one GPU is available')
 
-
-
         print('Cuda available: ', torch.cuda.is_available())
 
         return True

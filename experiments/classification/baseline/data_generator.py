@@ -35,7 +35,7 @@ class Dataset_train(Dataset):
 
         X = np.load(self.volums_list[id]).astype(np.float32)
         y = np.load(self.volums_list[id][:-4] + '_label.npy').astype(np.float32)
-        #y = np.array(json.load(open(self.volums_list[id][:-4] + '.json'))['label']).astype(np.float32)
+        # y = np.array(json.load(open(self.volums_list[id][:-4] + '.json'))['label']).astype(np.float32)
 
         y = [y.tolist()]
 
@@ -59,9 +59,7 @@ class Preprocessing:
 
         X = np.transpose(X.astype(np.float32), (2, 0, 1))
 
-        #X = self.standard_scaling(X)
-
-
+        # X = self.standard_scaling(X)
 
         return X
 

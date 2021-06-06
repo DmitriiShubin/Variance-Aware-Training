@@ -183,7 +183,6 @@ class Augmentations:
                 ]
             )
 
-
     # A.RandomBrightness(limit=0.2, p=prob)
 
     def run(self, image):

@@ -39,9 +39,15 @@ from experiments.segmentation.adversarial_network_train_val_late.run_experiment 
 from experiments.regression.baseline.run_experiment import run as run_efficientnet_baseline_regression
 
 # pre-training models
-from experiments.classification.patch_encoder.run_experiment import run as run_pre_training_patch_classification
-from experiments.classification.rotation_encoder.run_experiment import run as run_pre_training_rotation_classification
-from experiments.classification.contrastive_loss_encoder.run_experiment import run as run_pre_training_contrastive_classification
+from experiments.classification.patch_encoder.run_experiment import (
+    run as run_pre_training_patch_classification,
+)
+from experiments.classification.rotation_encoder.run_experiment import (
+    run as run_pre_training_rotation_classification,
+)
+from experiments.classification.contrastive_loss_encoder.run_experiment import (
+    run as run_pre_training_contrastive_classification,
+)
 
 # adversarial models
 from experiments.regression.adversarial_network_train_val_early.run_experiment import (
@@ -59,7 +65,9 @@ from experiments.regression.pre_trained.run_experiment import run as run_pre_tra
 # HIST experiments:
 
 # baseline models
-from experiments.classification.baseline.run_experiment import run as run_efficientnet_baseline_classification
+from experiments.classification.baseline.run_experiment import (
+    run as run_efficientnet_baseline_classification,
+)
 
 from experiments.classification.adversarial_network_train_val_early.run_experiment import (
     run as run_efficientnet_adv_early_classification,
@@ -78,23 +86,25 @@ import click
 @click.option('--gpu', default='7', help='')
 def main(experiment, gpu):
 
-
-    run_pre_training_patch_classification(experiment='./experiments/classification/patch_encoder/config_aptos.yml',
-                                          gpu='6,7')
+    run_pre_training_patch_classification(
+        experiment='./experiments/classification/patch_encoder/config_aptos.yml', gpu='6,7'
+    )
     run_pre_training_contrastive_classification(
-        experiment='./experiments/classification/contrastive_loss_encoder/config_aptos.yml', gpu='6,7')
+        experiment='./experiments/classification/contrastive_loss_encoder/config_aptos.yml', gpu='6,7'
+    )
     run_pre_training_rotation_classification(
-        experiment='./experiments/classification/rotation_encoder/config_aptos.yml', gpu='6,7')
+        experiment='./experiments/classification/rotation_encoder/config_aptos.yml', gpu='6,7'
+    )
 
-
-    run_pre_training_patch_classification(experiment='./experiments/classification/patch_encoder/config_HIST.yml',
-                                          gpu='6,7')
+    run_pre_training_patch_classification(
+        experiment='./experiments/classification/patch_encoder/config_HIST.yml', gpu='6,7'
+    )
     run_pre_training_rotation_classification(
-        experiment='./experiments/classification/rotation_encoder/config_HIST.yml', gpu='6,7')
+        experiment='./experiments/classification/rotation_encoder/config_HIST.yml', gpu='6,7'
+    )
     run_pre_training_contrastive_classification(
-        experiment='./experiments/classification/contrastive_loss_encoder/config_HIST.yml', gpu='6,7')
-
-
+        experiment='./experiments/classification/contrastive_loss_encoder/config_HIST.yml', gpu='6,7'
+    )
 
     return None
 

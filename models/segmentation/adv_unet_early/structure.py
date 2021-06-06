@@ -279,7 +279,6 @@ class UNet(nn.Module):
 
     def decoder(self, x1, x2, x3, x4, x5, x6):
 
-
         x = self.up1(x6, x5)
         x = self.up2(x, x4)
         x = self.up3(x, x3)

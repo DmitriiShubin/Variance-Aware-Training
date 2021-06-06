@@ -57,7 +57,9 @@ from experiments.regression.pre_trained.run_experiment import run as run_pre_tra
 # RANZCR experiments:
 
 # baseline models
-from experiments.classification.baseline.run_experiment import run as run_efficientnet_baseline_classification
+from experiments.classification.baseline.run_experiment import (
+    run as run_efficientnet_baseline_classification,
+)
 
 from experiments.classification.adversarial_network_train_val_early.run_experiment import (
     run as run_efficientnet_adv_early_classification,
@@ -119,10 +121,10 @@ def main(experiment, gpu):
     # APTOS
 
     # baseline models
-    #run_efficientnet_baseline_regression(experiment='./experiments/regression/baseline/config_aptos_2.yml', gpu='0,1')
-    #run_efficientnet_baseline_regression(experiment='./experiments/regression/baseline/config_aptos_4.yml', gpu='6,7')
-    #run_efficientnet_baseline_regression(experiment='./experiments/regression/baseline/config_aptos_8.yml', gpu='6,7')
-    #run_efficientnet_baseline_regression(experiment='./experiments/regression/baseline/config_aptos_UB.yml', gpu='6,7')
+    # run_efficientnet_baseline_regression(experiment='./experiments/regression/baseline/config_aptos_2.yml', gpu='0,1')
+    # run_efficientnet_baseline_regression(experiment='./experiments/regression/baseline/config_aptos_4.yml', gpu='6,7')
+    # run_efficientnet_baseline_regression(experiment='./experiments/regression/baseline/config_aptos_8.yml', gpu='6,7')
+    # run_efficientnet_baseline_regression(experiment='./experiments/regression/baseline/config_aptos_UB.yml', gpu='6,7')
     # #
     # #adv models
     # for i in range(1,11):
@@ -147,7 +149,7 @@ def main(experiment, gpu):
     #         experiment=f'./experiments/regression/adversarial_network_train_val_late/config_aptos_8_{i}.yml',
     #         gpu='5,6,7')
     #
-    #pre-trained models
+    # pre-trained models
     # run_pre_trained_regression(
     #     experiment='./experiments/regression/pre_trained/config_aptos_2_contrastive.yml', gpu='7')
 
@@ -156,19 +158,21 @@ def main(experiment, gpu):
 
     ###########################################################################
 
-    #HIST
-    run_efficientnet_baseline_classification(experiment='./experiments/classification/baseline/config_HIST_UB.yml', gpu='0')
-    #run_efficientnet_baseline_classification(experiment='./experiments/classification/baseline/config_HIST_4.yml',
-                                           #  gpu='0,1')
-    #run_efficientnet_baseline_classification(experiment='./experiments/classification/baseline/config_HIST_8.yml',
-                                            # gpu='0,1')
+    # HIST
+    run_efficientnet_baseline_classification(
+        experiment='./experiments/classification/baseline/config_HIST_UB.yml', gpu='0'
+    )
+    # run_efficientnet_baseline_classification(experiment='./experiments/classification/baseline/config_HIST_4.yml',
+    #  gpu='0,1')
+    # run_efficientnet_baseline_classification(experiment='./experiments/classification/baseline/config_HIST_8.yml',
+    # gpu='0,1')
 
     # run_efficientnet_baseline_classification(experiment='./experiments/classification/baseline/config_RANZCR_8_2.yml',
     #                                          gpu='0,1')
     # run_efficientnet_baseline_classification(experiment='./experiments/classification/baseline/config_RANZCR_8_3.yml',
     #                                          gpu='0,1')
 
-    #run_efficientnet_adv_early_classification(experiment='./experiments/classification/adversarial_network_train_val_early/config_RANZCR_2.yml', gpu='0,1')
+    # run_efficientnet_adv_early_classification(experiment='./experiments/classification/adversarial_network_train_val_early/config_RANZCR_2.yml', gpu='0,1')
 
     return None
 

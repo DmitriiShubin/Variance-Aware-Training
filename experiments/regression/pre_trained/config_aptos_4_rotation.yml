@@ -19,7 +19,7 @@ model:
   pre_trained_model: 'efficientnet-b3'
   pre_trained_model_ssl: "./data/model_weights/encoder_rotation_aptos/encoder_rotation_aptos_UB_split_table_fold_0.0_1621408288.4404104"
   type_pretrain: "rotation"
-  freeze: True
+  freeze: False
 optimizer_name: Adam
 optimizer_hparams:
   lr: 0.001

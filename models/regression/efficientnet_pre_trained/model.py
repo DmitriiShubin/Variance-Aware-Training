@@ -364,7 +364,7 @@ class Model:
             )
 
         if self.hparams['model']['freeze']:
-            if len(gpu)>1:
+            if len(gpu) > 1:
                 self.model.module.freeze_layers()
             else:
                 self.model.freeze_layers()

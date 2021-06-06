@@ -57,11 +57,24 @@ PCam classification (ROC-AUC score):
 
 ### Reproducing resuls
 
-#### Environment installation
+#### Dependencies
+
+Python version >3.7.0
+
+Install frameworks:
+```
+pip install -r requirements.txt
+```
 
 #### Training
 
+```
+python main.py
+```
+
 #### Evaluation
 
-
+```
+python eval.py
+```
 
