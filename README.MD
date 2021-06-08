@@ -6,7 +6,7 @@ This repository is the official implementation of the paper [About Explicit Vari
 ```
 @article{Shubin2021AboutEV,
   title={About Explicit Variance Minimization: Training Neural Networks for Medical Imaging With Limited Data Annotations},
-  author={Dmitrii Shubin and D. Eytan and S. Goodfellow},
+  author={Dmitrii Shubin and D. Eytan and S. D. Goodfellow},
   journal={ArXiv},
   year={2021},
   volume={abs/2105.14117}
