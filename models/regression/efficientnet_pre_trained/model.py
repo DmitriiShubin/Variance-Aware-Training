@@ -107,7 +107,6 @@ class Model:
                 # gradient clipping
                 if self.apply_clipping:
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
                     torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.5)
 
                 # backprop
